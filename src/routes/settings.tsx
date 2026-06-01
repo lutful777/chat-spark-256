@@ -80,16 +80,21 @@ const providerSchema = z.object({
     .trim()
     .min(1, "API Path wajib diisi")
     .max(512)
-    .refine((v) => v.startsWith("/"), "Path harus diawali '/' (contoh: /chat/completions)"),
+    .transform((v) => (v.startsWith("/") ? v : `/${v}`)),
   apiKey: z.string().trim().min(1, "API Key wajib diisi").max(8192),
   model: z.string().trim().min(1, "Model Name wajib diisi").max(256),
   systemPrompt: z.string().trim().max(8000).optional().default(""),
-  temperature: z.number({ invalid_type_error: "Temperature harus angka" }).min(0, "Min 0").max(2, "Maks 2"),
-  maxTokens: z
+  temperature: z.coerce
+    .number({ invalid_type_error: "Temperature harus angka" })
+    .min(0, "Min 0")
+    .max(2, "Maks 2")
+    .default(0.7),
+  maxTokens: z.coerce
     .number({ invalid_type_error: "Max Tokens harus angka" })
     .int("Harus bilangan bulat")
     .min(1, "Min 1")
-    .max(200000, "Maks 200000"),
+    .max(200000, "Maks 200000")
+    .default(1024),
   stream: z.boolean(),
   directCall: z.boolean(),
 });
