@@ -206,6 +206,11 @@ function SettingsPage() {
         <h1 className="text-base font-semibold">Settings</h1>
       </header>
 
+      {!ready ? (
+        <div className="flex min-h-[60vh] items-center justify-center text-muted-foreground">
+          <Loader2 className="size-6 animate-spin" />
+        </div>
+      ) : (
       <div className="mx-auto grid w-full max-w-5xl gap-4 p-3 md:grid-cols-[260px_1fr] md:p-6">
         {/* Provider list */}
         <section className="rounded-2xl border border-border bg-card p-3">
@@ -426,6 +431,7 @@ function SettingsPage() {
           )}
         </section>
       </div>
+      )}
     </div>
   );
 }
