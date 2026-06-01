@@ -18,6 +18,7 @@ import {
   uid,
 } from "./storage";
 import type { ChatMessage, Conversation, ProviderConfig } from "./types";
+import { DEFAULT_PROVIDER } from "./types";
 
 interface ChatStore {
   ready: boolean;
