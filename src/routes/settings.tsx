@@ -411,7 +411,11 @@ function SettingsPage() {
                     )}
                   </div>
 
-                  <Field label="Provider Name" error={errors.name}>
+                  <Field
+                    label="Provider Name"
+                    error={errors.name}
+                    fieldRef={(el) => (fieldRefs.current.name = el)}
+                  >
                     <Input
                       value={form.name}
                       onChange={(e) => update("name", e.target.value)}
@@ -420,7 +424,11 @@ function SettingsPage() {
                     />
                   </Field>
 
-                  <Field label="Base URL" error={errors.baseUrl}>
+                  <Field
+                    label="Base URL"
+                    error={errors.baseUrl}
+                    fieldRef={(el) => (fieldRefs.current.baseUrl = el)}
+                  >
                     <Input
                       value={form.baseUrl}
                       onChange={(e) => update("baseUrl", e.target.value)}
@@ -430,7 +438,11 @@ function SettingsPage() {
                     />
                   </Field>
 
-                  <Field label="API Path" error={errors.path}>
+                  <Field
+                    label="API Path"
+                    error={errors.path}
+                    fieldRef={(el) => (fieldRefs.current.path = el)}
+                  >
                     <Input
                       value={form.path}
                       onChange={(e) => update("path", e.target.value)}
@@ -443,6 +455,7 @@ function SettingsPage() {
                     label="API Key"
                     error={errors.apiKey}
                     hint="Disimpan hanya di perangkat ini (localStorage)."
+                    fieldRef={(el) => (fieldRefs.current.apiKey = el)}
                   >
                     <div className="flex gap-2">
                       <div className="relative flex-1">
@@ -476,7 +489,12 @@ function SettingsPage() {
                     </div>
                   </Field>
 
-                  <Field label="Model Name" error={errors.model} hint="Mis. mistralai/mistral-large">
+                  <Field
+                    label="Model Name"
+                    error={errors.model}
+                    hint="Mis. mistralai/mistral-large"
+                    fieldRef={(el) => (fieldRefs.current.model = el)}
+                  >
                     <Input
                       value={form.model}
                       onChange={(e) => update("model", e.target.value)}
@@ -489,6 +507,7 @@ function SettingsPage() {
                     label="System Prompt (opsional)"
                     error={errors.systemPrompt}
                     hint="Instruksi default untuk AI, mis. 'You are a helpful assistant.'"
+                    fieldRef={(el) => (fieldRefs.current.systemPrompt = el)}
                   >
                     <Textarea
                       value={form.systemPrompt ?? ""}
@@ -503,6 +522,7 @@ function SettingsPage() {
                     <Field
                       label={`Temperature: ${form.temperature.toFixed(2)}`}
                       error={errors.temperature}
+                      fieldRef={(el) => (fieldRefs.current.temperature = el)}
                     >
                       <Slider
                         value={[form.temperature]}
@@ -514,7 +534,11 @@ function SettingsPage() {
                       />
                     </Field>
 
-                    <Field label="Max Tokens" error={errors.maxTokens}>
+                    <Field
+                      label="Max Tokens"
+                      error={errors.maxTokens}
+                      fieldRef={(el) => (fieldRefs.current.maxTokens = el)}
+                    >
                       <Input
                         value={Number.isFinite(form.maxTokens) ? form.maxTokens : ""}
                         onChange={(e) => update("maxTokens", parseInt(e.target.value, 10) || 0)}
