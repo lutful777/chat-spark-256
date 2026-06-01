@@ -248,7 +248,6 @@ export async function generateImage(opts: {
       model: provider.imageModel.trim(),
       prompt,
       n: 1,
-      size: "1024x1024",
       response_format: "b64_json",
     },
     signal,
@@ -327,7 +326,7 @@ export async function photoToVideo(opts: {
     payload: {
       model: provider.videoModel.trim(),
       prompt,
-      image: imageDataUrl,
+      image: { url: imageDataUrl },
     },
     signal,
   });
@@ -414,7 +413,7 @@ export async function testVideoConnection(opts: {
     payload: {
       model: provider.videoModel.trim(),
       prompt: "connection test",
-      image: TINY_PNG,
+      image: { url: TINY_PNG },
     },
     signal,
   });
