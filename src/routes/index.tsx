@@ -448,7 +448,7 @@ function ChatPage() {
             providers.length === 0
               ? "Tambahkan provider di Settings…"
               : !canSend
-                ? "Lengkapi API Key & Model di Settings…"
+                ? "Lengkapi Base URL, API Path, API Key, dan Model di Settings…"
                 : `Pesan ke ${activeProvider?.name}…`
           }
         />
