@@ -64,6 +64,7 @@ function ChatPage() {
     activeProvider,
     activeProviderId,
     setActiveProviderId,
+    upsertProvider,
     createConversation,
     removeConversation,
     clearConversation,
@@ -97,6 +98,41 @@ function ChatPage() {
     !!activeProvider?.path.trim() &&
     !!activeProvider?.apiKey.trim() &&
     !!activeProvider?.model.trim();
+
+  // value encodes provider + selected model: "providerId:::modelName"
+  const selectedValue =
+    activeProviderId && activeProvider?.model
+      ? `${activeProviderId}:::${activeProvider.model}`
+      : activeProviderId
+        ? `${activeProviderId}:::`
+        : undefined;
+
+  const handleProviderModelChange = (value: string) => {
+    const sep = value.indexOf(":::");
+    const pid = sep === -1 ? value : value.slice(0, sep);
+    const model = sep === -1 ? "" : value.slice(sep + 3);
+    setActiveProviderId(pid);
+    const provider = providers.find((p) => p.id === pid);
+    if (provider && model && provider.model !== model) {
+      upsertProvider({ ...provider, model });
+    }
+  };
+
+  const providerModelItems = providers.flatMap((p) => {
+    const models = p.models?.length ? p.models : p.model ? [p.model] : [];
+    if (models.length === 0) {
+      return [
+        <SelectItem key={`${p.id}:::`} value={`${p.id}:::`}>
+          {p.name}
+        </SelectItem>,
+      ];
+    }
+    return models.map((m) => (
+      <SelectItem key={`${p.id}:::${m}`} value={`${p.id}:::${m}`}>
+        {p.name} · {m}
+      </SelectItem>
+    ));
+  });
 
   useEffect(() => {
     scrollEndRef.current?.scrollIntoView({ behavior: "smooth" });
