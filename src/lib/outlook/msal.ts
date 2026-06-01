@@ -93,7 +93,6 @@ async function getInstance(config: OutlookConfig): Promise<PublicClientApplicati
     },
     cache: {
       cacheLocation: "localStorage",
-      storeAuthStateInCookie: false,
     },
   };
   const inst = new PublicClientApplication(msalConfig);
