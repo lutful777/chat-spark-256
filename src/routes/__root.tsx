@@ -79,14 +79,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "AI API Chat" },
+      { title: "API Chat Client" },
       {
         name: "description",
         content:
-          "AI API Chat — klien chat untuk API OpenAI-compatible. Atur provider, base URL, dan model Anda sendiri.",
+          "API Chat Client — klien chat untuk API OpenAI-compatible. Pakai API key Anda sendiri, atur provider, base URL, dan model bebas.",
       },
-      { name: "author", content: "AI API Chat" },
-      { property: "og:title", content: "AI API Chat" },
+      { name: "author", content: "API Chat Client" },
+      { property: "og:title", content: "API Chat Client" },
       {
         property: "og:description",
         content: "Klien chat AI untuk API OpenAI-compatible dengan konfigurasi provider sendiri.",
