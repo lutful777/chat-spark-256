@@ -92,7 +92,11 @@ function ChatPage() {
   );
 
   const messages = activeConversation?.messages ?? [];
-  const canSend = !!activeProvider?.apiKey.trim() && !!activeProvider?.model.trim();
+  const canSend =
+    !!activeProvider?.baseUrl.trim() &&
+    !!activeProvider?.path.trim() &&
+    !!activeProvider?.apiKey.trim() &&
+    !!activeProvider?.model.trim();
 
   useEffect(() => {
     scrollEndRef.current?.scrollIntoView({ behavior: "smooth" });
