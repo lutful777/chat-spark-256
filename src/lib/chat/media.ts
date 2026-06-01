@@ -327,6 +327,7 @@ export async function photoToVideo(opts: {
       model: provider.videoModel.trim(),
       prompt,
       image: { url: imageDataUrl },
+      duration: 15,
     },
     signal,
   });
@@ -414,6 +415,7 @@ export async function testVideoConnection(opts: {
       model: provider.videoModel.trim(),
       prompt: "connection test",
       image: { url: TINY_PNG },
+      duration: 15,
     },
     signal,
   });
