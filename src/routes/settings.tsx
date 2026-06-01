@@ -317,6 +317,16 @@ function SettingsPage() {
         return;
       }
       const count = importProviders(parsed.data as Omit<ProviderConfig, "id">[]);
+      const normalized = parsed.data.map((p) => {
+        const models =
+          p.models && p.models.length > 0
+            ? p.models.map((m) => m.trim()).filter(Boolean)
+            : p.model
+              ? [p.model.trim()].filter(Boolean)
+              : [];
+        return { ...p, models, model: models[0] ?? "" };
+      });
+      void count;
       toast.success(`${count} provider diimpor. Isi API Key tiap provider.`);
     } catch {
       toast.error("Gagal membaca file JSON.");
