@@ -185,7 +185,7 @@ function ChatPage() {
       return;
     }
     if (!canSend) {
-      toast.error("API Key / Model belum diisi. Buka Settings.");
+      toast.error("Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu.");
       return;
     }
 
