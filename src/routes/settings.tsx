@@ -82,7 +82,14 @@ const providerSchema = z.object({
     .max(512)
     .transform((v) => (v.startsWith("/") ? v : `/${v}`)),
   apiKey: z.string().trim().min(1, "API Key wajib diisi").max(8192),
-  model: z.string().trim().min(1, "Model Name wajib diisi").max(256),
+  models: z
+    .array(z.string())
+    .transform((arr) => arr.map((s) => s.trim()).filter(Boolean))
+    .pipe(
+      z
+        .array(z.string().min(1).max(256))
+        .min(1, "Tambahkan minimal satu model"),
+    ),
   systemPrompt: z.string().trim().max(8000).optional().default(""),
   temperature: z.coerce
     .number({ invalid_type_error: "Temperature harus angka" })
@@ -107,6 +114,7 @@ const importSchema = z.array(
     path: z.string().trim().min(1).max(512),
     apiKey: z.string().max(8192).optional().default(""),
     model: z.string().trim().max(256).optional().default(""),
+    models: z.array(z.string().trim().max(256)).optional(),
     systemPrompt: z.string().max(8000).optional().default(""),
     temperature: z.number().min(0).max(2).optional().default(0.7),
     maxTokens: z.number().int().min(1).max(200000).optional().default(1024),
