@@ -373,20 +373,13 @@ function ChatPage() {
 
           {providers.length > 0 && (
             <Select
-              value={activeProviderId ?? undefined}
-              onValueChange={(v) => setActiveProviderId(v)}
+              value={selectedValue}
+              onValueChange={handleProviderModelChange}
             >
-              <SelectTrigger className="hidden h-9 w-48 rounded-xl text-xs sm:flex">
+              <SelectTrigger className="hidden h-9 w-56 rounded-xl text-xs sm:flex">
                 <SelectValue placeholder="Pilih provider" />
               </SelectTrigger>
-              <SelectContent>
-                {providers.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                    {p.model ? ` · ${p.model}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+              <SelectContent>{providerModelItems}</SelectContent>
             </Select>
           )}
 
@@ -426,20 +419,13 @@ function ChatPage() {
         {providers.length > 0 && (
           <div className="border-b border-border px-3 py-2 sm:hidden">
             <Select
-              value={activeProviderId ?? undefined}
-              onValueChange={(v) => setActiveProviderId(v)}
+              value={selectedValue}
+              onValueChange={handleProviderModelChange}
             >
               <SelectTrigger className="h-9 w-full rounded-xl text-xs">
                 <SelectValue placeholder="Pilih provider" />
               </SelectTrigger>
-              <SelectContent>
-                {providers.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                    {p.model ? ` · ${p.model}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+              <SelectContent>{providerModelItems}</SelectContent>
             </Select>
           </div>
         )}
