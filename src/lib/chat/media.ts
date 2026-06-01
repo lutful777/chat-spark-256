@@ -310,7 +310,7 @@ export async function photoToVideo(opts: {
 
   const apiKey = provider.apiKey.trim();
   const initial = await callProxy({
-    baseUrl: provider.baseUrl.trim(),
+    baseUrl: videoBase(provider),
     path: provider.videoPath.trim(),
     apiKey,
     payload: {
@@ -342,7 +342,7 @@ export async function photoToVideo(opts: {
 
     const poll = await callProxy({
       method: "GET",
-      baseUrl: provider.baseUrl.trim(),
+      baseUrl: videoBase(provider),
       path: statusPath,
       apiKey,
       signal,
