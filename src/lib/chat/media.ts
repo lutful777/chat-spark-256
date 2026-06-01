@@ -278,7 +278,7 @@ export async function editImage(opts: {
     payload: {
       model: provider.imageEditModel.trim(),
       prompt,
-      image: imageDataUrl,
+      image: { url: imageDataUrl, type: "image_url" },
       n: 1,
       response_format: "b64_json",
     },
