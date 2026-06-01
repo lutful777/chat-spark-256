@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VideoRouteImport } from './routes/video'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ImageRouteImport } from './routes/image'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicProxyRouteImport } from './routes/api/public/proxy'
 import { Route as ApiPublicMediaProxyRouteImport } from './routes/api/public/media-proxy'
 
+const VideoRoute = VideoRouteImport.update({
+  id: '/video',
+  path: '/video',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/image': typeof ImageRoute
   '/settings': typeof SettingsRoute
+  '/video': typeof VideoRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/image': typeof ImageRoute
   '/settings': typeof SettingsRoute
+  '/video': typeof VideoRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
 }
@@ -60,6 +68,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/image': typeof ImageRoute
   '/settings': typeof SettingsRoute
+  '/video': typeof VideoRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
 }
@@ -69,6 +78,7 @@ export interface FileRouteTypes {
     | '/'
     | '/image'
     | '/settings'
+    | '/video'
     | '/api/public/media-proxy'
     | '/api/public/proxy'
   fileRoutesByTo: FileRoutesByTo
@@ -76,6 +86,7 @@ export interface FileRouteTypes {
     | '/'
     | '/image'
     | '/settings'
+    | '/video'
     | '/api/public/media-proxy'
     | '/api/public/proxy'
   id:
@@ -83,6 +94,7 @@ export interface FileRouteTypes {
     | '/'
     | '/image'
     | '/settings'
+    | '/video'
     | '/api/public/media-proxy'
     | '/api/public/proxy'
   fileRoutesById: FileRoutesById
@@ -91,12 +103,20 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ImageRoute: typeof ImageRoute
   SettingsRoute: typeof SettingsRoute
+  VideoRoute: typeof VideoRoute
   ApiPublicMediaProxyRoute: typeof ApiPublicMediaProxyRoute
   ApiPublicProxyRoute: typeof ApiPublicProxyRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/video': {
+      id: '/video'
+      path: '/video'
+      fullPath: '/video'
+      preLoaderRoute: typeof VideoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -139,6 +159,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ImageRoute: ImageRoute,
   SettingsRoute: SettingsRoute,
+  VideoRoute: VideoRoute,
   ApiPublicMediaProxyRoute: ApiPublicMediaProxyRoute,
   ApiPublicProxyRoute: ApiPublicProxyRoute,
 }
