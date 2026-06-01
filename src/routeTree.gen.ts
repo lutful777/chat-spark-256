@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicProxyRouteImport } from './routes/api/public/proxy'
+import { Route as ApiPublicMediaProxyRouteImport } from './routes/api/public/media-proxy'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -28,34 +29,48 @@ const ApiPublicProxyRoute = ApiPublicProxyRouteImport.update({
   path: '/api/public/proxy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicMediaProxyRoute = ApiPublicMediaProxyRouteImport.update({
+  id: '/api/public/media-proxy',
+  path: '/api/public/media-proxy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
+  '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
+  '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
+  '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settings' | '/api/public/proxy'
+  fullPaths: '/' | '/settings' | '/api/public/media-proxy' | '/api/public/proxy'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings' | '/api/public/proxy'
-  id: '__root__' | '/' | '/settings' | '/api/public/proxy'
+  to: '/' | '/settings' | '/api/public/media-proxy' | '/api/public/proxy'
+  id:
+    | '__root__'
+    | '/'
+    | '/settings'
+    | '/api/public/media-proxy'
+    | '/api/public/proxy'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SettingsRoute: typeof SettingsRoute
+  ApiPublicMediaProxyRoute: typeof ApiPublicMediaProxyRoute
   ApiPublicProxyRoute: typeof ApiPublicProxyRoute
 }
 
@@ -82,14 +97,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicProxyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/media-proxy': {
+      id: '/api/public/media-proxy'
+      path: '/api/public/media-proxy'
+      fullPath: '/api/public/media-proxy'
+      preLoaderRoute: typeof ApiPublicMediaProxyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SettingsRoute: SettingsRoute,
+  ApiPublicMediaProxyRoute: ApiPublicMediaProxyRoute,
   ApiPublicProxyRoute: ApiPublicProxyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
