@@ -691,14 +691,16 @@ function Field({
   error,
   hint,
   children,
+  fieldRef,
 }: {
   label: string;
   error?: string;
   hint?: string;
   children: React.ReactNode;
+  fieldRef?: (el: HTMLDivElement | null) => void;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div ref={fieldRef} className="space-y-1.5">
       <Label className="text-sm">{label}</Label>
       {children}
       {error ? (
