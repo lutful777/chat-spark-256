@@ -313,6 +313,14 @@ function SettingsPage() {
       maxTokens: p.maxTokens,
       stream: p.stream ?? true,
       directCall: p.directCall ?? false,
+      imageBaseUrl: p.imageBaseUrl ?? "",
+      imagePath: p.imagePath ?? "",
+      imageModel: p.imageModel ?? "",
+      imageEditPath: p.imageEditPath ?? "",
+      imageEditModel: p.imageEditModel ?? "",
+      videoPath: p.videoPath ?? "",
+      videoModel: p.videoModel ?? "",
+      videoStatusPath: p.videoStatusPath ?? "",
     }));
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
