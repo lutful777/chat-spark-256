@@ -104,6 +104,14 @@ const providerSchema = z.object({
     .default(1024),
   stream: z.boolean(),
   directCall: z.boolean(),
+  imageBaseUrl: z.string().trim().max(2048).optional(),
+  imagePath: z.string().trim().max(512).optional(),
+  imageModel: z.string().trim().max(256).optional(),
+  imageEditPath: z.string().trim().max(512).optional(),
+  imageEditModel: z.string().trim().max(256).optional(),
+  videoPath: z.string().trim().max(512).optional(),
+  videoModel: z.string().trim().max(256).optional(),
+  videoStatusPath: z.string().trim().max(512).optional(),
 });
 
 // Import schema (without requiring API key)
