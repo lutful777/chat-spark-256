@@ -1,7 +1,17 @@
 import { Link } from "@tanstack/react-router";
-import { MessageSquarePlus, Settings, Sparkles, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Check,
+  MessageSquarePlus,
+  Pencil,
+  Settings,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@/lib/chat/types";
@@ -12,6 +22,18 @@ interface Props {
   onSelect: (id: string) => void;
   onNewChat: () => void;
   onDelete: (id: string) => void;
+  onRename: (id: string, title: string) => void;
+}
+
+function formatDate(ts: number): string {
+  try {
+    return new Date(ts).toLocaleDateString(undefined, {
+      day: "2-digit",
+      month: "short",
+    });
+  } catch {
+    return "";
+  }
 }
 
 export function ConversationSidebar({
@@ -20,7 +42,29 @@ export function ConversationSidebar({
   onSelect,
   onNewChat,
   onDelete,
+  onRename,
 }: Props) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingId) inputRef.current?.focus();
+  }, [editingId]);
+
+  const startEdit = (c: Conversation) => {
+    setEditingId(c.id);
+    setDraft(c.title);
+  };
+
+  const commitEdit = () => {
+    if (editingId) {
+      const title = draft.trim();
+      if (title) onRename(editingId, title.slice(0, 80));
+    }
+    setEditingId(null);
+  };
+
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex items-center gap-2 px-4 py-4">
@@ -28,7 +72,7 @@ export function ConversationSidebar({
           <Sparkles className="size-5" />
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">AI API Chat</p>
+          <p className="truncate text-sm font-semibold">API Chat Client</p>
           <p className="truncate text-xs text-muted-foreground">OpenAI-compatible</p>
         </div>
       </div>
@@ -57,22 +101,66 @@ export function ConversationSidebar({
                   : "hover:bg-sidebar-accent/50",
               )}
             >
-              <button
-                type="button"
-                onClick={() => onSelect(c.id)}
-                className="min-w-0 flex-1 truncate text-left"
-                title={c.title}
-              >
-                {c.title}
-              </button>
-              <button
-                type="button"
-                onClick={() => onDelete(c.id)}
-                aria-label="Hapus percakapan"
-                className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
-              >
-                <Trash2 className="size-4" />
-              </button>
+              {editingId === c.id ? (
+                <>
+                  <Input
+                    ref={inputRef}
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") commitEdit();
+                      if (e.key === "Escape") setEditingId(null);
+                    }}
+                    className="h-7 flex-1 rounded-md px-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={commitEdit}
+                    aria-label="Simpan nama"
+                    className="shrink-0 rounded-md p-1 text-primary"
+                  >
+                    <Check className="size-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingId(null)}
+                    aria-label="Batal"
+                    className="shrink-0 rounded-md p-1 text-muted-foreground"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(c.id)}
+                    className="min-w-0 flex-1 text-left"
+                    title={c.title}
+                  >
+                    <span className="block truncate">{c.title}</span>
+                    <span className="block truncate text-[10px] text-muted-foreground">
+                      {formatDate(c.createdAt)}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => startEdit(c)}
+                    aria-label="Ganti nama"
+                    className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(c.id)}
+                    aria-label="Hapus percakapan"
+                    className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </>
+              )}
             </div>
           ))}
         </div>
