@@ -136,6 +136,30 @@ function SettingsPage() {
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const fieldRefs = useRef<Partial<Record<keyof ProviderConfig, HTMLDivElement | null>>>({});
+
+  // order used to find the first errored field for scrolling/focus
+  const FIELD_ORDER: Array<keyof ProviderConfig> = [
+    "name",
+    "baseUrl",
+    "path",
+    "apiKey",
+    "model",
+    "systemPrompt",
+    "temperature",
+    "maxTokens",
+  ];
+
+  const scrollToFirstError = (errs: FormErrors) => {
+    const firstKey = FIELD_ORDER.find((k) => errs[k]);
+    if (!firstKey) return;
+    const el = fieldRefs.current[firstKey];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      const focusable = el.querySelector<HTMLElement>("input, textarea");
+      focusable?.focus({ preventScroll: true });
+    }
+  };
 
   useEffect(() => {
     if (!ready) return;
@@ -176,6 +200,7 @@ function SettingsPage() {
         if (!errs[key]) errs[key] = issue.message;
       }
       setErrors(errs);
+      scrollToFirstError(errs);
       return null;
     }
     setErrors({});
@@ -184,12 +209,10 @@ function SettingsPage() {
 
   const handleSave = () => {
     const valid = validate();
-    if (!valid) {
-      toast.error("Periksa kembali kolom yang ditandai.");
-      return;
-    }
+    if (!valid) return;
     upsertProvider(valid);
-    toast.success("Provider disimpan");
+    setForm(valid);
+    toast.success("Provider berhasil disimpan.");
   };
 
   const handleTest = async () => {
