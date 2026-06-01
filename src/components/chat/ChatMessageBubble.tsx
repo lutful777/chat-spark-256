@@ -59,10 +59,10 @@ export function ChatMessageBubble({
         </div>
       )}
 
-      <div className={cn("flex max-w-[82%] flex-col gap-1", isUser ? "items-end" : "items-start")}>
+      <div className={cn("flex min-w-0 max-w-[82%] flex-col gap-1", isUser ? "items-end" : "items-start")}>
         <div
           className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm",
+            "min-w-0 max-w-full rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm",
             isUser
               ? "rounded-br-md bg-primary text-primary-foreground"
               : message.error
@@ -75,13 +75,13 @@ export function ChatMessageBubble({
           ) : (
             <div
               className={cn(
-                "break-words [&_a]:text-primary [&_a]:underline",
+                "min-w-0 [overflow-wrap:anywhere] [&_a]:break-all [&_a]:text-primary [&_a]:underline",
                 "[&_p]:my-1.5 first:[&_p]:mt-0 last:[&_p]:mb-0",
                 "[&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-5",
                 "[&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:text-base [&_h1]:font-semibold",
                 "[&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:text-base [&_h2]:font-semibold",
                 "[&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:font-semibold",
-                "[&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-secondary [&_pre]:p-3 [&_pre]:text-xs",
+                "[&_pre]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-secondary [&_pre]:p-3 [&_pre]:text-xs",
                 "[&_code]:rounded [&_code]:bg-secondary [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs",
                 "[&_pre_code]:bg-transparent [&_pre_code]:p-0",
                 "[&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground",
