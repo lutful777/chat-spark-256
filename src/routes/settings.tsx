@@ -529,17 +529,44 @@ function SettingsPage() {
                   </Field>
 
                   <Field
-                    label="Model Name"
-                    error={errors.model}
-                    hint="Mis. mistralai/mistral-large"
-                    fieldRef={(el) => (fieldRefs.current.model = el)}
+                    label="Models"
+                    error={errors.models}
+                    hint="Tambahkan satu atau beberapa model untuk API key ini. Mis. mistralai/mistral-large"
+                    fieldRef={(el) => (fieldRefs.current.models = el)}
                   >
-                    <Input
-                      value={form.model}
-                      onChange={(e) => update("model", e.target.value)}
-                      placeholder="contoh: openai/gpt-4o-mini"
-                      className="rounded-xl"
-                    />
+                    <div className="space-y-2">
+                      {(form.models ?? []).map((m, i) => (
+                        <div key={i} className="flex gap-2">
+                          <Input
+                            value={m}
+                            onChange={(e) => updateModel(i, e.target.value)}
+                            placeholder="contoh: openai/gpt-4o-mini"
+                            className="rounded-xl"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0 rounded-xl"
+                            onClick={() => removeModel(i)}
+                            disabled={(form.models ?? []).length <= 1}
+                            aria-label="Hapus model"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 rounded-xl"
+                        onClick={addModel}
+                      >
+                        <Plus className="size-4" />
+                        Tambah Model
+                      </Button>
+                    </div>
                   </Field>
 
                   <Field
