@@ -25,6 +25,7 @@ const RequestSchema = z.object({
       .max(200),
     temperature: z.number().min(0).max(2).optional(),
     max_tokens: z.number().int().min(1).max(200000).optional(),
+    stream: z.boolean().optional(),
   }),
 });
 
@@ -71,6 +72,20 @@ export const Route = createFileRoute("/api/public/proxy")({
             body: JSON.stringify(payload),
             signal: controller.signal,
           });
+
+          // Streaming: pass the upstream SSE body straight through.
+          if (payload.stream && upstream.ok && upstream.body) {
+            clearTimeout(timeout);
+            return new Response(upstream.body, {
+              status: upstream.status,
+              headers: {
+                "Content-Type":
+                  upstream.headers.get("Content-Type") ?? "text/event-stream",
+                "Cache-Control": "no-cache",
+                ...corsHeaders,
+              },
+            });
+          }
 
           const text = await upstream.text();
           return new Response(text, {
