@@ -18,6 +18,10 @@ export interface ProviderConfig {
   model: string;
   temperature: number;
   maxTokens: number;
+  /** optional default instruction sent as the system message */
+  systemPrompt?: string;
+  /** request token-by-token streaming responses */
+  stream?: boolean;
   /** call provider directly from the browser instead of via server proxy */
   directCall?: boolean;
 }
@@ -39,6 +43,8 @@ export const DEFAULT_PROVIDER: Omit<ProviderConfig, "id"> = {
   model: "",
   temperature: 0.7,
   maxTokens: 1024,
+  systemPrompt: "",
+  stream: true,
   directCall: false,
 };
 
@@ -49,9 +55,11 @@ export const PROVIDER_PRESETS: Array<Omit<ProviderConfig, "id">> = [
     baseUrl: "https://openrouter.ai/api/v1",
     path: "/chat/completions",
     apiKey: "",
-    model: "",
+    model: "openai/gpt-4o-mini",
     temperature: 0.7,
     maxTokens: 1024,
+    systemPrompt: "",
+    stream: true,
     directCall: false,
   },
   {
@@ -59,9 +67,11 @@ export const PROVIDER_PRESETS: Array<Omit<ProviderConfig, "id">> = [
     baseUrl: "https://api.bluesminds.com/v1",
     path: "/chat/completions",
     apiKey: "",
-    model: "",
+    model: "mistralai/mistral-large",
     temperature: 0.7,
     maxTokens: 1024,
+    systemPrompt: "",
+    stream: true,
     directCall: false,
   },
   {
@@ -72,6 +82,8 @@ export const PROVIDER_PRESETS: Array<Omit<ProviderConfig, "id">> = [
     model: "gpt-4o-mini",
     temperature: 0.7,
     maxTokens: 1024,
+    systemPrompt: "",
+    stream: true,
     directCall: false,
   },
 ];
