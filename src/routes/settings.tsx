@@ -291,6 +291,7 @@ function SettingsPage() {
       path: p.path,
       apiKey: "",
       model: p.model,
+      models: p.models ?? (p.model ? [p.model] : []),
       systemPrompt: p.systemPrompt ?? "",
       temperature: p.temperature,
       maxTokens: p.maxTokens,
