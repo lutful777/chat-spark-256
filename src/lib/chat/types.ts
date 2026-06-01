@@ -30,6 +30,8 @@ export interface ProviderConfig {
   /* ---------- Media (image / video) settings ---------- */
   /** optional separate base URL for image endpoints; falls back to baseUrl */
   imageBaseUrl?: string;
+  /** separate API key for image endpoints; falls back to apiKey */
+  imageApiKey?: string;
   /** path for image generation, e.g. /images/generations */
   imagePath?: string;
   /** model used for image generation */
@@ -38,6 +40,8 @@ export interface ProviderConfig {
   imageEditPath?: string;
   /** model used for image editing */
   imageEditModel?: string;
+  /** separate API key for video endpoints; falls back to apiKey */
+  videoApiKey?: string;
   /** path for video generation, e.g. /videos/generations */
   videoPath?: string;
   /** optional separate base URL for video endpoints; falls back to baseUrl */

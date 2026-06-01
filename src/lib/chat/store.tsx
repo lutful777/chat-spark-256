@@ -168,7 +168,9 @@ export function ChatStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearAllApiKeys = useCallback(() => {
-    setProviders((prev) => prev.map((p) => ({ ...p, apiKey: "" })));
+    setProviders((prev) =>
+      prev.map((p) => ({ ...p, apiKey: "", imageApiKey: "", videoApiKey: "" })),
+    );
   }, []);
 
   const resetAllData = useCallback(() => {

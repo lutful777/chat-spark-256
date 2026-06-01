@@ -219,6 +219,14 @@ function videoBase(provider: ProviderConfig): string {
   return (provider.videoBaseUrl?.trim() || provider.baseUrl || "").trim();
 }
 
+function effectiveImageApiKey(provider: ProviderConfig): string {
+  return (provider.imageApiKey?.trim() || provider.apiKey || "").trim();
+}
+
+function effectiveVideoApiKey(provider: ProviderConfig): string {
+  return (provider.videoApiKey?.trim() || provider.apiKey || "").trim();
+}
+
 /* ---------------- public API ---------------- */
 
 export async function generateImage(opts: {
@@ -227,14 +235,15 @@ export async function generateImage(opts: {
   signal?: AbortSignal;
 }): Promise<string> {
   const { provider, prompt, signal } = opts;
-  if (!provider.apiKey.trim()) throw new MediaError("API Key belum diisi di Settings.");
+  const imgKey = effectiveImageApiKey(provider);
+  if (!imgKey) throw new MediaError("API Key belum diisi di Settings (Image atau Chat API).");
   if (!provider.imagePath?.trim()) throw new MediaError("Image Generate Path belum diatur di Settings.");
   if (!provider.imageModel?.trim()) throw new MediaError("Image Generate Model belum diatur di Settings.");
 
   const result = await callProxy({
     baseUrl: imageBase(provider),
     path: provider.imagePath.trim(),
-    apiKey: provider.apiKey.trim(),
+    apiKey: imgKey,
     payload: {
       model: provider.imageModel.trim(),
       prompt,
@@ -258,14 +267,15 @@ export async function editImage(opts: {
   signal?: AbortSignal;
 }): Promise<string> {
   const { provider, prompt, imageDataUrl, signal } = opts;
-  if (!provider.apiKey.trim()) throw new MediaError("API Key belum diisi di Settings.");
+  const imgKey = effectiveImageApiKey(provider);
+  if (!imgKey) throw new MediaError("API Key belum diisi di Settings (Image atau Chat API).");
   if (!provider.imageEditPath?.trim()) throw new MediaError("Image Edit Path belum diatur di Settings.");
   if (!provider.imageEditModel?.trim()) throw new MediaError("Image Edit Model belum diatur di Settings.");
 
   const result = await callProxy({
     baseUrl: imageBase(provider),
     path: provider.imageEditPath.trim(),
-    apiKey: provider.apiKey.trim(),
+    apiKey: imgKey,
     payload: {
       model: provider.imageEditModel.trim(),
       prompt,
@@ -304,11 +314,12 @@ export async function photoToVideo(opts: {
   onStatus?: (message: string) => void;
 }): Promise<string> {
   const { provider, prompt, imageDataUrl, signal, onStatus } = opts;
-  if (!provider.apiKey.trim()) throw new MediaError("API Key belum diisi di Settings.");
+  const vidKey = effectiveVideoApiKey(provider);
+  if (!vidKey) throw new MediaError("API Key belum diisi di Settings (Video atau Chat API).");
   if (!provider.videoPath?.trim()) throw new MediaError("Video Generate Path belum diatur di Settings.");
   if (!provider.videoModel?.trim()) throw new MediaError("Video Model belum diatur di Settings.");
 
-  const apiKey = provider.apiKey.trim();
+  const apiKey = vidKey;
   const initial = await callProxy({
     baseUrl: videoBase(provider),
     path: provider.videoPath.trim(),
@@ -388,7 +399,8 @@ export async function testVideoConnection(opts: {
   signal?: AbortSignal;
 }): Promise<void> {
   const { provider, signal } = opts;
-  if (!provider.apiKey.trim()) throw new MediaError("API Key belum diisi di tab Chat API.");
+  const vidKey = effectiveVideoApiKey(provider);
+  if (!vidKey) throw new MediaError("API Key belum diisi (Video atau Chat API).");
   if (!provider.videoPath?.trim())
     throw new MediaError("Video Generate Path belum diatur.");
   if (!provider.videoModel?.trim()) throw new MediaError("Video Model belum diatur.");
@@ -398,7 +410,7 @@ export async function testVideoConnection(opts: {
   await callProxy({
     baseUrl: videoBase(provider),
     path: provider.videoPath.trim(),
-    apiKey: provider.apiKey.trim(),
+    apiKey: vidKey,
     payload: {
       model: provider.videoModel.trim(),
       prompt: "connection test",

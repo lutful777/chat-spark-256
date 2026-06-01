@@ -124,6 +124,7 @@ const chatSchema = z.object({
 
 const imageSchema = z.object({
   imageBaseUrl: optionalUrl,
+  imageApiKey: z.string().trim().max(8192).optional().default(""),
   imagePath: optionalPath,
   imageModel: optionalModel,
   imageEditPath: optionalPath,
@@ -132,6 +133,7 @@ const imageSchema = z.object({
 
 const videoSchema = z.object({
   videoBaseUrl: optionalUrl,
+  videoApiKey: z.string().trim().max(8192).optional().default(""),
   videoPath: optionalPath,
   videoModel: optionalModel,
   videoStatusPath: optionalPath,
@@ -152,11 +154,13 @@ const importSchema = z.array(
     stream: z.boolean().optional().default(true),
     directCall: z.boolean().optional().default(false),
     imageBaseUrl: z.string().trim().max(2048).optional(),
+    imageApiKey: z.string().max(8192).optional().default(""),
     imagePath: z.string().trim().max(512).optional(),
     imageModel: z.string().trim().max(256).optional(),
     imageEditPath: z.string().trim().max(512).optional(),
     imageEditModel: z.string().trim().max(256).optional(),
     videoBaseUrl: z.string().trim().max(2048).optional(),
+    videoApiKey: z.string().max(8192).optional().default(""),
     videoPath: z.string().trim().max(512).optional(),
     videoModel: z.string().trim().max(256).optional(),
     videoStatusPath: z.string().trim().max(512).optional(),
@@ -182,7 +186,9 @@ function SettingsPage() {
   const [form, setForm] = useState<ProviderConfig | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showKey, setShowKey] = useState(false);
-  const [testing, setTesting] = useState<null | "chat" | "image" | "video">(null);
+  const [showImageKey, setShowImageKey] = useState(false);
+  const [showVideoKey, setShowVideoKey] = useState(false);
+  const [testing, setTesting] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const fieldRefs = useRef<Partial<Record<keyof ProviderConfig, HTMLDivElement | null>>>({});
 
@@ -324,31 +330,15 @@ function SettingsPage() {
     if (valid) persist(valid, "Video API");
   };
 
-  const handleTestChat = async () => {
-    const valid = validateChat();
-    if (!valid) {
-      toast.error("Periksa kembali kolom yang ditandai.");
-      return;
-    }
-    setTesting("chat");
-    try {
-      await testConnection(valid);
-      toast.success("Chat API berhasil terhubung.");
-    } catch (err) {
-      toast.error(err instanceof ChatError ? err.message : "Test koneksi gagal.");
-    } finally {
-      setTesting(null);
-    }
-  };
-
   const handleTestImage = async () => {
     const valid = validateImage();
     if (!valid) {
       toast.error("Periksa kembali kolom yang ditandai.");
       return;
     }
-    if (!valid.apiKey.trim()) {
-      toast.error("Isi API Key di tab Chat API terlebih dahulu.");
+    const effectiveKey = valid.imageApiKey?.trim() || valid.apiKey.trim();
+    if (!effectiveKey) {
+      toast.error("Isi Image API Key (atau Chat API Key sebagai fallback) terlebih dahulu.");
       return;
     }
     if (!valid.imagePath?.trim() || !valid.imageModel?.trim()) {
@@ -372,8 +362,9 @@ function SettingsPage() {
       toast.error("Periksa kembali kolom yang ditandai.");
       return;
     }
-    if (!valid.apiKey.trim()) {
-      toast.error("Isi API Key di tab Chat API terlebih dahulu.");
+    const effectiveKey = valid.videoApiKey?.trim() || valid.apiKey.trim();
+    if (!effectiveKey) {
+      toast.error("Isi Video API Key (atau Chat API Key sebagai fallback) terlebih dahulu.");
       return;
     }
     if (!valid.videoPath?.trim() || !valid.videoModel?.trim()) {
@@ -386,6 +377,28 @@ function SettingsPage() {
       toast.success("Video API berhasil terhubung.");
     } catch (err) {
       toast.error(err instanceof MediaError ? err.message : "Test koneksi gagal.");
+    } finally {
+      setTesting(null);
+    }
+  };
+
+  const handleTestChatModel = async (idx: number, model: string) => {
+    const valid = validateChat();
+    if (!valid) {
+      toast.error("Periksa kembali kolom yang ditandai.");
+      return;
+    }
+    if (!model.trim()) {
+      toast.error("Nama model tidak boleh kosong.");
+      return;
+    }
+    const testKey = `chat-${idx}`;
+    setTesting(testKey);
+    try {
+      await testConnection({ ...valid, model: model.trim() });
+      toast.success(`Model "${model.trim()}" berhasil terhubung.`);
+    } catch (err) {
+      toast.error(err instanceof ChatError ? err.message : "Test koneksi gagal.");
     } finally {
       setTesting(null);
     }
@@ -427,11 +440,13 @@ function SettingsPage() {
       stream: p.stream ?? true,
       directCall: p.directCall ?? false,
       imageBaseUrl: p.imageBaseUrl ?? "",
+      imageApiKey: "",
       imagePath: p.imagePath ?? "",
       imageModel: p.imageModel ?? "",
       imageEditPath: p.imageEditPath ?? "",
       imageEditModel: p.imageEditModel ?? "",
       videoBaseUrl: p.videoBaseUrl ?? "",
+      videoApiKey: "",
       videoPath: p.videoPath ?? "",
       videoModel: p.videoModel ?? "",
       videoStatusPath: p.videoStatusPath ?? "",
@@ -684,7 +699,7 @@ function SettingsPage() {
                       <Field
                         label="Chat Models"
                         error={errors.models}
-                        hint="Tambahkan satu atau beberapa model untuk API key ini. Mis. mistralai/mistral-large"
+                        hint="Tambahkan satu atau beberapa model. Klik Test untuk uji koneksi per model."
                         fieldRef={(el) => (fieldRefs.current.models = el)}
                       >
                         <div className="space-y-2">
@@ -696,6 +711,22 @@ function SettingsPage() {
                                 placeholder="contoh: openai/gpt-4o-mini"
                                 className="rounded-xl"
                               />
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="icon"
+                                className="shrink-0 rounded-xl"
+                                onClick={() => handleTestChatModel(i, m)}
+                                disabled={testing !== null || !m.trim() || !isComplete}
+                                aria-label={`Test model ${m}`}
+                                title="Test koneksi model ini"
+                              >
+                                {testing === `chat-${i}` ? (
+                                  <Loader2 className="size-4 animate-spin" />
+                                ) : (
+                                  <Plug className="size-4" />
+                                )}
+                              </Button>
                               <Button
                                 type="button"
                                 variant="outline"
@@ -808,19 +839,6 @@ function SettingsPage() {
                           Save
                         </Button>
                         <Button
-                          variant="secondary"
-                          onClick={handleTestChat}
-                          disabled={testing !== null || !isComplete}
-                          className="gap-2 rounded-xl"
-                        >
-                          {testing === "chat" ? (
-                            <Loader2 className="size-4 animate-spin" />
-                          ) : (
-                            <Plug className="size-4" />
-                          )}
-                          Test Connection
-                        </Button>
-                        <Button
                           variant="ghost"
                           onClick={handleDelete}
                           className="ml-auto gap-2 rounded-xl text-destructive hover:text-destructive"
@@ -834,11 +852,11 @@ function SettingsPage() {
                     {/* ---------------- Image API ---------------- */}
                     <TabsContent value="image" className="mt-4 space-y-5">
                       <p className="text-xs text-muted-foreground">
-                        Opsional. Memakai API Key dari tab Chat API. Kosongkan jika tidak dipakai.
+                        Opsional. Jika Image API Key dikosongkan, akan memakai Chat API Key sebagai fallback.
                       </p>
 
                       <Field
-                        label="Image Base URL (opsional)"
+                        label="Base URL (opsional)"
                         error={errors.imageBaseUrl}
                         hint="Kosongkan untuk memakai Base URL dari tab Chat API."
                         fieldRef={(el) => (fieldRefs.current.imageBaseUrl = el)}
@@ -852,36 +870,73 @@ function SettingsPage() {
                         />
                       </Field>
 
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <Field
-                          label="Generate Path"
-                          error={errors.imagePath}
-                          fieldRef={(el) => (fieldRefs.current.imagePath = el)}
-                        >
-                          <Input
-                            value={form.imagePath ?? ""}
-                            onChange={(e) => update("imagePath", e.target.value)}
-                            placeholder="/images/generations"
-                            className="rounded-xl"
-                          />
-                        </Field>
-                        <Field
-                          label="Generate Model"
-                          error={errors.imageModel}
-                          fieldRef={(el) => (fieldRefs.current.imageModel = el)}
-                        >
-                          <Input
-                            value={form.imageModel ?? ""}
-                            onChange={(e) => update("imageModel", e.target.value)}
-                            placeholder="contoh: gpt-image-1"
-                            className="rounded-xl"
-                          />
-                        </Field>
-                      </div>
+                      <Field
+                        label="API Path"
+                        error={errors.imagePath}
+                        fieldRef={(el) => (fieldRefs.current.imagePath = el)}
+                      >
+                        <Input
+                          value={form.imagePath ?? ""}
+                          onChange={(e) => update("imagePath", e.target.value)}
+                          placeholder="/images/generations"
+                          className="rounded-xl"
+                        />
+                      </Field>
+
+                      <Field
+                        label="Image API Key"
+                        error={errors.imageApiKey}
+                        hint="Disimpan di perangkat ini (localStorage). Kosongkan untuk memakai Chat API Key."
+                        fieldRef={(el) => (fieldRefs.current.imageApiKey = el)}
+                      >
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <Input
+                              value={form.imageApiKey ?? ""}
+                              onChange={(e) => update("imageApiKey", e.target.value)}
+                              type={showImageKey ? "text" : "password"}
+                              placeholder="sk-... (opsional)"
+                              autoComplete="off"
+                              className="rounded-xl pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowImageKey((v) => !v)}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              aria-label={showImageKey ? "Sembunyikan" : "Tampilkan"}
+                            >
+                              {showImageKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                            </button>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0 rounded-xl"
+                            onClick={() => update("imageApiKey", "")}
+                            aria-label="Hapus Image API Key"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </Field>
+
+                      <Field
+                        label="Model"
+                        error={errors.imageModel}
+                        fieldRef={(el) => (fieldRefs.current.imageModel = el)}
+                      >
+                        <Input
+                          value={form.imageModel ?? ""}
+                          onChange={(e) => update("imageModel", e.target.value)}
+                          placeholder="contoh: gpt-image-1"
+                          className="rounded-xl"
+                        />
+                      </Field>
 
                       <div className="grid gap-4 sm:grid-cols-2">
                         <Field
-                          label="Edit Path"
+                          label="Edit Path (opsional)"
                           error={errors.imageEditPath}
                           fieldRef={(el) => (fieldRefs.current.imageEditPath = el)}
                         >
@@ -893,7 +948,7 @@ function SettingsPage() {
                           />
                         </Field>
                         <Field
-                          label="Edit Model"
+                          label="Edit Model (opsional)"
                           error={errors.imageEditModel}
                           fieldRef={(el) => (fieldRefs.current.imageEditModel = el)}
                         >
@@ -930,11 +985,11 @@ function SettingsPage() {
                     {/* ---------------- Video API ---------------- */}
                     <TabsContent value="video" className="mt-4 space-y-5">
                       <p className="text-xs text-muted-foreground">
-                        Opsional. Memakai API Key dari tab Chat API. Kosongkan jika tidak dipakai.
+                        Opsional. Jika Video API Key dikosongkan, akan memakai Chat API Key sebagai fallback.
                       </p>
 
                       <Field
-                        label="Video Base URL (opsional)"
+                        label="Base URL (opsional)"
                         error={errors.videoBaseUrl}
                         hint="Kosongkan untuk memakai Base URL dari tab Chat API."
                         fieldRef={(el) => (fieldRefs.current.videoBaseUrl = el)}
@@ -948,32 +1003,69 @@ function SettingsPage() {
                         />
                       </Field>
 
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <Field
-                          label="Generate Path"
-                          error={errors.videoPath}
-                          fieldRef={(el) => (fieldRefs.current.videoPath = el)}
-                        >
-                          <Input
-                            value={form.videoPath ?? ""}
-                            onChange={(e) => update("videoPath", e.target.value)}
-                            placeholder="/videos/generations"
-                            className="rounded-xl"
-                          />
-                        </Field>
-                        <Field
-                          label="Video Model"
-                          error={errors.videoModel}
-                          fieldRef={(el) => (fieldRefs.current.videoModel = el)}
-                        >
-                          <Input
-                            value={form.videoModel ?? ""}
-                            onChange={(e) => update("videoModel", e.target.value)}
-                            placeholder="contoh: veo-3"
-                            className="rounded-xl"
-                          />
-                        </Field>
-                      </div>
+                      <Field
+                        label="API Path"
+                        error={errors.videoPath}
+                        fieldRef={(el) => (fieldRefs.current.videoPath = el)}
+                      >
+                        <Input
+                          value={form.videoPath ?? ""}
+                          onChange={(e) => update("videoPath", e.target.value)}
+                          placeholder="/videos/generations"
+                          className="rounded-xl"
+                        />
+                      </Field>
+
+                      <Field
+                        label="Video API Key"
+                        error={errors.videoApiKey}
+                        hint="Disimpan di perangkat ini (localStorage). Kosongkan untuk memakai Chat API Key."
+                        fieldRef={(el) => (fieldRefs.current.videoApiKey = el)}
+                      >
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <Input
+                              value={form.videoApiKey ?? ""}
+                              onChange={(e) => update("videoApiKey", e.target.value)}
+                              type={showVideoKey ? "text" : "password"}
+                              placeholder="sk-... (opsional)"
+                              autoComplete="off"
+                              className="rounded-xl pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowVideoKey((v) => !v)}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              aria-label={showVideoKey ? "Sembunyikan" : "Tampilkan"}
+                            >
+                              {showVideoKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                            </button>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0 rounded-xl"
+                            onClick={() => update("videoApiKey", "")}
+                            aria-label="Hapus Video API Key"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </Field>
+
+                      <Field
+                        label="Model"
+                        error={errors.videoModel}
+                        fieldRef={(el) => (fieldRefs.current.videoModel = el)}
+                      >
+                        <Input
+                          value={form.videoModel ?? ""}
+                          onChange={(e) => update("videoModel", e.target.value)}
+                          placeholder="contoh: veo-3"
+                          className="rounded-xl"
+                        />
+                      </Field>
 
                       <Field
                         label="Status Path (opsional)"
