@@ -215,6 +215,10 @@ function imageBase(provider: ProviderConfig): string {
   return (provider.imageBaseUrl?.trim() || provider.baseUrl || "").trim();
 }
 
+function videoBase(provider: ProviderConfig): string {
+  return (provider.videoBaseUrl?.trim() || provider.baseUrl || "").trim();
+}
+
 /* ---------------- public API ---------------- */
 
 export async function generateImage(opts: {
