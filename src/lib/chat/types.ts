@@ -40,6 +40,8 @@ export interface ProviderConfig {
   imageEditModel?: string;
   /** path for video generation, e.g. /videos/generations */
   videoPath?: string;
+  /** optional separate base URL for video endpoints; falls back to baseUrl */
+  videoBaseUrl?: string;
   /** model used for video generation */
   videoModel?: string;
   /** optional status/polling path; supports {request_id} placeholder */
