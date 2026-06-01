@@ -80,14 +80,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "API Chat Client" },
+      { title: "AI Chat Exploit" },
       {
         name: "description",
         content:
-          "API Chat Client — klien chat untuk API OpenAI-compatible. Pakai API key Anda sendiri, atur provider, base URL, dan model bebas.",
+          "AI Chat Exploit — klien chat untuk API OpenAI-compatible. Pakai API key Anda sendiri, atur provider, base URL, dan model bebas.",
       },
-      { name: "author", content: "API Chat Client" },
-      { property: "og:title", content: "API Chat Client" },
+      { name: "author", content: "AI Chat Exploit" },
+      { property: "og:title", content: "AI Chat Exploit" },
       {
         property: "og:description",
         content: "Klien chat AI untuk API OpenAI-compatible dengan konfigurasi provider sendiri.",
@@ -95,6 +95,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "theme-color", content: "#0f172a" },
     ],
     links: [
       {
