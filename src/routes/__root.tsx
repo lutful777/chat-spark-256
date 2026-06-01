@@ -127,8 +127,46 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function useServiceWorker() {
+  const [swState, setSwState] = useState<"idle" | "registered" | "error">("idle");
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+    // Guard: never register inside iframes or Lovable preview hosts
+    const isInIframe = (() => {
+      try {
+        return window.self !== window.top;
+      } catch {
+        return true;
+      }
+    })();
+
+    const isPreviewHost =
+      window.location.hostname.includes("id-preview--") ||
+      window.location.hostname.includes("lovableproject.com");
+
+    if (isPreviewHost || isInIframe) {
+      // Unregister any existing SWs in preview/iframe contexts
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((regs) => regs.forEach((r) => r.unregister()))
+        .catch(() => {});
+      return;
+    }
+
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then(() => setSwState("registered"))
+      .catch(() => setSwState("error"));
+  }, []);
+
+  return swState;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useServiceWorker();
 
   return (
     <QueryClientProvider client={queryClient}>
