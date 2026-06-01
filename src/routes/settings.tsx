@@ -48,6 +48,7 @@ import { useChatStore } from "@/lib/chat/store";
 import { uid } from "@/lib/chat/storage";
 import { ChatError, testConnection } from "@/lib/chat/api";
 import { PROVIDER_PRESETS, type ProviderConfig } from "@/lib/chat/types";
+import { OutlookConnect } from "@/components/outlook/OutlookConnect";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -796,6 +797,9 @@ function SettingsPage() {
               )}
             </section>
           </div>
+
+          {/* Microsoft Outlook (MSAL / OAuth) */}
+          <OutlookConnect />
 
           {/* Data & privacy */}
           <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
