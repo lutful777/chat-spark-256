@@ -147,6 +147,16 @@ function SettingsPage() {
 
   const isActive = useMemo(() => form?.id === activeProviderId, [form, activeProviderId]);
 
+  const isComplete = useMemo(
+    () =>
+      !!form &&
+      !!form.baseUrl.trim() &&
+      !!form.path.trim() &&
+      !!form.apiKey.trim() &&
+      !!form.model.trim(),
+    [form],
+  );
+
   const update = <K extends keyof ProviderConfig>(key: K, value: ProviderConfig[K]) => {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
@@ -386,7 +396,7 @@ function SettingsPage() {
                     <Input
                       value={form.baseUrl}
                       onChange={(e) => update("baseUrl", e.target.value)}
-                      placeholder="https://api.bluesminds.com/v1"
+                      placeholder="https://api.provider.com/v1"
                       inputMode="url"
                       className="rounded-xl"
                     />
@@ -442,7 +452,7 @@ function SettingsPage() {
                     <Input
                       value={form.model}
                       onChange={(e) => update("model", e.target.value)}
-                      placeholder="nama-model"
+                      placeholder="contoh: openai/gpt-4o-mini"
                       className="rounded-xl"
                     />
                   </Field>
@@ -515,6 +525,12 @@ function SettingsPage() {
                     />
                   </div>
 
+                  {!isComplete && (
+                    <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
+                      Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu.
+                    </p>
+                  )}
+
                   <div className="flex flex-wrap gap-2 pt-1">
                     <Button onClick={handleSave} className="gap-2 rounded-xl">
                       <Save className="size-4" />
@@ -523,7 +539,7 @@ function SettingsPage() {
                     <Button
                       variant="secondary"
                       onClick={handleTest}
-                      disabled={testing}
+                      disabled={testing || !isComplete}
                       className="gap-2 rounded-xl"
                     >
                       {testing ? (

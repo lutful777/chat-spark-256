@@ -92,7 +92,11 @@ function ChatPage() {
   );
 
   const messages = activeConversation?.messages ?? [];
-  const canSend = !!activeProvider?.apiKey.trim() && !!activeProvider?.model.trim();
+  const canSend =
+    !!activeProvider?.baseUrl.trim() &&
+    !!activeProvider?.path.trim() &&
+    !!activeProvider?.apiKey.trim() &&
+    !!activeProvider?.model.trim();
 
   useEffect(() => {
     scrollEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -181,7 +185,7 @@ function ChatPage() {
       return;
     }
     if (!canSend) {
-      toast.error("API Key / Model belum diisi. Buka Settings.");
+      toast.error("Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu.");
       return;
     }
 
@@ -444,7 +448,7 @@ function ChatPage() {
             providers.length === 0
               ? "Tambahkan provider di Settings…"
               : !canSend
-                ? "Lengkapi API Key & Model di Settings…"
+                ? "Lengkapi Base URL, API Path, API Key, dan Model di Settings…"
                 : `Pesan ke ${activeProvider?.name}…`
           }
         />
@@ -470,7 +474,7 @@ function EmptyState({
         {!hasProvider
           ? "Tambahkan provider API terlebih dahulu di Settings, lalu masukkan API key milik Anda."
           : !canSend
-            ? "Lengkapi API Key dan Model pada provider aktif di Settings."
+            ? "Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu."
             : "Ketik pesan di bawah untuk mengobrol dengan model AI Anda."}
       </p>
       {(!hasProvider || !canSend) && (

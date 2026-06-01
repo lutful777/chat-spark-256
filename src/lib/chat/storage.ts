@@ -7,6 +7,7 @@ import {
 const PROVIDERS_KEY = "aiapichat:providers";
 const ACTIVE_PROVIDER_KEY = "aiapichat:activeProvider";
 const CONVERSATIONS_KEY = "aiapichat:conversations";
+const MIGRATION_KEY = "aiapichat:migrations";
 
 export function uid(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -41,6 +42,42 @@ function write(key: string, value: unknown): void {
 
 /* ---------------- Providers ---------------- */
 
+/**
+ * One-time migration: clear leftover hardcoded defaults from older versions.
+ * Only blanks fields that match the old auto-filled defaults so user-entered
+ * values and user-created providers are never touched.
+ */
+const OLD_DEFAULT_BASE_URL = "https://api.bluesminds.com/v1";
+const OLD_DEFAULT_PATH = "/chat/completions";
+const OLD_DEFAULT_MODELS = ["gpt-5-chat", "gpt-4o-mini", "openai/gpt-4o-mini", "mistralai/mistral-large"];
+
+function runProviderMigration(providers: ProviderConfig[]): {
+  providers: ProviderConfig[];
+  changed: boolean;
+} {
+  const done = read<string[]>(MIGRATION_KEY, []);
+  if (done.includes("clear-old-defaults")) return { providers, changed: false };
+
+  let changed = false;
+  const next = providers.map((p) => {
+    // Only target an untouched default provider (no API key entered by user).
+    if (p.apiKey.trim()) return p;
+    const matchesOldDefault =
+      p.baseUrl === OLD_DEFAULT_BASE_URL && p.path === OLD_DEFAULT_PATH;
+    if (!matchesOldDefault) return p;
+    changed = true;
+    return {
+      ...p,
+      baseUrl: "",
+      path: "",
+      model: OLD_DEFAULT_MODELS.includes(p.model.trim()) ? "" : p.model,
+    };
+  });
+
+  write(MIGRATION_KEY, [...done, "clear-old-defaults"]);
+  return { providers: next, changed };
+}
+
 export function loadProviders(): ProviderConfig[] {
   const providers = read<ProviderConfig[]>(PROVIDERS_KEY, []);
   if (providers.length === 0) {
@@ -49,7 +86,9 @@ export function loadProviders(): ProviderConfig[] {
     write(ACTIVE_PROVIDER_KEY, seeded.id);
     return [seeded];
   }
-  return providers;
+  const { providers: migrated, changed } = runProviderMigration(providers);
+  if (changed) write(PROVIDERS_KEY, migrated);
+  return migrated;
 }
 
 export function saveProviders(providers: ProviderConfig[]): void {

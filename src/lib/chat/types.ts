@@ -37,12 +37,12 @@ export interface Conversation {
 
 export const DEFAULT_PROVIDER: Omit<ProviderConfig, "id"> = {
   name: "Custom API",
-  baseUrl: "https://api.bluesminds.com/v1",
-  path: "/chat/completions",
+  baseUrl: "",
+  path: "",
   apiKey: "",
   model: "",
   temperature: 0.7,
-  maxTokens: 1024,
+  maxTokens: 1000,
   systemPrompt: "",
   stream: true,
   directCall: false,
