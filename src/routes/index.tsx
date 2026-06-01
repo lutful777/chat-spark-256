@@ -408,7 +408,7 @@ function ChatPage() {
           </div>
         )}
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="min-w-0 flex-1 [&>div>div]:!block [&>div>div]:!min-w-0">
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 overflow-x-hidden px-3 py-5">
             {messages.length === 0 && !loading ? (
               <EmptyState hasProvider={providers.length > 0} canSend={canSend} />
