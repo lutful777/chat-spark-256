@@ -152,7 +152,7 @@ function SettingsPage() {
     "baseUrl",
     "path",
     "apiKey",
-    "model",
+    "models",
     "systemPrompt",
     "temperature",
     "maxTokens",
@@ -190,12 +190,30 @@ function SettingsPage() {
       !!form.baseUrl.trim() &&
       !!form.path.trim() &&
       !!form.apiKey.trim() &&
-      !!form.model.trim(),
+      (form.models ?? []).some((m) => m.trim().length > 0),
     [form],
   );
 
   const update = <K extends keyof ProviderConfig>(key: K, value: ProviderConfig[K]) => {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
+  };
+
+  const updateModel = (index: number, value: string) => {
+    setForm((prev) =>
+      prev
+        ? { ...prev, models: prev.models.map((m, i) => (i === index ? value : m)) }
+        : prev,
+    );
+  };
+
+  const addModel = () => {
+    setForm((prev) => (prev ? { ...prev, models: [...(prev.models ?? []), ""] } : prev));
+  };
+
+  const removeModel = (index: number) => {
+    setForm((prev) =>
+      prev ? { ...prev, models: prev.models.filter((_, i) => i !== index) } : prev,
+    );
   };
 
   const validate = (): ProviderConfig | null => {
@@ -212,7 +230,10 @@ function SettingsPage() {
       return null;
     }
     setErrors({});
-    return { ...form, ...parsed.data };
+    const models = parsed.data.models;
+    const current = (form.model ?? "").trim();
+    const model = current && models.includes(current) ? current : models[0];
+    return { ...form, ...parsed.data, models, model };
   };
 
   const handleSave = () => {
