@@ -156,6 +156,7 @@ const importSchema = z.array(
     imageModel: z.string().trim().max(256).optional(),
     imageEditPath: z.string().trim().max(512).optional(),
     imageEditModel: z.string().trim().max(256).optional(),
+    videoBaseUrl: z.string().trim().max(2048).optional(),
     videoPath: z.string().trim().max(512).optional(),
     videoModel: z.string().trim().max(256).optional(),
     videoStatusPath: z.string().trim().max(512).optional(),
