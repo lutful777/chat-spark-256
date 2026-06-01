@@ -15,7 +15,10 @@ export interface ProviderConfig {
   baseUrl: string;
   path: string;
   apiKey: string;
+  /** currently selected model used for chat */
   model: string;
+  /** all models available under this provider/API key */
+  models: string[];
   temperature: number;
   maxTokens: number;
   /** optional default instruction sent as the system message */
@@ -41,6 +44,7 @@ export const DEFAULT_PROVIDER: Omit<ProviderConfig, "id"> = {
   path: "",
   apiKey: "",
   model: "",
+  models: [],
   temperature: 0.7,
   maxTokens: 1000,
   systemPrompt: "",
@@ -56,6 +60,7 @@ export const PROVIDER_PRESETS: Array<Omit<ProviderConfig, "id">> = [
     path: "/chat/completions",
     apiKey: "",
     model: "openai/gpt-4o-mini",
+    models: ["openai/gpt-4o-mini"],
     temperature: 0.7,
     maxTokens: 1024,
     systemPrompt: "",
@@ -68,6 +73,7 @@ export const PROVIDER_PRESETS: Array<Omit<ProviderConfig, "id">> = [
     path: "/chat/completions",
     apiKey: "",
     model: "mistralai/mistral-large",
+    models: ["mistralai/mistral-large"],
     temperature: 0.7,
     maxTokens: 1024,
     systemPrompt: "",
@@ -80,6 +86,7 @@ export const PROVIDER_PRESETS: Array<Omit<ProviderConfig, "id">> = [
     path: "/chat/completions",
     apiKey: "",
     model: "gpt-4o-mini",
+    models: ["gpt-4o-mini"],
     temperature: 0.7,
     maxTokens: 1024,
     systemPrompt: "",

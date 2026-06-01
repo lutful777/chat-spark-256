@@ -82,7 +82,14 @@ const providerSchema = z.object({
     .max(512)
     .transform((v) => (v.startsWith("/") ? v : `/${v}`)),
   apiKey: z.string().trim().min(1, "API Key wajib diisi").max(8192),
-  model: z.string().trim().min(1, "Model Name wajib diisi").max(256),
+  models: z
+    .array(z.string())
+    .transform((arr) => arr.map((s) => s.trim()).filter(Boolean))
+    .pipe(
+      z
+        .array(z.string().min(1).max(256))
+        .min(1, "Tambahkan minimal satu model"),
+    ),
   systemPrompt: z.string().trim().max(8000).optional().default(""),
   temperature: z.coerce
     .number({ invalid_type_error: "Temperature harus angka" })
@@ -107,6 +114,7 @@ const importSchema = z.array(
     path: z.string().trim().min(1).max(512),
     apiKey: z.string().max(8192).optional().default(""),
     model: z.string().trim().max(256).optional().default(""),
+    models: z.array(z.string().trim().max(256)).optional(),
     systemPrompt: z.string().max(8000).optional().default(""),
     temperature: z.number().min(0).max(2).optional().default(0.7),
     maxTokens: z.number().int().min(1).max(200000).optional().default(1024),
@@ -144,7 +152,7 @@ function SettingsPage() {
     "baseUrl",
     "path",
     "apiKey",
-    "model",
+    "models",
     "systemPrompt",
     "temperature",
     "maxTokens",
@@ -182,12 +190,30 @@ function SettingsPage() {
       !!form.baseUrl.trim() &&
       !!form.path.trim() &&
       !!form.apiKey.trim() &&
-      !!form.model.trim(),
+      (form.models ?? []).some((m) => m.trim().length > 0),
     [form],
   );
 
   const update = <K extends keyof ProviderConfig>(key: K, value: ProviderConfig[K]) => {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
+  };
+
+  const updateModel = (index: number, value: string) => {
+    setForm((prev) =>
+      prev
+        ? { ...prev, models: prev.models.map((m, i) => (i === index ? value : m)) }
+        : prev,
+    );
+  };
+
+  const addModel = () => {
+    setForm((prev) => (prev ? { ...prev, models: [...(prev.models ?? []), ""] } : prev));
+  };
+
+  const removeModel = (index: number) => {
+    setForm((prev) =>
+      prev ? { ...prev, models: prev.models.filter((_, i) => i !== index) } : prev,
+    );
   };
 
   const validate = (): ProviderConfig | null => {
@@ -204,7 +230,10 @@ function SettingsPage() {
       return null;
     }
     setErrors({});
-    return { ...form, ...parsed.data };
+    const models = parsed.data.models;
+    const current = (form.model ?? "").trim();
+    const model = current && models.includes(current) ? current : models[0];
+    return { ...form, ...parsed.data, models, model };
   };
 
   const handleSave = () => {
@@ -262,6 +291,7 @@ function SettingsPage() {
       path: p.path,
       apiKey: "",
       model: p.model,
+      models: p.models ?? (p.model ? [p.model] : []),
       systemPrompt: p.systemPrompt ?? "",
       temperature: p.temperature,
       maxTokens: p.maxTokens,
@@ -286,7 +316,16 @@ function SettingsPage() {
         toast.error("File tidak valid: " + (parsed.error.issues[0]?.message ?? ""));
         return;
       }
-      const count = importProviders(parsed.data as Omit<ProviderConfig, "id">[]);
+      const normalized = parsed.data.map((p) => {
+        const models =
+          p.models && p.models.length > 0
+            ? p.models.map((m) => m.trim()).filter(Boolean)
+            : p.model
+              ? [p.model.trim()].filter(Boolean)
+              : [];
+        return { ...p, models, model: models[0] ?? "" };
+      });
+      const count = importProviders(normalized as Omit<ProviderConfig, "id">[]);
       toast.success(`${count} provider diimpor. Isi API Key tiap provider.`);
     } catch {
       toast.error("Gagal membaca file JSON.");
@@ -490,17 +529,44 @@ function SettingsPage() {
                   </Field>
 
                   <Field
-                    label="Model Name"
-                    error={errors.model}
-                    hint="Mis. mistralai/mistral-large"
-                    fieldRef={(el) => (fieldRefs.current.model = el)}
+                    label="Models"
+                    error={errors.models}
+                    hint="Tambahkan satu atau beberapa model untuk API key ini. Mis. mistralai/mistral-large"
+                    fieldRef={(el) => (fieldRefs.current.models = el)}
                   >
-                    <Input
-                      value={form.model}
-                      onChange={(e) => update("model", e.target.value)}
-                      placeholder="contoh: openai/gpt-4o-mini"
-                      className="rounded-xl"
-                    />
+                    <div className="space-y-2">
+                      {(form.models ?? []).map((m, i) => (
+                        <div key={i} className="flex gap-2">
+                          <Input
+                            value={m}
+                            onChange={(e) => updateModel(i, e.target.value)}
+                            placeholder="contoh: openai/gpt-4o-mini"
+                            className="rounded-xl"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0 rounded-xl"
+                            onClick={() => removeModel(i)}
+                            disabled={(form.models ?? []).length <= 1}
+                            aria-label="Hapus model"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 rounded-xl"
+                        onClick={addModel}
+                      >
+                        <Plus className="size-4" />
+                        Tambah Model
+                      </Button>
+                    </div>
                   </Field>
 
                   <Field
