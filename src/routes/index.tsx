@@ -474,7 +474,7 @@ function EmptyState({
         {!hasProvider
           ? "Tambahkan provider API terlebih dahulu di Settings, lalu masukkan API key milik Anda."
           : !canSend
-            ? "Lengkapi API Key dan Model pada provider aktif di Settings."
+            ? "Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu."
             : "Ketik pesan di bawah untuk mengobrol dengan model AI Anda."}
       </p>
       {(!hasProvider || !canSend) && (
