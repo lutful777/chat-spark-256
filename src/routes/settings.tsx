@@ -104,6 +104,14 @@ const providerSchema = z.object({
     .default(1024),
   stream: z.boolean(),
   directCall: z.boolean(),
+  imageBaseUrl: z.string().trim().max(2048).optional(),
+  imagePath: z.string().trim().max(512).optional(),
+  imageModel: z.string().trim().max(256).optional(),
+  imageEditPath: z.string().trim().max(512).optional(),
+  imageEditModel: z.string().trim().max(256).optional(),
+  videoPath: z.string().trim().max(512).optional(),
+  videoModel: z.string().trim().max(256).optional(),
+  videoStatusPath: z.string().trim().max(512).optional(),
 });
 
 // Import schema (without requiring API key)
@@ -120,6 +128,14 @@ const importSchema = z.array(
     maxTokens: z.number().int().min(1).max(200000).optional().default(1024),
     stream: z.boolean().optional().default(true),
     directCall: z.boolean().optional().default(false),
+    imageBaseUrl: z.string().trim().max(2048).optional(),
+    imagePath: z.string().trim().max(512).optional(),
+    imageModel: z.string().trim().max(256).optional(),
+    imageEditPath: z.string().trim().max(512).optional(),
+    imageEditModel: z.string().trim().max(256).optional(),
+    videoPath: z.string().trim().max(512).optional(),
+    videoModel: z.string().trim().max(256).optional(),
+    videoStatusPath: z.string().trim().max(512).optional(),
   }),
 );
 
@@ -297,6 +313,14 @@ function SettingsPage() {
       maxTokens: p.maxTokens,
       stream: p.stream ?? true,
       directCall: p.directCall ?? false,
+      imageBaseUrl: p.imageBaseUrl ?? "",
+      imagePath: p.imagePath ?? "",
+      imageModel: p.imageModel ?? "",
+      imageEditPath: p.imageEditPath ?? "",
+      imageEditModel: p.imageEditModel ?? "",
+      videoPath: p.videoPath ?? "",
+      videoModel: p.videoModel ?? "",
+      videoStatusPath: p.videoStatusPath ?? "",
     }));
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -641,6 +665,98 @@ function SettingsPage() {
                       checked={!!form.directCall}
                       onCheckedChange={(v) => update("directCall", v)}
                     />
+                  </div>
+
+                  {/* ---------- Media API (image / video) ---------- */}
+                  <div className="space-y-4 rounded-xl border border-border p-4">
+                    <div>
+                      <p className="text-sm font-semibold">Media API (Image & Video)</p>
+                      <p className="text-xs text-muted-foreground">
+                        Opsional. Pakai API key yang sama di atas. Kosongkan jika tidak dipakai.
+                      </p>
+                    </div>
+
+                    <Field
+                      label="Image Generate Base URL (opsional)"
+                      hint="Kosongkan untuk memakai Base URL di atas."
+                    >
+                      <Input
+                        value={form.imageBaseUrl ?? ""}
+                        onChange={(e) => update("imageBaseUrl", e.target.value)}
+                        placeholder="https://api.provider.com/v1"
+                        inputMode="url"
+                        className="rounded-xl"
+                      />
+                    </Field>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="Image Generate Path">
+                        <Input
+                          value={form.imagePath ?? ""}
+                          onChange={(e) => update("imagePath", e.target.value)}
+                          placeholder="/images/generations"
+                          className="rounded-xl"
+                        />
+                      </Field>
+                      <Field label="Image Generate Model">
+                        <Input
+                          value={form.imageModel ?? ""}
+                          onChange={(e) => update("imageModel", e.target.value)}
+                          placeholder="contoh: gpt-image-1"
+                          className="rounded-xl"
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="Image Edit Path">
+                        <Input
+                          value={form.imageEditPath ?? ""}
+                          onChange={(e) => update("imageEditPath", e.target.value)}
+                          placeholder="/images/edits"
+                          className="rounded-xl"
+                        />
+                      </Field>
+                      <Field label="Image Edit Model">
+                        <Input
+                          value={form.imageEditModel ?? ""}
+                          onChange={(e) => update("imageEditModel", e.target.value)}
+                          placeholder="contoh: gpt-image-1"
+                          className="rounded-xl"
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="Video Generate Path">
+                        <Input
+                          value={form.videoPath ?? ""}
+                          onChange={(e) => update("videoPath", e.target.value)}
+                          placeholder="/videos/generations"
+                          className="rounded-xl"
+                        />
+                      </Field>
+                      <Field label="Video Model">
+                        <Input
+                          value={form.videoModel ?? ""}
+                          onChange={(e) => update("videoModel", e.target.value)}
+                          placeholder="contoh: veo-3"
+                          className="rounded-xl"
+                        />
+                      </Field>
+                    </div>
+
+                    <Field
+                      label="Video Status Path (opsional)"
+                      hint="Untuk polling request_id. Pakai {request_id} sbg placeholder, mis. /videos/status/{request_id}"
+                    >
+                      <Input
+                        value={form.videoStatusPath ?? ""}
+                        onChange={(e) => update("videoStatusPath", e.target.value)}
+                        placeholder="/videos/status/{request_id}"
+                        className="rounded-xl"
+                      />
+                    </Field>
                   </div>
 
                   {!isComplete && (

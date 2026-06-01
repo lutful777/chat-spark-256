@@ -27,6 +27,23 @@ export interface ProviderConfig {
   stream?: boolean;
   /** call provider directly from the browser instead of via server proxy */
   directCall?: boolean;
+  /* ---------- Media (image / video) settings ---------- */
+  /** optional separate base URL for image endpoints; falls back to baseUrl */
+  imageBaseUrl?: string;
+  /** path for image generation, e.g. /images/generations */
+  imagePath?: string;
+  /** model used for image generation */
+  imageModel?: string;
+  /** path for image editing, e.g. /images/edits */
+  imageEditPath?: string;
+  /** model used for image editing */
+  imageEditModel?: string;
+  /** path for video generation, e.g. /videos/generations */
+  videoPath?: string;
+  /** model used for video generation */
+  videoModel?: string;
+  /** optional status/polling path; supports {request_id} placeholder */
+  videoStatusPath?: string;
 }
 
 export interface Conversation {

@@ -9,13 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VideoRouteImport } from './routes/video'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ImageRouteImport } from './routes/image'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicProxyRouteImport } from './routes/api/public/proxy'
+import { Route as ApiPublicMediaProxyRouteImport } from './routes/api/public/media-proxy'
 
+const VideoRoute = VideoRouteImport.update({
+  id: '/video',
+  path: '/video',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImageRoute = ImageRouteImport.update({
+  id: '/image',
+  path: '/image',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -28,44 +41,94 @@ const ApiPublicProxyRoute = ApiPublicProxyRouteImport.update({
   path: '/api/public/proxy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicMediaProxyRoute = ApiPublicMediaProxyRouteImport.update({
+  id: '/api/public/media-proxy',
+  path: '/api/public/media-proxy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/image': typeof ImageRoute
   '/settings': typeof SettingsRoute
+  '/video': typeof VideoRoute
+  '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/image': typeof ImageRoute
   '/settings': typeof SettingsRoute
+  '/video': typeof VideoRoute
+  '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/image': typeof ImageRoute
   '/settings': typeof SettingsRoute
+  '/video': typeof VideoRoute
+  '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settings' | '/api/public/proxy'
+  fullPaths:
+    | '/'
+    | '/image'
+    | '/settings'
+    | '/video'
+    | '/api/public/media-proxy'
+    | '/api/public/proxy'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings' | '/api/public/proxy'
-  id: '__root__' | '/' | '/settings' | '/api/public/proxy'
+  to:
+    | '/'
+    | '/image'
+    | '/settings'
+    | '/video'
+    | '/api/public/media-proxy'
+    | '/api/public/proxy'
+  id:
+    | '__root__'
+    | '/'
+    | '/image'
+    | '/settings'
+    | '/video'
+    | '/api/public/media-proxy'
+    | '/api/public/proxy'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ImageRoute: typeof ImageRoute
   SettingsRoute: typeof SettingsRoute
+  VideoRoute: typeof VideoRoute
+  ApiPublicMediaProxyRoute: typeof ApiPublicMediaProxyRoute
   ApiPublicProxyRoute: typeof ApiPublicProxyRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/video': {
+      id: '/video'
+      path: '/video'
+      fullPath: '/video'
+      preLoaderRoute: typeof VideoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/image': {
+      id: '/image'
+      path: '/image'
+      fullPath: '/image'
+      preLoaderRoute: typeof ImageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -82,12 +145,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicProxyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/media-proxy': {
+      id: '/api/public/media-proxy'
+      path: '/api/public/media-proxy'
+      fullPath: '/api/public/media-proxy'
+      preLoaderRoute: typeof ApiPublicMediaProxyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ImageRoute: ImageRoute,
   SettingsRoute: SettingsRoute,
+  VideoRoute: VideoRoute,
+  ApiPublicMediaProxyRoute: ApiPublicMediaProxyRoute,
   ApiPublicProxyRoute: ApiPublicProxyRoute,
 }
 export const routeTree = rootRouteImport

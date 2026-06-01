@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { MediaNav } from "@/components/media/MediaNav";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@/lib/chat/types";
 
@@ -82,6 +83,10 @@ export function ConversationSidebar({
           <MessageSquarePlus className="size-4" />
           New Chat
         </Button>
+      </div>
+
+      <div className="px-3 pt-3">
+        <MediaNav className="w-full justify-between" />
       </div>
 
       <ScrollArea className="mt-3 flex-1 px-2">
