@@ -147,6 +147,16 @@ function SettingsPage() {
 
   const isActive = useMemo(() => form?.id === activeProviderId, [form, activeProviderId]);
 
+  const isComplete = useMemo(
+    () =>
+      !!form &&
+      !!form.baseUrl.trim() &&
+      !!form.path.trim() &&
+      !!form.apiKey.trim() &&
+      !!form.model.trim(),
+    [form],
+  );
+
   const update = <K extends keyof ProviderConfig>(key: K, value: ProviderConfig[K]) => {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
