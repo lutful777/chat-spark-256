@@ -74,7 +74,16 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
-const providerSchema = z.object({
+const optionalUrl = z
+  .string()
+  .trim()
+  .max(2048)
+  .optional()
+  .refine((v) => !v || /^https?:\/\//.test(v), "URL tidak valid (harus diawali http/https)");
+const optionalPath = z.string().trim().max(512).optional();
+const optionalModel = z.string().trim().max(256).optional();
+
+const chatSchema = z.object({
   name: z.string().trim().min(1, "Provider Name wajib diisi").max(60, "Maksimal 60 karakter"),
   baseUrl: z
     .string()
@@ -111,14 +120,21 @@ const providerSchema = z.object({
     .default(1024),
   stream: z.boolean(),
   directCall: z.boolean(),
-  imageBaseUrl: z.string().trim().max(2048).optional(),
-  imagePath: z.string().trim().max(512).optional(),
-  imageModel: z.string().trim().max(256).optional(),
-  imageEditPath: z.string().trim().max(512).optional(),
-  imageEditModel: z.string().trim().max(256).optional(),
-  videoPath: z.string().trim().max(512).optional(),
-  videoModel: z.string().trim().max(256).optional(),
-  videoStatusPath: z.string().trim().max(512).optional(),
+});
+
+const imageSchema = z.object({
+  imageBaseUrl: optionalUrl,
+  imagePath: optionalPath,
+  imageModel: optionalModel,
+  imageEditPath: optionalPath,
+  imageEditModel: optionalModel,
+});
+
+const videoSchema = z.object({
+  videoBaseUrl: optionalUrl,
+  videoPath: optionalPath,
+  videoModel: optionalModel,
+  videoStatusPath: optionalPath,
 });
 
 // Import schema (without requiring API key)
