@@ -166,6 +166,14 @@ function ChatPage() {
     }
   };
 
+  if (!ready) {
+    return (
+      <div className="flex h-[100dvh] w-full items-center justify-center bg-background text-muted-foreground">
+        <Sparkles className="size-6 animate-pulse text-primary" />
+      </div>
+    );
+  }
+
   const sidebar = (
     <ConversationSidebar
       conversations={conversations}
