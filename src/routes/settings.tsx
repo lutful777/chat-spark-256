@@ -316,7 +316,6 @@ function SettingsPage() {
         toast.error("File tidak valid: " + (parsed.error.issues[0]?.message ?? ""));
         return;
       }
-      const count = importProviders(parsed.data as Omit<ProviderConfig, "id">[]);
       const normalized = parsed.data.map((p) => {
         const models =
           p.models && p.models.length > 0
@@ -326,7 +325,7 @@ function SettingsPage() {
               : [];
         return { ...p, models, model: models[0] ?? "" };
       });
-      void count;
+      const count = importProviders(normalized as Omit<ProviderConfig, "id">[]);
       toast.success(`${count} provider diimpor. Isi API Key tiap provider.`);
     } catch {
       toast.error("Gagal membaca file JSON.");
