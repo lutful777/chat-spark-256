@@ -396,7 +396,7 @@ function SettingsPage() {
                     <Input
                       value={form.baseUrl}
                       onChange={(e) => update("baseUrl", e.target.value)}
-                      placeholder="https://api.bluesminds.com/v1"
+                      placeholder="https://api.provider.com/v1"
                       inputMode="url"
                       className="rounded-xl"
                     />
@@ -452,7 +452,7 @@ function SettingsPage() {
                     <Input
                       value={form.model}
                       onChange={(e) => update("model", e.target.value)}
-                      placeholder="nama-model"
+                      placeholder="contoh: openai/gpt-4o-mini"
                       className="rounded-xl"
                     />
                   </Field>
