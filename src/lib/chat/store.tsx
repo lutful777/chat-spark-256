@@ -34,6 +34,9 @@ interface ChatStore {
   renameConversation: (id: string, title: string) => void;
   setConversationMessages: (id: string, messages: ChatMessage[]) => void;
   setConversationProvider: (id: string, providerId: string | null) => void;
+  importProviders: (incoming: ProviderConfig[]) => number;
+  clearAllApiKeys: () => void;
+  resetAllData: () => void;
 }
 
 const ChatContext = createContext<ChatStore | null>(null);
@@ -149,6 +152,31 @@ export function ChatStoreProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const importProviders = useCallback((incoming: ProviderConfig[]): number => {
+    let added = 0;
+    setProviders((prev) => {
+      const next = [...prev];
+      for (const inc of incoming) {
+        const provider: ProviderConfig = { ...inc, id: uid() };
+        next.push(provider);
+        added += 1;
+      }
+      return next;
+    });
+    return added;
+  }, []);
+
+  const clearAllApiKeys = useCallback(() => {
+    setProviders((prev) => prev.map((p) => ({ ...p, apiKey: "" })));
+  }, []);
+
+  const resetAllData = useCallback(() => {
+    setConversations([]);
+    const seeded: ProviderConfig = { id: uid(), ...DEFAULT_PROVIDER };
+    setProviders([seeded]);
+    setActiveProviderIdState(seeded.id);
+  }, []);
+
   const activeProvider = useMemo(
     () => providers.find((p) => p.id === activeProviderId) ?? null,
     [providers, activeProviderId],
@@ -169,6 +197,9 @@ export function ChatStoreProvider({ children }: { children: ReactNode }) {
     renameConversation,
     setConversationMessages,
     setConversationProvider,
+    importProviders,
+    clearAllApiKeys,
+    resetAllData,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
