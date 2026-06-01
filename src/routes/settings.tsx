@@ -651,6 +651,98 @@ function SettingsPage() {
                     />
                   </div>
 
+                  {/* ---------- Media API (image / video) ---------- */}
+                  <div className="space-y-4 rounded-xl border border-border p-4">
+                    <div>
+                      <p className="text-sm font-semibold">Media API (Image & Video)</p>
+                      <p className="text-xs text-muted-foreground">
+                        Opsional. Pakai API key yang sama di atas. Kosongkan jika tidak dipakai.
+                      </p>
+                    </div>
+
+                    <Field
+                      label="Image Generate Base URL (opsional)"
+                      hint="Kosongkan untuk memakai Base URL di atas."
+                    >
+                      <Input
+                        value={form.imageBaseUrl ?? ""}
+                        onChange={(e) => update("imageBaseUrl", e.target.value)}
+                        placeholder="https://api.provider.com/v1"
+                        inputMode="url"
+                        className="rounded-xl"
+                      />
+                    </Field>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="Image Generate Path">
+                        <Input
+                          value={form.imagePath ?? ""}
+                          onChange={(e) => update("imagePath", e.target.value)}
+                          placeholder="/images/generations"
+                          className="rounded-xl"
+                        />
+                      </Field>
+                      <Field label="Image Generate Model">
+                        <Input
+                          value={form.imageModel ?? ""}
+                          onChange={(e) => update("imageModel", e.target.value)}
+                          placeholder="contoh: gpt-image-1"
+                          className="rounded-xl"
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="Image Edit Path">
+                        <Input
+                          value={form.imageEditPath ?? ""}
+                          onChange={(e) => update("imageEditPath", e.target.value)}
+                          placeholder="/images/edits"
+                          className="rounded-xl"
+                        />
+                      </Field>
+                      <Field label="Image Edit Model">
+                        <Input
+                          value={form.imageEditModel ?? ""}
+                          onChange={(e) => update("imageEditModel", e.target.value)}
+                          placeholder="contoh: gpt-image-1"
+                          className="rounded-xl"
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="Video Generate Path">
+                        <Input
+                          value={form.videoPath ?? ""}
+                          onChange={(e) => update("videoPath", e.target.value)}
+                          placeholder="/videos/generations"
+                          className="rounded-xl"
+                        />
+                      </Field>
+                      <Field label="Video Model">
+                        <Input
+                          value={form.videoModel ?? ""}
+                          onChange={(e) => update("videoModel", e.target.value)}
+                          placeholder="contoh: veo-3"
+                          className="rounded-xl"
+                        />
+                      </Field>
+                    </div>
+
+                    <Field
+                      label="Video Status Path (opsional)"
+                      hint="Untuk polling request_id. Pakai {request_id} sbg placeholder, mis. /videos/status/{request_id}"
+                    >
+                      <Input
+                        value={form.videoStatusPath ?? ""}
+                        onChange={(e) => update("videoStatusPath", e.target.value)}
+                        placeholder="/videos/status/{request_id}"
+                        className="rounded-xl"
+                      />
+                    </Field>
+                  </div>
+
                   {!isComplete && (
                     <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
                       Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu.
