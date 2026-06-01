@@ -137,6 +137,7 @@ const videoSchema = z.object({
   videoPath: optionalPath,
   videoModel: optionalModel,
   videoStatusPath: optionalPath,
+  videoCount: z.union([z.literal(1), z.literal(2)]).optional().default(1),
 });
 
 // Import schema (without requiring API key)
@@ -164,6 +165,7 @@ const importSchema = z.array(
     videoPath: z.string().trim().max(512).optional(),
     videoModel: z.string().trim().max(256).optional(),
     videoStatusPath: z.string().trim().max(512).optional(),
+    videoCount: z.union([z.literal(1), z.literal(2)]).optional().default(1),
   }),
 );
 
@@ -1115,6 +1117,26 @@ function SettingsPage() {
                           placeholder="/videos/status/{request_id}"
                           className="rounded-xl"
                         />
+                      </Field>
+
+                      <Field label="Video Output" hint="Jumlah video yang digenerate per permintaan.">
+                        <div className="inline-flex rounded-xl border border-border bg-card p-1">
+                          {([1, 2] as const).map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => update("videoCount", n)}
+                              className={cn(
+                                "rounded-lg px-4 py-1.5 text-sm font-medium transition-colors",
+                                (form.videoCount ?? 1) === n
+                                  ? "bg-primary/15 text-primary"
+                                  : "text-muted-foreground hover:text-foreground",
+                              )}
+                            >
+                              {n} Video{n === 2 ? "s" : ""}
+                            </button>
+                          ))}
+                        </div>
                       </Field>
 
                       <div className="flex flex-wrap gap-2 pt-1">

@@ -54,7 +54,7 @@ function VideoPage() {
   const [providerId, setProviderId] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
-  const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [results, setResults] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -119,19 +119,40 @@ function VideoPage() {
     }
 
     setLoading(true);
-    setResultUrl(null);
+    setResults([]);
     setStatus("Mengirim permintaan…");
     const controller = new AbortController();
     abortRef.current = controller;
+    const count = provider.videoCount ?? 1;
     try {
-      const url = await photoToVideo({
-        provider,
-        prompt: prompt.trim(),
-        imageDataUrl: sourceUrl,
-        signal: controller.signal,
-        onStatus: (m) => setStatus(m),
-      });
-      setResultUrl(url);
+      if (count === 2) {
+        setStatus("Part 1: Mengirim permintaan…");
+        const url1 = await photoToVideo({
+          provider,
+          prompt: prompt.trim(),
+          imageDataUrl: sourceUrl,
+          signal: controller.signal,
+          onStatus: (m) => setStatus(`Part 1: ${m}`),
+        });
+        setStatus("Part 2: Mengirim permintaan…");
+        const url2 = await photoToVideo({
+          provider,
+          prompt: prompt.trim(),
+          imageDataUrl: sourceUrl,
+          signal: controller.signal,
+          onStatus: (m) => setStatus(`Part 2: ${m}`),
+        });
+        setResults([url1, url2]);
+      } else {
+        const url = await photoToVideo({
+          provider,
+          prompt: prompt.trim(),
+          imageDataUrl: sourceUrl,
+          signal: controller.signal,
+          onStatus: (m) => setStatus(m),
+        });
+        setResults([url]);
+      }
       setStatus(null);
     } catch (err) {
       const message = err instanceof MediaError ? err.message : "Permintaan gagal.";
@@ -276,7 +297,7 @@ function VideoPage() {
             </div>
           )}
 
-          {(loading || resultUrl) && (
+          {(loading || results.length > 0) && (
             <div className="space-y-3 rounded-2xl border border-border bg-card p-4 md:p-6">
               <h2 className="text-sm font-semibold">Hasil</h2>
               {loading ? (
@@ -284,21 +305,37 @@ function VideoPage() {
                   <Loader2 className="size-5 animate-spin" />
                   <span className="text-xs">{status ?? "Memproses…"}</span>
                 </div>
-              ) : resultUrl ? (
-                <div className="space-y-3">
-                  <video
-                    src={resultUrl}
-                    controls
-                    className="max-h-[60vh] w-full rounded-xl border border-border"
-                  />
-                  <Button
-                    variant="outline"
-                    className="gap-2 rounded-xl"
-                    onClick={() => downloadMedia(resultUrl, `video-${Date.now()}.mp4`)}
-                  >
-                    <Download className="size-4" />
-                    Download video
-                  </Button>
+              ) : results.length > 0 ? (
+                <div className="space-y-4">
+                  {results.map((url, i) => (
+                    <div key={i} className="space-y-2">
+                      {results.length > 1 && (
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Part {i + 1}
+                        </p>
+                      )}
+                      <video
+                        src={url}
+                        controls
+                        className="max-h-[60vh] w-full rounded-xl border border-border"
+                      />
+                      <Button
+                        variant="outline"
+                        className="gap-2 rounded-xl"
+                        onClick={() =>
+                          downloadMedia(
+                            url,
+                            results.length > 1
+                              ? `video-part${i + 1}-${Date.now()}.mp4`
+                              : `video-${Date.now()}.mp4`,
+                          )
+                        }
+                      >
+                        <Download className="size-4" />
+                        Download{results.length > 1 ? ` Part ${i + 1}` : " video"}
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               ) : null}
             </div>
