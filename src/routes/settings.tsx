@@ -43,10 +43,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/lib/chat/store";
 import { uid } from "@/lib/chat/storage";
 import { ChatError, testConnection } from "@/lib/chat/api";
+import {
+  MediaError,
+  testImageConnection,
+  testVideoConnection,
+} from "@/lib/chat/media";
 import { PROVIDER_PRESETS, type ProviderConfig } from "@/lib/chat/types";
 import { OutlookConnect } from "@/components/outlook/OutlookConnect";
 
