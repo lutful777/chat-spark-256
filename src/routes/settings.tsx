@@ -181,7 +181,7 @@ function SettingsPage() {
   const [form, setForm] = useState<ProviderConfig | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showKey, setShowKey] = useState(false);
-  const [testing, setTesting] = useState(false);
+  const [testing, setTesting] = useState<null | "chat" | "image" | "video">(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const fieldRefs = useRef<Partial<Record<keyof ProviderConfig, HTMLDivElement | null>>>({});
 
@@ -255,17 +255,22 @@ function SettingsPage() {
     );
   };
 
-  const validate = (): ProviderConfig | null => {
+  const applyErrors = (issues: z.ZodIssue[]) => {
+    const errs: FormErrors = {};
+    for (const issue of issues) {
+      const key = issue.path[0] as keyof ProviderConfig;
+      if (!errs[key]) errs[key] = issue.message;
+    }
+    setErrors(errs);
+    scrollToFirstError(errs);
+  };
+
+  /** Validate only the Chat API fields and return a merged provider. */
+  const validateChat = (): ProviderConfig | null => {
     if (!form) return null;
-    const parsed = providerSchema.safeParse(form);
+    const parsed = chatSchema.safeParse(form);
     if (!parsed.success) {
-      const errs: FormErrors = {};
-      for (const issue of parsed.error.issues) {
-        const key = issue.path[0] as keyof ProviderConfig;
-        if (!errs[key]) errs[key] = issue.message;
-      }
-      setErrors(errs);
-      scrollToFirstError(errs);
+      applyErrors(parsed.error.issues);
       return null;
     }
     setErrors({});
@@ -275,29 +280,113 @@ function SettingsPage() {
     return { ...form, ...parsed.data, models, model };
   };
 
-  const handleSave = () => {
-    const valid = validate();
-    if (!valid) return;
-    upsertProvider(valid);
-    setForm(valid);
-    toast.success("Provider berhasil disimpan.");
+  /** Validate only the Image API fields and return a merged provider. */
+  const validateImage = (): ProviderConfig | null => {
+    if (!form) return null;
+    const parsed = imageSchema.safeParse(form);
+    if (!parsed.success) {
+      applyErrors(parsed.error.issues);
+      return null;
+    }
+    setErrors({});
+    return { ...form, ...parsed.data };
   };
 
-  const handleTest = async () => {
-    const valid = validate();
+  /** Validate only the Video API fields and return a merged provider. */
+  const validateVideo = (): ProviderConfig | null => {
+    if (!form) return null;
+    const parsed = videoSchema.safeParse(form);
+    if (!parsed.success) {
+      applyErrors(parsed.error.issues);
+      return null;
+    }
+    setErrors({});
+    return { ...form, ...parsed.data };
+  };
+
+  const persist = (valid: ProviderConfig, label: string) => {
+    upsertProvider(valid);
+    setForm(valid);
+    toast.success(`${label} disimpan.`);
+  };
+
+  const handleSaveChat = () => {
+    const valid = validateChat();
+    if (valid) persist(valid, "Chat API");
+  };
+  const handleSaveImage = () => {
+    const valid = validateImage();
+    if (valid) persist(valid, "Image API");
+  };
+  const handleSaveVideo = () => {
+    const valid = validateVideo();
+    if (valid) persist(valid, "Video API");
+  };
+
+  const handleTestChat = async () => {
+    const valid = validateChat();
     if (!valid) {
       toast.error("Periksa kembali kolom yang ditandai.");
       return;
     }
-    setTesting(true);
+    setTesting("chat");
     try {
       await testConnection(valid);
-      toast.success("Provider berhasil terhubung.");
+      toast.success("Chat API berhasil terhubung.");
     } catch (err) {
-      const message = err instanceof ChatError ? err.message : "Test koneksi gagal.";
-      toast.error(message);
+      toast.error(err instanceof ChatError ? err.message : "Test koneksi gagal.");
     } finally {
-      setTesting(false);
+      setTesting(null);
+    }
+  };
+
+  const handleTestImage = async () => {
+    const valid = validateImage();
+    if (!valid) {
+      toast.error("Periksa kembali kolom yang ditandai.");
+      return;
+    }
+    if (!valid.apiKey.trim()) {
+      toast.error("Isi API Key di tab Chat API terlebih dahulu.");
+      return;
+    }
+    if (!valid.imagePath?.trim() || !valid.imageModel?.trim()) {
+      toast.error("Isi Generate Path dan Generate Model terlebih dahulu.");
+      return;
+    }
+    setTesting("image");
+    try {
+      await testImageConnection({ provider: valid });
+      toast.success("Image API berhasil terhubung.");
+    } catch (err) {
+      toast.error(err instanceof MediaError ? err.message : "Test koneksi gagal.");
+    } finally {
+      setTesting(null);
+    }
+  };
+
+  const handleTestVideo = async () => {
+    const valid = validateVideo();
+    if (!valid) {
+      toast.error("Periksa kembali kolom yang ditandai.");
+      return;
+    }
+    if (!valid.apiKey.trim()) {
+      toast.error("Isi API Key di tab Chat API terlebih dahulu.");
+      return;
+    }
+    if (!valid.videoPath?.trim() || !valid.videoModel?.trim()) {
+      toast.error("Isi Video Generate Path dan Video Model terlebih dahulu.");
+      return;
+    }
+    setTesting("video");
+    try {
+      await testVideoConnection({ provider: valid });
+      toast.success("Video API berhasil terhubung.");
+    } catch (err) {
+      toast.error(err instanceof MediaError ? err.message : "Test koneksi gagal.");
+    } finally {
+      setTesting(null);
     }
   };
 
