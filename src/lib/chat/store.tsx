@@ -35,7 +35,7 @@ interface ChatStore {
   renameConversation: (id: string, title: string) => void;
   setConversationMessages: (id: string, messages: ChatMessage[]) => void;
   setConversationProvider: (id: string, providerId: string | null) => void;
-  importProviders: (incoming: ProviderConfig[]) => number;
+  importProviders: (incoming: Array<Omit<ProviderConfig, "id">>) => number;
   clearAllApiKeys: () => void;
   resetAllData: () => void;
 }
@@ -153,7 +153,7 @@ export function ChatStoreProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const importProviders = useCallback((incoming: ProviderConfig[]): number => {
+  const importProviders = useCallback((incoming: Array<Omit<ProviderConfig, "id">>): number => {
     let added = 0;
     setProviders((prev) => {
       const next = [...prev];
