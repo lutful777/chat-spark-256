@@ -78,6 +78,30 @@ function runProviderMigration(providers: ProviderConfig[]): {
   return { providers: next, changed };
 }
 
+/**
+ * Ensure every provider has a `models` array. Older providers stored a single
+ * `model` string — migrate it into a one-item `models` list without touching
+ * any other data (API key, conversations, settings remain intact).
+ */
+function normalizeProviderModels(providers: ProviderConfig[]): {
+  providers: ProviderConfig[];
+  changed: boolean;
+} {
+  let changed = false;
+  const next = providers.map((p) => {
+    if (Array.isArray(p.models) && p.models.length > 0) {
+      // keep selected model valid
+      if (p.model && p.models.includes(p.model)) return p;
+      changed = true;
+      return { ...p, model: p.models[0] };
+    }
+    const single = (p.model ?? "").trim();
+    changed = true;
+    return { ...p, models: single ? [single] : [], model: single };
+  });
+  return { providers: next, changed };
+}
+
 export function loadProviders(): ProviderConfig[] {
   const providers = read<ProviderConfig[]>(PROVIDERS_KEY, []);
   if (providers.length === 0) {
@@ -87,8 +111,10 @@ export function loadProviders(): ProviderConfig[] {
     return [seeded];
   }
   const { providers: migrated, changed } = runProviderMigration(providers);
-  if (changed) write(PROVIDERS_KEY, migrated);
-  return migrated;
+  const { providers: normalized, changed: changed2 } =
+    normalizeProviderModels(migrated);
+  if (changed || changed2) write(PROVIDERS_KEY, normalized);
+  return normalized;
 }
 
 export function saveProviders(providers: ProviderConfig[]): void {
