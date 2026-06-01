@@ -43,10 +43,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/lib/chat/store";
 import { uid } from "@/lib/chat/storage";
 import { ChatError, testConnection } from "@/lib/chat/api";
+import {
+  MediaError,
+  testImageConnection,
+  testVideoConnection,
+} from "@/lib/chat/media";
 import { PROVIDER_PRESETS, type ProviderConfig } from "@/lib/chat/types";
 import { OutlookConnect } from "@/components/outlook/OutlookConnect";
 
@@ -68,7 +74,16 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
-const providerSchema = z.object({
+const optionalUrl = z
+  .string()
+  .trim()
+  .max(2048)
+  .optional()
+  .refine((v) => !v || /^https?:\/\//.test(v), "URL tidak valid (harus diawali http/https)");
+const optionalPath = z.string().trim().max(512).optional();
+const optionalModel = z.string().trim().max(256).optional();
+
+const chatSchema = z.object({
   name: z.string().trim().min(1, "Provider Name wajib diisi").max(60, "Maksimal 60 karakter"),
   baseUrl: z
     .string()
@@ -105,14 +120,21 @@ const providerSchema = z.object({
     .default(1024),
   stream: z.boolean(),
   directCall: z.boolean(),
-  imageBaseUrl: z.string().trim().max(2048).optional(),
-  imagePath: z.string().trim().max(512).optional(),
-  imageModel: z.string().trim().max(256).optional(),
-  imageEditPath: z.string().trim().max(512).optional(),
-  imageEditModel: z.string().trim().max(256).optional(),
-  videoPath: z.string().trim().max(512).optional(),
-  videoModel: z.string().trim().max(256).optional(),
-  videoStatusPath: z.string().trim().max(512).optional(),
+});
+
+const imageSchema = z.object({
+  imageBaseUrl: optionalUrl,
+  imagePath: optionalPath,
+  imageModel: optionalModel,
+  imageEditPath: optionalPath,
+  imageEditModel: optionalModel,
+});
+
+const videoSchema = z.object({
+  videoBaseUrl: optionalUrl,
+  videoPath: optionalPath,
+  videoModel: optionalModel,
+  videoStatusPath: optionalPath,
 });
 
 // Import schema (without requiring API key)
@@ -134,6 +156,7 @@ const importSchema = z.array(
     imageModel: z.string().trim().max(256).optional(),
     imageEditPath: z.string().trim().max(512).optional(),
     imageEditModel: z.string().trim().max(256).optional(),
+    videoBaseUrl: z.string().trim().max(2048).optional(),
     videoPath: z.string().trim().max(512).optional(),
     videoModel: z.string().trim().max(256).optional(),
     videoStatusPath: z.string().trim().max(512).optional(),
@@ -159,7 +182,7 @@ function SettingsPage() {
   const [form, setForm] = useState<ProviderConfig | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showKey, setShowKey] = useState(false);
-  const [testing, setTesting] = useState(false);
+  const [testing, setTesting] = useState<null | "chat" | "image" | "video">(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const fieldRefs = useRef<Partial<Record<keyof ProviderConfig, HTMLDivElement | null>>>({});
 
@@ -233,17 +256,22 @@ function SettingsPage() {
     );
   };
 
-  const validate = (): ProviderConfig | null => {
+  const applyErrors = (issues: z.ZodIssue[]) => {
+    const errs: FormErrors = {};
+    for (const issue of issues) {
+      const key = issue.path[0] as keyof ProviderConfig;
+      if (!errs[key]) errs[key] = issue.message;
+    }
+    setErrors(errs);
+    scrollToFirstError(errs);
+  };
+
+  /** Validate only the Chat API fields and return a merged provider. */
+  const validateChat = (): ProviderConfig | null => {
     if (!form) return null;
-    const parsed = providerSchema.safeParse(form);
+    const parsed = chatSchema.safeParse(form);
     if (!parsed.success) {
-      const errs: FormErrors = {};
-      for (const issue of parsed.error.issues) {
-        const key = issue.path[0] as keyof ProviderConfig;
-        if (!errs[key]) errs[key] = issue.message;
-      }
-      setErrors(errs);
-      scrollToFirstError(errs);
+      applyErrors(parsed.error.issues);
       return null;
     }
     setErrors({});
@@ -253,29 +281,113 @@ function SettingsPage() {
     return { ...form, ...parsed.data, models, model };
   };
 
-  const handleSave = () => {
-    const valid = validate();
-    if (!valid) return;
-    upsertProvider(valid);
-    setForm(valid);
-    toast.success("Provider berhasil disimpan.");
+  /** Validate only the Image API fields and return a merged provider. */
+  const validateImage = (): ProviderConfig | null => {
+    if (!form) return null;
+    const parsed = imageSchema.safeParse(form);
+    if (!parsed.success) {
+      applyErrors(parsed.error.issues);
+      return null;
+    }
+    setErrors({});
+    return { ...form, ...parsed.data };
   };
 
-  const handleTest = async () => {
-    const valid = validate();
+  /** Validate only the Video API fields and return a merged provider. */
+  const validateVideo = (): ProviderConfig | null => {
+    if (!form) return null;
+    const parsed = videoSchema.safeParse(form);
+    if (!parsed.success) {
+      applyErrors(parsed.error.issues);
+      return null;
+    }
+    setErrors({});
+    return { ...form, ...parsed.data };
+  };
+
+  const persist = (valid: ProviderConfig, label: string) => {
+    upsertProvider(valid);
+    setForm(valid);
+    toast.success(`${label} disimpan.`);
+  };
+
+  const handleSaveChat = () => {
+    const valid = validateChat();
+    if (valid) persist(valid, "Chat API");
+  };
+  const handleSaveImage = () => {
+    const valid = validateImage();
+    if (valid) persist(valid, "Image API");
+  };
+  const handleSaveVideo = () => {
+    const valid = validateVideo();
+    if (valid) persist(valid, "Video API");
+  };
+
+  const handleTestChat = async () => {
+    const valid = validateChat();
     if (!valid) {
       toast.error("Periksa kembali kolom yang ditandai.");
       return;
     }
-    setTesting(true);
+    setTesting("chat");
     try {
       await testConnection(valid);
-      toast.success("Provider berhasil terhubung.");
+      toast.success("Chat API berhasil terhubung.");
     } catch (err) {
-      const message = err instanceof ChatError ? err.message : "Test koneksi gagal.";
-      toast.error(message);
+      toast.error(err instanceof ChatError ? err.message : "Test koneksi gagal.");
     } finally {
-      setTesting(false);
+      setTesting(null);
+    }
+  };
+
+  const handleTestImage = async () => {
+    const valid = validateImage();
+    if (!valid) {
+      toast.error("Periksa kembali kolom yang ditandai.");
+      return;
+    }
+    if (!valid.apiKey.trim()) {
+      toast.error("Isi API Key di tab Chat API terlebih dahulu.");
+      return;
+    }
+    if (!valid.imagePath?.trim() || !valid.imageModel?.trim()) {
+      toast.error("Isi Generate Path dan Generate Model terlebih dahulu.");
+      return;
+    }
+    setTesting("image");
+    try {
+      await testImageConnection({ provider: valid });
+      toast.success("Image API berhasil terhubung.");
+    } catch (err) {
+      toast.error(err instanceof MediaError ? err.message : "Test koneksi gagal.");
+    } finally {
+      setTesting(null);
+    }
+  };
+
+  const handleTestVideo = async () => {
+    const valid = validateVideo();
+    if (!valid) {
+      toast.error("Periksa kembali kolom yang ditandai.");
+      return;
+    }
+    if (!valid.apiKey.trim()) {
+      toast.error("Isi API Key di tab Chat API terlebih dahulu.");
+      return;
+    }
+    if (!valid.videoPath?.trim() || !valid.videoModel?.trim()) {
+      toast.error("Isi Video Generate Path dan Video Model terlebih dahulu.");
+      return;
+    }
+    setTesting("video");
+    try {
+      await testVideoConnection({ provider: valid });
+      toast.success("Video API berhasil terhubung.");
+    } catch (err) {
+      toast.error(err instanceof MediaError ? err.message : "Test koneksi gagal.");
+    } finally {
+      setTesting(null);
     }
   };
 
@@ -319,6 +431,7 @@ function SettingsPage() {
       imageModel: p.imageModel ?? "",
       imageEditPath: p.imageEditPath ?? "",
       imageEditModel: p.imageEditModel ?? "",
+      videoBaseUrl: p.videoBaseUrl ?? "",
       videoPath: p.videoPath ?? "",
       videoModel: p.videoModel ?? "",
       videoStatusPath: p.videoStatusPath ?? "",
@@ -488,311 +601,415 @@ function SettingsPage() {
                     />
                   </Field>
 
-                  <Field
-                    label="Base URL"
-                    error={errors.baseUrl}
-                    fieldRef={(el) => (fieldRefs.current.baseUrl = el)}
-                  >
-                    <Input
-                      value={form.baseUrl}
-                      onChange={(e) => update("baseUrl", e.target.value)}
-                      placeholder="https://api.provider.com/v1"
-                      inputMode="url"
-                      className="rounded-xl"
-                    />
-                  </Field>
+                  <Tabs defaultValue="chat" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 rounded-xl">
+                      <TabsTrigger value="chat" className="rounded-lg text-xs sm:text-sm">
+                        Chat API
+                      </TabsTrigger>
+                      <TabsTrigger value="image" className="rounded-lg text-xs sm:text-sm">
+                        Image API
+                      </TabsTrigger>
+                      <TabsTrigger value="video" className="rounded-lg text-xs sm:text-sm">
+                        Video API
+                      </TabsTrigger>
+                    </TabsList>
 
-                  <Field
-                    label="API Path"
-                    error={errors.path}
-                    fieldRef={(el) => (fieldRefs.current.path = el)}
-                  >
-                    <Input
-                      value={form.path}
-                      onChange={(e) => update("path", e.target.value)}
-                      placeholder="/chat/completions"
-                      className="rounded-xl"
-                    />
-                  </Field>
-
-                  <Field
-                    label="API Key"
-                    error={errors.apiKey}
-                    hint="Disimpan hanya di perangkat ini (localStorage)."
-                    fieldRef={(el) => (fieldRefs.current.apiKey = el)}
-                  >
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Input
-                          value={form.apiKey}
-                          onChange={(e) => update("apiKey", e.target.value)}
-                          type={showKey ? "text" : "password"}
-                          placeholder="sk-..."
-                          autoComplete="off"
-                          className="rounded-xl pr-10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowKey((v) => !v)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          aria-label={showKey ? "Sembunyikan" : "Tampilkan"}
-                        >
-                          {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                        </button>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0 rounded-xl"
-                        onClick={handleClearKey}
-                        aria-label="Hapus API Key"
+                    {/* ---------------- Chat API ---------------- */}
+                    <TabsContent value="chat" className="mt-4 space-y-5">
+                      <Field
+                        label="Base URL"
+                        error={errors.baseUrl}
+                        fieldRef={(el) => (fieldRefs.current.baseUrl = el)}
                       >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
-                  </Field>
+                        <Input
+                          value={form.baseUrl}
+                          onChange={(e) => update("baseUrl", e.target.value)}
+                          placeholder="https://api.provider.com/v1"
+                          inputMode="url"
+                          className="rounded-xl"
+                        />
+                      </Field>
 
-                  <Field
-                    label="Models"
-                    error={errors.models}
-                    hint="Tambahkan satu atau beberapa model untuk API key ini. Mis. mistralai/mistral-large"
-                    fieldRef={(el) => (fieldRefs.current.models = el)}
-                  >
-                    <div className="space-y-2">
-                      {(form.models ?? []).map((m, i) => (
-                        <div key={i} className="flex gap-2">
-                          <Input
-                            value={m}
-                            onChange={(e) => updateModel(i, e.target.value)}
-                            placeholder="contoh: openai/gpt-4o-mini"
-                            className="rounded-xl"
-                          />
+                      <Field
+                        label="API Path"
+                        error={errors.path}
+                        fieldRef={(el) => (fieldRefs.current.path = el)}
+                      >
+                        <Input
+                          value={form.path}
+                          onChange={(e) => update("path", e.target.value)}
+                          placeholder="/chat/completions"
+                          className="rounded-xl"
+                        />
+                      </Field>
+
+                      <Field
+                        label="API Key"
+                        error={errors.apiKey}
+                        hint="Disimpan hanya di perangkat ini (localStorage)."
+                        fieldRef={(el) => (fieldRefs.current.apiKey = el)}
+                      >
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <Input
+                              value={form.apiKey}
+                              onChange={(e) => update("apiKey", e.target.value)}
+                              type={showKey ? "text" : "password"}
+                              placeholder="sk-..."
+                              autoComplete="off"
+                              className="rounded-xl pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowKey((v) => !v)}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              aria-label={showKey ? "Sembunyikan" : "Tampilkan"}
+                            >
+                              {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                            </button>
+                          </div>
                           <Button
                             type="button"
                             variant="outline"
                             size="icon"
                             className="shrink-0 rounded-xl"
-                            onClick={() => removeModel(i)}
-                            disabled={(form.models ?? []).length <= 1}
-                            aria-label="Hapus model"
+                            onClick={handleClearKey}
+                            aria-label="Hapus API Key"
                           >
                             <Trash2 className="size-4" />
                           </Button>
                         </div>
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="gap-2 rounded-xl"
-                        onClick={addModel}
+                      </Field>
+
+                      <Field
+                        label="Chat Models"
+                        error={errors.models}
+                        hint="Tambahkan satu atau beberapa model untuk API key ini. Mis. mistralai/mistral-large"
+                        fieldRef={(el) => (fieldRefs.current.models = el)}
                       >
-                        <Plus className="size-4" />
-                        Tambah Model
-                      </Button>
-                    </div>
-                  </Field>
+                        <div className="space-y-2">
+                          {(form.models ?? []).map((m, i) => (
+                            <div key={i} className="flex gap-2">
+                              <Input
+                                value={m}
+                                onChange={(e) => updateModel(i, e.target.value)}
+                                placeholder="contoh: openai/gpt-4o-mini"
+                                className="rounded-xl"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="shrink-0 rounded-xl"
+                                onClick={() => removeModel(i)}
+                                disabled={(form.models ?? []).length <= 1}
+                                aria-label="Hapus model"
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-2 rounded-xl"
+                            onClick={addModel}
+                          >
+                            <Plus className="size-4" />
+                            Tambah Model
+                          </Button>
+                        </div>
+                      </Field>
 
-                  <Field
-                    label="System Prompt (opsional)"
-                    error={errors.systemPrompt}
-                    hint="Instruksi default untuk AI, mis. 'You are a helpful assistant.'"
-                    fieldRef={(el) => (fieldRefs.current.systemPrompt = el)}
-                  >
-                    <Textarea
-                      value={form.systemPrompt ?? ""}
-                      onChange={(e) => update("systemPrompt", e.target.value)}
-                      placeholder="You are a helpful assistant."
-                      rows={3}
-                      className="rounded-xl"
-                    />
-                  </Field>
-
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <Field
-                      label={`Temperature: ${form.temperature.toFixed(2)}`}
-                      error={errors.temperature}
-                      fieldRef={(el) => (fieldRefs.current.temperature = el)}
-                    >
-                      <Slider
-                        value={[form.temperature]}
-                        min={0}
-                        max={2}
-                        step={0.05}
-                        onValueChange={([v]) => update("temperature", v)}
-                        className="py-2"
-                      />
-                    </Field>
-
-                    <Field
-                      label="Max Tokens"
-                      error={errors.maxTokens}
-                      fieldRef={(el) => (fieldRefs.current.maxTokens = el)}
-                    >
-                      <Input
-                        value={Number.isFinite(form.maxTokens) ? form.maxTokens : ""}
-                        onChange={(e) => update("maxTokens", parseInt(e.target.value, 10) || 0)}
-                        type="number"
-                        min={1}
-                        max={200000}
-                        inputMode="numeric"
-                        className="rounded-xl"
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-xl border border-border px-3 py-3">
-                    <div className="pr-3">
-                      <p className="text-sm font-medium">Enable Streaming</p>
-                      <p className="text-xs text-muted-foreground">
-                        Tampilkan jawaban AI token demi token saat tersedia.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={form.stream ?? true}
-                      onCheckedChange={(v) => update("stream", v)}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-xl border border-border px-3 py-3">
-                    <div className="pr-3">
-                      <p className="text-sm font-medium">Panggil langsung dari browser</p>
-                      <p className="text-xs text-muted-foreground">
-                        Default lewat proxy untuk hindari CORS. Aktifkan jika provider mengizinkan CORS.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={!!form.directCall}
-                      onCheckedChange={(v) => update("directCall", v)}
-                    />
-                  </div>
-
-                  {/* ---------- Media API (image / video) ---------- */}
-                  <div className="space-y-4 rounded-xl border border-border p-4">
-                    <div>
-                      <p className="text-sm font-semibold">Media API (Image & Video)</p>
-                      <p className="text-xs text-muted-foreground">
-                        Opsional. Pakai API key yang sama di atas. Kosongkan jika tidak dipakai.
-                      </p>
-                    </div>
-
-                    <Field
-                      label="Image Generate Base URL (opsional)"
-                      hint="Kosongkan untuk memakai Base URL di atas."
-                    >
-                      <Input
-                        value={form.imageBaseUrl ?? ""}
-                        onChange={(e) => update("imageBaseUrl", e.target.value)}
-                        placeholder="https://api.provider.com/v1"
-                        inputMode="url"
-                        className="rounded-xl"
-                      />
-                    </Field>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="Image Generate Path">
-                        <Input
-                          value={form.imagePath ?? ""}
-                          onChange={(e) => update("imagePath", e.target.value)}
-                          placeholder="/images/generations"
+                      <Field
+                        label="System Prompt (opsional)"
+                        error={errors.systemPrompt}
+                        hint="Instruksi default untuk AI, mis. 'You are a helpful assistant.'"
+                        fieldRef={(el) => (fieldRefs.current.systemPrompt = el)}
+                      >
+                        <Textarea
+                          value={form.systemPrompt ?? ""}
+                          onChange={(e) => update("systemPrompt", e.target.value)}
+                          placeholder="You are a helpful assistant."
+                          rows={3}
                           className="rounded-xl"
                         />
                       </Field>
-                      <Field label="Image Generate Model">
-                        <Input
-                          value={form.imageModel ?? ""}
-                          onChange={(e) => update("imageModel", e.target.value)}
-                          placeholder="contoh: gpt-image-1"
-                          className="rounded-xl"
-                        />
-                      </Field>
-                    </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="Image Edit Path">
-                        <Input
-                          value={form.imageEditPath ?? ""}
-                          onChange={(e) => update("imageEditPath", e.target.value)}
-                          placeholder="/images/edits"
-                          className="rounded-xl"
-                        />
-                      </Field>
-                      <Field label="Image Edit Model">
-                        <Input
-                          value={form.imageEditModel ?? ""}
-                          onChange={(e) => update("imageEditModel", e.target.value)}
-                          placeholder="contoh: gpt-image-1"
-                          className="rounded-xl"
-                        />
-                      </Field>
-                    </div>
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        <Field
+                          label={`Temperature: ${form.temperature.toFixed(2)}`}
+                          error={errors.temperature}
+                          fieldRef={(el) => (fieldRefs.current.temperature = el)}
+                        >
+                          <Slider
+                            value={[form.temperature]}
+                            min={0}
+                            max={2}
+                            step={0.05}
+                            onValueChange={([v]) => update("temperature", v)}
+                            className="py-2"
+                          />
+                        </Field>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="Video Generate Path">
-                        <Input
-                          value={form.videoPath ?? ""}
-                          onChange={(e) => update("videoPath", e.target.value)}
-                          placeholder="/videos/generations"
-                          className="rounded-xl"
+                        <Field
+                          label="Max Tokens"
+                          error={errors.maxTokens}
+                          fieldRef={(el) => (fieldRefs.current.maxTokens = el)}
+                        >
+                          <Input
+                            value={Number.isFinite(form.maxTokens) ? form.maxTokens : ""}
+                            onChange={(e) => update("maxTokens", parseInt(e.target.value, 10) || 0)}
+                            type="number"
+                            min={1}
+                            max={200000}
+                            inputMode="numeric"
+                            className="rounded-xl"
+                          />
+                        </Field>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-xl border border-border px-3 py-3">
+                        <div className="pr-3">
+                          <p className="text-sm font-medium">Enable Streaming</p>
+                          <p className="text-xs text-muted-foreground">
+                            Tampilkan jawaban AI token demi token saat tersedia.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={form.stream ?? true}
+                          onCheckedChange={(v) => update("stream", v)}
                         />
-                      </Field>
-                      <Field label="Video Model">
-                        <Input
-                          value={form.videoModel ?? ""}
-                          onChange={(e) => update("videoModel", e.target.value)}
-                          placeholder="contoh: veo-3"
-                          className="rounded-xl"
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-xl border border-border px-3 py-3">
+                        <div className="pr-3">
+                          <p className="text-sm font-medium">Panggil langsung dari browser</p>
+                          <p className="text-xs text-muted-foreground">
+                            Default lewat proxy untuk hindari CORS. Aktifkan jika provider mengizinkan CORS.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={!!form.directCall}
+                          onCheckedChange={(v) => update("directCall", v)}
                         />
-                      </Field>
-                    </div>
+                      </div>
 
-                    <Field
-                      label="Video Status Path (opsional)"
-                      hint="Untuk polling request_id. Pakai {request_id} sbg placeholder, mis. /videos/status/{request_id}"
-                    >
-                      <Input
-                        value={form.videoStatusPath ?? ""}
-                        onChange={(e) => update("videoStatusPath", e.target.value)}
-                        placeholder="/videos/status/{request_id}"
-                        className="rounded-xl"
-                      />
-                    </Field>
-                  </div>
-
-                  {!isComplete && (
-                    <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
-                      Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu.
-                    </p>
-                  )}
-
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <Button onClick={handleSave} className="gap-2 rounded-xl">
-                      <Save className="size-4" />
-                      Save
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={handleTest}
-                      disabled={testing || !isComplete}
-                      className="gap-2 rounded-xl"
-                    >
-                      {testing ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Plug className="size-4" />
+                      {!isComplete && (
+                        <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
+                          Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu.
+                        </p>
                       )}
-                      Test Connection
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={handleDelete}
-                      className="ml-auto gap-2 rounded-xl text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="size-4" />
-                      Hapus Provider
-                    </Button>
-                  </div>
+
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <Button onClick={handleSaveChat} className="gap-2 rounded-xl">
+                          <Save className="size-4" />
+                          Save
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          onClick={handleTestChat}
+                          disabled={testing !== null || !isComplete}
+                          className="gap-2 rounded-xl"
+                        >
+                          {testing === "chat" ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <Plug className="size-4" />
+                          )}
+                          Test Connection
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={handleDelete}
+                          className="ml-auto gap-2 rounded-xl text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="size-4" />
+                          Hapus Provider
+                        </Button>
+                      </div>
+                    </TabsContent>
+
+                    {/* ---------------- Image API ---------------- */}
+                    <TabsContent value="image" className="mt-4 space-y-5">
+                      <p className="text-xs text-muted-foreground">
+                        Opsional. Memakai API Key dari tab Chat API. Kosongkan jika tidak dipakai.
+                      </p>
+
+                      <Field
+                        label="Image Base URL (opsional)"
+                        error={errors.imageBaseUrl}
+                        hint="Kosongkan untuk memakai Base URL dari tab Chat API."
+                        fieldRef={(el) => (fieldRefs.current.imageBaseUrl = el)}
+                      >
+                        <Input
+                          value={form.imageBaseUrl ?? ""}
+                          onChange={(e) => update("imageBaseUrl", e.target.value)}
+                          placeholder="https://api.provider.com/v1"
+                          inputMode="url"
+                          className="rounded-xl"
+                        />
+                      </Field>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Field
+                          label="Generate Path"
+                          error={errors.imagePath}
+                          fieldRef={(el) => (fieldRefs.current.imagePath = el)}
+                        >
+                          <Input
+                            value={form.imagePath ?? ""}
+                            onChange={(e) => update("imagePath", e.target.value)}
+                            placeholder="/images/generations"
+                            className="rounded-xl"
+                          />
+                        </Field>
+                        <Field
+                          label="Generate Model"
+                          error={errors.imageModel}
+                          fieldRef={(el) => (fieldRefs.current.imageModel = el)}
+                        >
+                          <Input
+                            value={form.imageModel ?? ""}
+                            onChange={(e) => update("imageModel", e.target.value)}
+                            placeholder="contoh: gpt-image-1"
+                            className="rounded-xl"
+                          />
+                        </Field>
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Field
+                          label="Edit Path"
+                          error={errors.imageEditPath}
+                          fieldRef={(el) => (fieldRefs.current.imageEditPath = el)}
+                        >
+                          <Input
+                            value={form.imageEditPath ?? ""}
+                            onChange={(e) => update("imageEditPath", e.target.value)}
+                            placeholder="/images/edits"
+                            className="rounded-xl"
+                          />
+                        </Field>
+                        <Field
+                          label="Edit Model"
+                          error={errors.imageEditModel}
+                          fieldRef={(el) => (fieldRefs.current.imageEditModel = el)}
+                        >
+                          <Input
+                            value={form.imageEditModel ?? ""}
+                            onChange={(e) => update("imageEditModel", e.target.value)}
+                            placeholder="contoh: gpt-image-1"
+                            className="rounded-xl"
+                          />
+                        </Field>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <Button onClick={handleSaveImage} className="gap-2 rounded-xl">
+                          <Save className="size-4" />
+                          Save
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          onClick={handleTestImage}
+                          disabled={testing !== null}
+                          className="gap-2 rounded-xl"
+                        >
+                          {testing === "image" ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <Plug className="size-4" />
+                          )}
+                          Test Connection
+                        </Button>
+                      </div>
+                    </TabsContent>
+
+                    {/* ---------------- Video API ---------------- */}
+                    <TabsContent value="video" className="mt-4 space-y-5">
+                      <p className="text-xs text-muted-foreground">
+                        Opsional. Memakai API Key dari tab Chat API. Kosongkan jika tidak dipakai.
+                      </p>
+
+                      <Field
+                        label="Video Base URL (opsional)"
+                        error={errors.videoBaseUrl}
+                        hint="Kosongkan untuk memakai Base URL dari tab Chat API."
+                        fieldRef={(el) => (fieldRefs.current.videoBaseUrl = el)}
+                      >
+                        <Input
+                          value={form.videoBaseUrl ?? ""}
+                          onChange={(e) => update("videoBaseUrl", e.target.value)}
+                          placeholder="https://api.provider.com/v1"
+                          inputMode="url"
+                          className="rounded-xl"
+                        />
+                      </Field>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Field
+                          label="Generate Path"
+                          error={errors.videoPath}
+                          fieldRef={(el) => (fieldRefs.current.videoPath = el)}
+                        >
+                          <Input
+                            value={form.videoPath ?? ""}
+                            onChange={(e) => update("videoPath", e.target.value)}
+                            placeholder="/videos/generations"
+                            className="rounded-xl"
+                          />
+                        </Field>
+                        <Field
+                          label="Video Model"
+                          error={errors.videoModel}
+                          fieldRef={(el) => (fieldRefs.current.videoModel = el)}
+                        >
+                          <Input
+                            value={form.videoModel ?? ""}
+                            onChange={(e) => update("videoModel", e.target.value)}
+                            placeholder="contoh: veo-3"
+                            className="rounded-xl"
+                          />
+                        </Field>
+                      </div>
+
+                      <Field
+                        label="Status Path (opsional)"
+                        error={errors.videoStatusPath}
+                        hint="Untuk polling request_id. Pakai {request_id} sbg placeholder, mis. /videos/status/{request_id}"
+                        fieldRef={(el) => (fieldRefs.current.videoStatusPath = el)}
+                      >
+                        <Input
+                          value={form.videoStatusPath ?? ""}
+                          onChange={(e) => update("videoStatusPath", e.target.value)}
+                          placeholder="/videos/status/{request_id}"
+                          className="rounded-xl"
+                        />
+                      </Field>
+
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <Button onClick={handleSaveVideo} className="gap-2 rounded-xl">
+                          <Save className="size-4" />
+                          Save
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          onClick={handleTestVideo}
+                          disabled={testing !== null}
+                          className="gap-2 rounded-xl"
+                        >
+                          {testing === "video" ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <Plug className="size-4" />
+                          )}
+                          Test Connection
+                        </Button>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </div>
               )}
             </section>

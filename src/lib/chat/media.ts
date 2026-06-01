@@ -215,6 +215,10 @@ function imageBase(provider: ProviderConfig): string {
   return (provider.imageBaseUrl?.trim() || provider.baseUrl || "").trim();
 }
 
+function videoBase(provider: ProviderConfig): string {
+  return (provider.videoBaseUrl?.trim() || provider.baseUrl || "").trim();
+}
+
 /* ---------------- public API ---------------- */
 
 export async function generateImage(opts: {
@@ -306,7 +310,7 @@ export async function photoToVideo(opts: {
 
   const apiKey = provider.apiKey.trim();
   const initial = await callProxy({
-    baseUrl: provider.baseUrl.trim(),
+    baseUrl: videoBase(provider),
     path: provider.videoPath.trim(),
     apiKey,
     payload: {
@@ -338,7 +342,7 @@ export async function photoToVideo(opts: {
 
     const poll = await callProxy({
       method: "GET",
-      baseUrl: provider.baseUrl.trim(),
+      baseUrl: videoBase(provider),
       path: statusPath,
       apiKey,
       signal,
@@ -361,6 +365,48 @@ export async function photoToVideo(opts: {
 }
 
 /* ---------------- file helpers ---------------- */
+
+/* ---------------- connection tests ---------------- */
+
+/** 1x1 transparent PNG used as a placeholder for connection tests. */
+const TINY_PNG =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+export async function testImageConnection(opts: {
+  provider: ProviderConfig;
+  signal?: AbortSignal;
+}): Promise<void> {
+  await generateImage({
+    provider: opts.provider,
+    prompt: "connection test: a small solid red dot on white background",
+    signal: opts.signal,
+  });
+}
+
+export async function testVideoConnection(opts: {
+  provider: ProviderConfig;
+  signal?: AbortSignal;
+}): Promise<void> {
+  const { provider, signal } = opts;
+  if (!provider.apiKey.trim()) throw new MediaError("API Key belum diisi di tab Chat API.");
+  if (!provider.videoPath?.trim())
+    throw new MediaError("Video Generate Path belum diatur.");
+  if (!provider.videoModel?.trim()) throw new MediaError("Video Model belum diatur.");
+
+  // Only send the initial request — getting any 2xx response (request_id,
+  // url, or json) means the endpoint and API key are reachable.
+  await callProxy({
+    baseUrl: videoBase(provider),
+    path: provider.videoPath.trim(),
+    apiKey: provider.apiKey.trim(),
+    payload: {
+      model: provider.videoModel.trim(),
+      prompt: "connection test",
+      image: TINY_PNG,
+    },
+    signal,
+  });
+}
 
 export const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB
