@@ -525,6 +525,12 @@ function SettingsPage() {
                     />
                   </div>
 
+                  {!isComplete && (
+                    <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
+                      Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu.
+                    </p>
+                  )}
+
                   <div className="flex flex-wrap gap-2 pt-1">
                     <Button onClick={handleSave} className="gap-2 rounded-xl">
                       <Save className="size-4" />
@@ -533,7 +539,7 @@ function SettingsPage() {
                     <Button
                       variant="secondary"
                       onClick={handleTest}
-                      disabled={testing}
+                      disabled={testing || !isComplete}
                       className="gap-2 rounded-xl"
                     >
                       {testing ? (
