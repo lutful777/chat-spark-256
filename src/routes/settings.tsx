@@ -431,6 +431,7 @@ function SettingsPage() {
       imageModel: p.imageModel ?? "",
       imageEditPath: p.imageEditPath ?? "",
       imageEditModel: p.imageEditModel ?? "",
+      videoBaseUrl: p.videoBaseUrl ?? "",
       videoPath: p.videoPath ?? "",
       videoModel: p.videoModel ?? "",
       videoStatusPath: p.videoStatusPath ?? "",
