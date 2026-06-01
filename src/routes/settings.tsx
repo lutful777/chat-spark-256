@@ -425,6 +425,42 @@ function SettingsPage() {
     toast.success("API Key dihapus dari provider ini");
   };
 
+  // Export all providers WITH API keys (full backup)
+  const handleExportSettings = () => {
+    const data = providers.map((p) => ({
+      name: p.name,
+      baseUrl: p.baseUrl,
+      path: p.path,
+      apiKey: p.apiKey,
+      model: p.model,
+      models: p.models ?? (p.model ? [p.model] : []),
+      systemPrompt: p.systemPrompt ?? "",
+      temperature: p.temperature,
+      maxTokens: p.maxTokens,
+      stream: p.stream ?? true,
+      directCall: p.directCall ?? false,
+      imageBaseUrl: p.imageBaseUrl ?? "",
+      imageApiKey: p.imageApiKey ?? "",
+      imagePath: p.imagePath ?? "",
+      imageModel: p.imageModel ?? "",
+      imageEditPath: p.imageEditPath ?? "",
+      imageEditModel: p.imageEditModel ?? "",
+      videoBaseUrl: p.videoBaseUrl ?? "",
+      videoApiKey: p.videoApiKey ?? "",
+      videoPath: p.videoPath ?? "",
+      videoModel: p.videoModel ?? "",
+      videoStatusPath: p.videoStatusPath ?? "",
+    }));
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "api-chat-settings.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Settings diekspor (termasuk API key). Simpan file ini dengan aman.");
+  };
+
   // Export all providers WITHOUT API keys
   const handleExportProviders = () => {
     const data = providers.map((p) => ({
@@ -1127,9 +1163,9 @@ function SettingsPage() {
               }}
             />
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" className="gap-2 rounded-xl" onClick={handleExportProviders}>
+              <Button variant="outline" className="gap-2 rounded-xl" onClick={handleExportSettings}>
                 <Download className="size-4" />
-                Export tanpa API key
+                Export Settings
               </Button>
               <Button
                 variant="outline"
@@ -1137,7 +1173,11 @@ function SettingsPage() {
                 onClick={() => fileRef.current?.click()}
               >
                 <Upload className="size-4" />
-                Import settings
+                Import Settings
+              </Button>
+              <Button variant="outline" className="gap-2 rounded-xl" onClick={handleExportProviders}>
+                <Download className="size-4" />
+                Export tanpa API key
               </Button>
 
               <AlertDialog>
