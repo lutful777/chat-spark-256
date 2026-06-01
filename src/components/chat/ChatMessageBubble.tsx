@@ -59,7 +59,7 @@ export function ChatMessageBubble({
         </div>
       )}
 
-      <div className={cn("flex max-w-[82%] flex-col gap-1", isUser ? "items-end" : "items-start")}>
+      <div className={cn("flex min-w-0 max-w-[82%] flex-col gap-1", isUser ? "items-end" : "items-start")}>
         <div
           className={cn(
             "rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm",
