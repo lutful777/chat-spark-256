@@ -80,16 +80,21 @@ const providerSchema = z.object({
     .trim()
     .min(1, "API Path wajib diisi")
     .max(512)
-    .refine((v) => v.startsWith("/"), "Path harus diawali '/' (contoh: /chat/completions)"),
+    .transform((v) => (v.startsWith("/") ? v : `/${v}`)),
   apiKey: z.string().trim().min(1, "API Key wajib diisi").max(8192),
   model: z.string().trim().min(1, "Model Name wajib diisi").max(256),
   systemPrompt: z.string().trim().max(8000).optional().default(""),
-  temperature: z.number({ invalid_type_error: "Temperature harus angka" }).min(0, "Min 0").max(2, "Maks 2"),
-  maxTokens: z
+  temperature: z.coerce
+    .number({ invalid_type_error: "Temperature harus angka" })
+    .min(0, "Min 0")
+    .max(2, "Maks 2")
+    .default(0.7),
+  maxTokens: z.coerce
     .number({ invalid_type_error: "Max Tokens harus angka" })
     .int("Harus bilangan bulat")
     .min(1, "Min 1")
-    .max(200000, "Maks 200000"),
+    .max(200000, "Maks 200000")
+    .default(1024),
   stream: z.boolean(),
   directCall: z.boolean(),
 });
@@ -131,6 +136,30 @@ function SettingsPage() {
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const fieldRefs = useRef<Partial<Record<keyof ProviderConfig, HTMLDivElement | null>>>({});
+
+  // order used to find the first errored field for scrolling/focus
+  const FIELD_ORDER: Array<keyof ProviderConfig> = [
+    "name",
+    "baseUrl",
+    "path",
+    "apiKey",
+    "model",
+    "systemPrompt",
+    "temperature",
+    "maxTokens",
+  ];
+
+  const scrollToFirstError = (errs: FormErrors) => {
+    const firstKey = FIELD_ORDER.find((k) => errs[k]);
+    if (!firstKey) return;
+    const el = fieldRefs.current[firstKey];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      const focusable = el.querySelector<HTMLElement>("input, textarea");
+      focusable?.focus({ preventScroll: true });
+    }
+  };
 
   useEffect(() => {
     if (!ready) return;
@@ -171,6 +200,7 @@ function SettingsPage() {
         if (!errs[key]) errs[key] = issue.message;
       }
       setErrors(errs);
+      scrollToFirstError(errs);
       return null;
     }
     setErrors({});
@@ -179,12 +209,10 @@ function SettingsPage() {
 
   const handleSave = () => {
     const valid = validate();
-    if (!valid) {
-      toast.error("Periksa kembali kolom yang ditandai.");
-      return;
-    }
+    if (!valid) return;
     upsertProvider(valid);
-    toast.success("Provider disimpan");
+    setForm(valid);
+    toast.success("Provider berhasil disimpan.");
   };
 
   const handleTest = async () => {
@@ -383,7 +411,11 @@ function SettingsPage() {
                     )}
                   </div>
 
-                  <Field label="Provider Name" error={errors.name}>
+                  <Field
+                    label="Provider Name"
+                    error={errors.name}
+                    fieldRef={(el) => (fieldRefs.current.name = el)}
+                  >
                     <Input
                       value={form.name}
                       onChange={(e) => update("name", e.target.value)}
@@ -392,7 +424,11 @@ function SettingsPage() {
                     />
                   </Field>
 
-                  <Field label="Base URL" error={errors.baseUrl}>
+                  <Field
+                    label="Base URL"
+                    error={errors.baseUrl}
+                    fieldRef={(el) => (fieldRefs.current.baseUrl = el)}
+                  >
                     <Input
                       value={form.baseUrl}
                       onChange={(e) => update("baseUrl", e.target.value)}
@@ -402,7 +438,11 @@ function SettingsPage() {
                     />
                   </Field>
 
-                  <Field label="API Path" error={errors.path}>
+                  <Field
+                    label="API Path"
+                    error={errors.path}
+                    fieldRef={(el) => (fieldRefs.current.path = el)}
+                  >
                     <Input
                       value={form.path}
                       onChange={(e) => update("path", e.target.value)}
@@ -415,6 +455,7 @@ function SettingsPage() {
                     label="API Key"
                     error={errors.apiKey}
                     hint="Disimpan hanya di perangkat ini (localStorage)."
+                    fieldRef={(el) => (fieldRefs.current.apiKey = el)}
                   >
                     <div className="flex gap-2">
                       <div className="relative flex-1">
@@ -448,7 +489,12 @@ function SettingsPage() {
                     </div>
                   </Field>
 
-                  <Field label="Model Name" error={errors.model} hint="Mis. mistralai/mistral-large">
+                  <Field
+                    label="Model Name"
+                    error={errors.model}
+                    hint="Mis. mistralai/mistral-large"
+                    fieldRef={(el) => (fieldRefs.current.model = el)}
+                  >
                     <Input
                       value={form.model}
                       onChange={(e) => update("model", e.target.value)}
@@ -461,6 +507,7 @@ function SettingsPage() {
                     label="System Prompt (opsional)"
                     error={errors.systemPrompt}
                     hint="Instruksi default untuk AI, mis. 'You are a helpful assistant.'"
+                    fieldRef={(el) => (fieldRefs.current.systemPrompt = el)}
                   >
                     <Textarea
                       value={form.systemPrompt ?? ""}
@@ -475,6 +522,7 @@ function SettingsPage() {
                     <Field
                       label={`Temperature: ${form.temperature.toFixed(2)}`}
                       error={errors.temperature}
+                      fieldRef={(el) => (fieldRefs.current.temperature = el)}
                     >
                       <Slider
                         value={[form.temperature]}
@@ -486,7 +534,11 @@ function SettingsPage() {
                       />
                     </Field>
 
-                    <Field label="Max Tokens" error={errors.maxTokens}>
+                    <Field
+                      label="Max Tokens"
+                      error={errors.maxTokens}
+                      fieldRef={(el) => (fieldRefs.current.maxTokens = el)}
+                    >
                       <Input
                         value={Number.isFinite(form.maxTokens) ? form.maxTokens : ""}
                         onChange={(e) => update("maxTokens", parseInt(e.target.value, 10) || 0)}
@@ -663,14 +715,16 @@ function Field({
   error,
   hint,
   children,
+  fieldRef,
 }: {
   label: string;
   error?: string;
   hint?: string;
   children: React.ReactNode;
+  fieldRef?: (el: HTMLDivElement | null) => void;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div ref={fieldRef} className="space-y-1.5">
       <Label className="text-sm">{label}</Label>
       {children}
       {error ? (
