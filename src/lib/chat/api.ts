@@ -58,16 +58,28 @@ function toApiMessages(messages: ChatMessage[]) {
     .map((m) => ({ role: m.role, content: m.content }));
 }
 
+function buildMessages(provider: ProviderConfig, messages: ChatMessage[]) {
+  const out = toApiMessages(messages);
+  const sys = provider.systemPrompt?.trim();
+  if (sys) {
+    return [{ role: "system" as const, content: sys }, ...out];
+  }
+  return out;
+}
+
 export interface SendChatOptions {
   provider: ProviderConfig;
   messages: ChatMessage[];
   signal?: AbortSignal;
+  /** called incrementally when the provider streams its response */
+  onToken?: (full: string) => void;
 }
 
 export async function sendChat({
   provider,
   messages,
   signal,
+  onToken,
 }: SendChatOptions): Promise<ChatResult> {
   if (!provider.apiKey.trim()) {
     throw new ChatError("API Key belum diisi. Buka Settings untuk mengaturnya.");
@@ -76,12 +88,20 @@ export async function sendChat({
     throw new ChatError("Model belum diisi. Buka Settings untuk mengaturnya.");
   }
 
+  const wantStream = !!provider.stream && !!onToken;
+
   const payload = {
     model: provider.model.trim(),
-    messages: toApiMessages(messages),
+    messages: buildMessages(provider, messages),
     temperature: provider.temperature,
     max_tokens: provider.maxTokens,
+    stream: wantStream,
   };
+
+  // -------- Streaming path --------
+  if (wantStream) {
+    return streamChat({ provider, payload, signal, onToken: onToken! });
+  }
 
   let status: number;
   let body: string;
@@ -131,7 +151,7 @@ export async function sendChat({
       throw new ChatError("Permintaan dibatalkan.");
     }
     throw new ChatError(
-      "Network error. Periksa koneksi internet, atau coba aktifkan/nonaktifkan mode panggilan langsung di Settings.",
+      "Provider ini mungkin tidak mengizinkan request langsung dari browser (CORS), atau ada masalah jaringan. Coba aktifkan/nonaktifkan mode panggilan langsung di Settings.",
     );
   }
 
@@ -157,14 +177,110 @@ export async function sendChat({
   return { content };
 }
 
+interface StreamOptions {
+  provider: ProviderConfig;
+  payload: unknown;
+  signal?: AbortSignal;
+  onToken: (full: string) => void;
+}
+
+async function streamChat({
+  provider,
+  payload,
+  signal,
+  onToken,
+}: StreamOptions): Promise<ChatResult> {
+  let res: Response;
+  try {
+    if (provider.directCall) {
+      res = await fetch(buildTarget(provider), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${provider.apiKey.trim()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        signal,
+      });
+    } else {
+      res = await fetch("/api/public/proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          baseUrl: provider.baseUrl.trim(),
+          path: provider.path.trim(),
+          apiKey: provider.apiKey.trim(),
+          payload,
+        }),
+        signal,
+      });
+    }
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ChatError("Permintaan dibatalkan.");
+    }
+    throw new ChatError(
+      "Provider ini mungkin tidak mengizinkan request langsung dari browser (CORS), atau ada masalah jaringan. Coba aktifkan/nonaktifkan mode panggilan langsung di Settings.",
+    );
+  }
+
+  if (!res.ok || !res.body) {
+    const body = await res.text().catch(() => "");
+    throw new ChatError(mapStatusToMessage(res.status, body));
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let full = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+        const data = trimmed.slice(5).trim();
+        if (data === "[DONE]") continue;
+        try {
+          const json = JSON.parse(data);
+          const delta = json?.choices?.[0]?.delta?.content;
+          if (typeof delta === "string" && delta.length) {
+            full += delta;
+            onToken(full);
+          }
+        } catch {
+          /* ignore partial / non-JSON keepalive lines */
+        }
+      }
+    }
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      if (full) return { content: full };
+      throw new ChatError("Permintaan dibatalkan.");
+    }
+    throw err;
+  }
+
+  if (!full) {
+    throw new ChatError("Provider tidak mengembalikan jawaban. Periksa model dan parameter.");
+  }
+  return { content: full };
+}
+
 export async function testConnection(provider: ProviderConfig): Promise<string> {
   const res = await sendChat({
-    provider,
+    provider: { ...provider, stream: false },
     messages: [
       {
         id: "test",
         role: "user",
-        content: "Hi",
+        content: "Say hello in one short sentence.",
         createdAt: Date.now(),
       },
     ],
