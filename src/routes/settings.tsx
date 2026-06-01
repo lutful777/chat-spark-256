@@ -128,6 +128,14 @@ const importSchema = z.array(
     maxTokens: z.number().int().min(1).max(200000).optional().default(1024),
     stream: z.boolean().optional().default(true),
     directCall: z.boolean().optional().default(false),
+    imageBaseUrl: z.string().trim().max(2048).optional(),
+    imagePath: z.string().trim().max(512).optional(),
+    imageModel: z.string().trim().max(256).optional(),
+    imageEditPath: z.string().trim().max(512).optional(),
+    imageEditModel: z.string().trim().max(256).optional(),
+    videoPath: z.string().trim().max(512).optional(),
+    videoModel: z.string().trim().max(256).optional(),
+    videoStatusPath: z.string().trim().max(512).optional(),
   }),
 );
 
