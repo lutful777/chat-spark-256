@@ -1,5 +1,15 @@
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CheckCircle2, Loader2, LogOut, Mail, ShieldCheck, UserRound } from "lucide-react";
+import {
+  CheckCircle2,
+  Inbox,
+  Loader2,
+  LogOut,
+  Mail,
+  RefreshCw,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -50,18 +60,19 @@ export function OutlookConnect() {
     });
   };
 
-  const handleConnect = async () => {
+  const handleConnect = async (switchAccount = false) => {
     if (!config.clientId.trim()) {
       toast.error("Isi Microsoft Client ID terlebih dahulu.");
       return;
     }
     setConnecting(true);
     try {
-      const account = await connectOutlook(config);
+      const account = await connectOutlook(config, switchAccount ? "select_account" : "select_account");
       const acctEmail = account.username ?? null;
       setEmail(acctEmail);
+      setProfile(null);
       updateConfig({ email: acctEmail ?? undefined });
-      toast.success("Outlook terhubung.");
+      toast.success(switchAccount ? "Akun Outlook diganti." : "Outlook terhubung.");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Gagal menghubungkan Outlook.";
       toast.error(message);
@@ -112,7 +123,7 @@ export function OutlookConnect() {
       <p className="mb-4 text-xs text-muted-foreground">
         Hubungkan akun Microsoft via Microsoft Identity Platform (MSAL). Login dilakukan
         langsung ke Microsoft dengan izin kamu — aplikasi tidak pernah meminta email/password.
-        Scope: User.Read, Mail.Read, Mail.Send, Calendars.Read, offline_access.
+        Scope: User.Read, Mail.Read, offline_access.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -178,14 +189,29 @@ export function OutlookConnect() {
 
       <div className="mt-4 flex flex-wrap gap-2">
         {!connected ? (
-          <Button onClick={handleConnect} disabled={connecting} className="gap-2 rounded-xl">
+          <Button onClick={() => handleConnect(false)} disabled={connecting} className="gap-2 rounded-xl">
             {connecting ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
             Connect Outlook
           </Button>
         ) : (
           <>
+            <Button asChild variant="default" className="gap-2 rounded-xl">
+              <Link to="/outlook">
+                <Inbox className="size-4" />
+                Check Inbox
+              </Link>
+            </Button>
             <Button
               variant="secondary"
+              onClick={() => handleConnect(true)}
+              disabled={connecting}
+              className="gap-2 rounded-xl"
+            >
+              {connecting ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+              Switch Account
+            </Button>
+            <Button
+              variant="outline"
               onClick={handleTestProfile}
               disabled={testing}
               className="gap-2 rounded-xl"
@@ -195,7 +221,7 @@ export function OutlookConnect() {
               ) : (
                 <ShieldCheck className="size-4" />
               )}
-              Test ambil profil
+              Test profil
             </Button>
             <Button
               variant="ghost"
