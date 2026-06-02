@@ -108,3 +108,14 @@
     color: var(--color-foreground);
   }
 }
+
+/* Hide the Lovable editor badge if it is injected inside the app DOM. */
+[id*="lovable" i],
+[class*="lovable" i],
+[data-lovable],
+a[href*="lovable.dev" i],
+iframe[src*="lovable" i] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
