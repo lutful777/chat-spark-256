@@ -1,0 +1,23 @@
+# Supabase project config for GitHub integration.
+# This repo uses Supabase only for AI app memory.
+# Do not store user API keys, provider settings, or chat history in Supabase.
+
+project_id = "chat-spark-256"
+
+[api]
+enabled = true
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+major_version = 15
+
+[studio]
+enabled = true
+
+[auth]
+enabled = true
+
+[storage]
+enabled = true
