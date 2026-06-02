@@ -14,7 +14,7 @@ export function MediaNav({ className }: { className?: string }) {
   return (
     <nav
       className={cn(
-        "inline-flex items-center gap-1 rounded-2xl border border-border bg-card p-1",
+        "grid w-full grid-cols-4 gap-1 overflow-hidden rounded-2xl border border-border bg-card p-1",
         className,
       )}
     >
@@ -25,12 +25,12 @@ export function MediaNav({ className }: { className?: string }) {
             key={t.to}
             to={t.to}
             activeOptions={{ exact: t.exact }}
-            className="rounded-xl px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="min-w-0 rounded-xl px-1 py-1.5 text-center text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
             activeProps={{ className: "bg-primary/15 text-primary" }}
           >
-            <span className="flex items-center gap-1.5">
-              <Icon className="size-4" />
-              {t.label}
+            <span className="flex min-w-0 flex-col items-center justify-center gap-0.5 leading-none sm:flex-row sm:gap-1">
+              <Icon className="size-4 shrink-0" />
+              <span className="block max-w-full truncate">{t.label}</span>
             </span>
           </Link>
         );
