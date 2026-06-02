@@ -1,33 +1,68 @@
 {
-  "name": "AI Chat Exploit",
+  "id": "/",
+  "name": "AI API Chat",
   "short_name": "AI Chat",
-  "description": "Klien chat AI untuk API OpenAI-compatible dengan konfigurasi provider sendiri.",
-  "start_url": "/",
+  "description": "Klien chat AI multi-provider dengan mode GitHub, Real Time Search, upload file, dan memory Supabase.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "orientation": "portrait-primary",
-  "scope": "/",
+  "lang": "id",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities", "developer", "ai"],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "icons": [
     {
-      "src": "/icon-192x192.png?v=3",
+      "src": "/icon-192x192.png?v=4",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-512x512.png?v=3",
+      "src": "/icon-512x512.png?v=4",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/maskable-icon-512x512.png?v=3",
+      "src": "/maskable-icon-512x512.png?v=4",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/maskable-icon-512x512.png?v=4",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
-  "categories": ["productivity", "utilities"],
-  "lang": "id"
+  "shortcuts": [
+    {
+      "name": "New Chat",
+      "short_name": "Chat",
+      "description": "Buka chat baru",
+      "url": "/?action=new-chat",
+      "icons": [{ "src": "/icon-192x192.png?v=4", "sizes": "192x192" }]
+    },
+    {
+      "name": "Image Generator",
+      "short_name": "Image",
+      "description": "Buka fitur gambar",
+      "url": "/image",
+      "icons": [{ "src": "/icon-192x192.png?v=4", "sizes": "192x192" }]
+    },
+    {
+      "name": "Video Generator",
+      "short_name": "Video",
+      "description": "Buka fitur video",
+      "url": "/video",
+      "icons": [{ "src": "/icon-192x192.png?v=4", "sizes": "192x192" }]
+    }
+  ]
 }
