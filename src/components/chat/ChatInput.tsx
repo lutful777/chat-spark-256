@@ -191,7 +191,6 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
                 <CommandOption onClick={() => fillGithubCommand("Perbaiki error ")} label="Perbaiki error" />
                 <CommandOption onClick={() => fillGithubCommand("cek build")} label="Cek build" />
                 <CommandOption onClick={() => fillGithubCommand("PUSH")} label="Push" />
-                <CommandOption onClick={() => fillGithubCommand("batal")} label="Batal" />
               </div>
             </div>
           )}
