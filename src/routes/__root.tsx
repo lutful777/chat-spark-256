@@ -78,44 +78,44 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "API Chat Client" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { title: "AI API Chat" },
       {
         name: "description",
         content:
-          "API Chat Client — klien chat untuk API OpenAI-compatible. Pakai API key Anda sendiri, atur provider, base URL, dan model bebas.",
+          "AI API Chat — chat AI multi-provider dengan mode GitHub, Real Time Search, upload file, dan memory Supabase.",
       },
-      { name: "author", content: "API Chat Client" },
-      { property: "og:title", content: "API Chat Client" },
+      { name: "author", content: "AI API Chat" },
+      { name: "application-name", content: "AI API Chat" },
+      { property: "og:title", content: "AI API Chat" },
       {
         property: "og:description",
-        content: "Klien chat AI untuk API OpenAI-compatible dengan konfigurasi provider sendiri.",
+        content: "Klien chat AI multi-provider dengan konfigurasi API sendiri.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "API Chat Client" },
-      { name: "description", content: "api key ai" },
-      { property: "og:description", content: "api key ai" },
-      { name: "twitter:description", content: "api key ai" },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/c1542829-5e6e-478e-956e-2f34181f405c" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/c1542829-5e6e-478e-956e-2f34181f405c" },
+      { name: "twitter:title", content: "AI API Chat" },
+      { name: "twitter:description", content: "Chat AI multi-provider dengan GitHub mode dan Real Time Search." },
+      { property: "og:image", content: "/icon-512x512.png?v=4" },
+      { name: "twitter:image", content: "/icon-512x512.png?v=4" },
       { name: "theme-color", content: "#0f172a" },
+      { name: "color-scheme", content: "dark" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "AI Chat" },
+      { name: "format-detection", content: "telephone=no" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "manifest", href: "/manifest.json" },
-      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192x192.png?v=3" },
-      { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512x512.png?v=3" },
-      { rel: "apple-touch-icon", sizes: "192x192", href: "/icon-192x192.png?v=3" },
-      { rel: "apple-touch-icon", sizes: "512x512", href: "/icon-512x512.png?v=3" },
+      { rel: "manifest", href: "/manifest.json?v=4" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192x192.png?v=4" },
+      { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512x512.png?v=4" },
+      { rel: "apple-touch-icon", sizes: "192x192", href: "/icon-192x192.png?v=4" },
+      { rel: "apple-touch-icon", sizes: "512x512", href: "/icon-512x512.png?v=4" },
     ],
   }),
   shellComponent: RootShell,
@@ -123,6 +123,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
+
+function PwaBoot() {
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    });
+  }, []);
+  return null;
+}
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
@@ -145,6 +155,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ChatStoreProvider>
+        <PwaBoot />
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
       </ChatStoreProvider>
