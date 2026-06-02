@@ -31,6 +31,41 @@ function uniqueSources(sources: SearchSource[]): SearchSource[] {
   return Array.from(new Map(sources.filter((s) => s.url && s.snippet).map((s) => [s.url || s.title, s])).values()).slice(0, 8);
 }
 
+async function searchSerper(query: string, signal: AbortSignal): Promise<SearchSource[]> {
+  const key = process.env.SERPER_API_KEY;
+  if (!key) return [];
+  const res = await fetch("https://google.serper.dev/search", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-KEY": key,
+    },
+    body: JSON.stringify({ q: query, num: 8 }),
+    signal,
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as {
+    answerBox?: { title?: string; answer?: string; snippet?: string; link?: string };
+    organic?: Array<{ title?: string; link?: string; snippet?: string }>;
+  };
+  const sources: SearchSource[] = [];
+  if (data.answerBox?.answer || data.answerBox?.snippet) {
+    sources.push({
+      title: stripHtml(data.answerBox.title || "Serper answer").slice(0, 140),
+      url: stripHtml(data.answerBox.link || `https://www.google.com/search?q=${encodeURIComponent(query)}`),
+      snippet: stripHtml(data.answerBox.answer || data.answerBox.snippet),
+    });
+  }
+  sources.push(
+    ...(data.organic ?? []).map((item) => ({
+      title: stripHtml(item.title).slice(0, 140),
+      url: stripHtml(item.link),
+      snippet: stripHtml(item.snippet),
+    })),
+  );
+  return sources;
+}
+
 async function searchBrave(query: string, signal: AbortSignal): Promise<SearchSource[]> {
   const key = process.env.BRAVE_SEARCH_API_KEY;
   if (!key) return [];
@@ -151,12 +186,18 @@ export const Route = createFileRoute("/api/public/realtime-search")({
         const timeout = setTimeout(() => controller.abort(), 15000);
 
         try {
-          const [brave, tavily] = await Promise.all([
-            searchBrave(query, controller.signal).catch(() => []),
-            searchTavily(query, controller.signal).catch(() => []),
-          ]);
-          let sources = uniqueSources([...brave, ...tavily]);
-          let provider = brave.length || tavily.length ? "brave/tavily" : "duckduckgo";
+          const serper = await searchSerper(query, controller.signal).catch(() => []);
+          let sources = uniqueSources(serper);
+          let provider = serper.length ? "serper" : "duckduckgo";
+
+          if (sources.length === 0) {
+            const [brave, tavily] = await Promise.all([
+              searchBrave(query, controller.signal).catch(() => []),
+              searchTavily(query, controller.signal).catch(() => []),
+            ]);
+            sources = uniqueSources([...brave, ...tavily]);
+            provider = brave.length || tavily.length ? "brave/tavily" : "duckduckgo";
+          }
 
           if (sources.length === 0) {
             const ddg = await searchDuckDuckGo(query, controller.signal);
