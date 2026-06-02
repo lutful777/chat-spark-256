@@ -195,6 +195,25 @@ function encodePath(path: string): string {
   return path.split("/").map(encodeURIComponent).join("/");
 }
 
+function shouldLookLikeFullSourceFile(path: string): boolean {
+  return /\.(ts|tsx|js|jsx)$/i.test(path);
+}
+
+function assertSafeGeneratedFile(path: string, content: string): void {
+  if (!shouldLookLikeFullSourceFile(path)) return;
+
+  const trimmed = content.trim();
+  const lineCount = trimmed.split("\n").length;
+  const hasModuleShape = /^import\s/m.test(trimmed) || /^export\s/m.test(trimmed);
+  const startsWithDetachedJsx = /^<[^>]+/m.test(trimmed);
+
+  if (lineCount < 60 || !hasModuleShape || startsWithDetachedJsx) {
+    throw new Error(
+      `GitHub update dibatalkan demi keamanan: ${path} terlihat seperti potongan kode, bukan full file. Minta AI membaca file lengkap lalu ulangi update.`,
+    );
+  }
+}
+
 export async function getFileContent(
   tokenValue: string,
   owner: string,
@@ -222,6 +241,7 @@ export async function updateFileContent(args: {
   content: string;
   message: string;
 }): Promise<{ commit?: { sha: string; html_url?: string }; content?: { sha: string } }> {
+  assertSafeGeneratedFile(args.path, args.content);
   const safePath = encodePath(args.path);
   return githubFetch(args.token, `/repos/${args.owner}/${args.repo}/contents/${safePath}`, {
     method: "PUT",
@@ -283,6 +303,7 @@ export async function commitMultipleFiles(args: {
   message: string;
 }): Promise<{ sha: string; html_url: string }> {
   if (args.files.length === 0) throw new Error("Tidak ada file untuk di-commit.");
+  args.files.forEach((file) => assertSafeGeneratedFile(file.path, file.content));
 
   const head = await getBranchHead(args);
   const baseCommit = await getGitCommit({ ...args, sha: head.sha });
