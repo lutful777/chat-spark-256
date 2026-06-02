@@ -50,8 +50,6 @@ export interface ProviderConfig {
   videoModel?: string;
   /** optional status/polling path; supports {request_id} placeholder */
   videoStatusPath?: string;
-  /** number of videos to generate per request: 1 (default) or 2 */
-  videoCount?: 1 | 2;
 }
 
 export interface Conversation {

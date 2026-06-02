@@ -25,6 +25,7 @@ import { useChatStore } from "@/lib/chat/store";
 import {
   MediaError,
   downloadMedia,
+  extractLastFrame,
   fileToDataUrl,
   mergeVideos,
   photoToVideo,
@@ -124,38 +125,31 @@ function VideoPage() {
     setStatus("Mengirim permintaan…");
     const controller = new AbortController();
     abortRef.current = controller;
-    const count = provider.videoCount ?? 1;
     try {
-      if (count === 2) {
-        setStatus("Part 1: Mengirim permintaan…");
-        const url1 = await photoToVideo({
-          provider,
-          prompt: prompt.trim(),
-          imageDataUrl: sourceUrl,
-          signal: controller.signal,
-          onStatus: (m) => setStatus(`Part 1: ${m}`),
-        });
-        setStatus("Part 2: Mengirim permintaan…");
-        const url2 = await photoToVideo({
-          provider,
-          prompt: prompt.trim(),
-          imageDataUrl: sourceUrl,
-          signal: controller.signal,
-          onStatus: (m) => setStatus(`Part 2: ${m}`),
-        });
-        setStatus("Menggabungkan video di server…");
-        const mergedUrl = await mergeVideos(url1, url2, controller.signal);
-        setResults([mergedUrl]);
-      } else {
-        const url = await photoToVideo({
-          provider,
-          prompt: prompt.trim(),
-          imageDataUrl: sourceUrl,
-          signal: controller.signal,
-          onStatus: (m) => setStatus(m),
-        });
-        setResults([url]);
-      }
+      setStatus("Part 1: Mengirim permintaan…");
+      const url1 = await photoToVideo({
+        provider,
+        prompt: prompt.trim(),
+        imageDataUrl: sourceUrl,
+        signal: controller.signal,
+        onStatus: (m) => setStatus(`Part 1: ${m}`),
+      });
+
+      setStatus("Mengambil frame terakhir Part 1…");
+      const lastFrame = await extractLastFrame(url1, controller.signal);
+
+      setStatus("Part 2: Mengirim permintaan…");
+      const url2 = await photoToVideo({
+        provider,
+        prompt: prompt.trim(),
+        imageDataUrl: lastFrame,
+        signal: controller.signal,
+        onStatus: (m) => setStatus(`Part 2: ${m}`),
+      });
+
+      setStatus("Menggabungkan video di server…");
+      const mergedUrl = await mergeVideos(url1, url2, controller.signal);
+      setResults([mergedUrl]);
       setStatus(null);
     } catch (err) {
       const message = err instanceof MediaError ? err.message : "Permintaan gagal.";
@@ -309,36 +303,20 @@ function VideoPage() {
                   <span className="text-xs">{status ?? "Memproses…"}</span>
                 </div>
               ) : results.length > 0 ? (
-                <div className="space-y-4">
-                  {results.map((url, i) => (
-                    <div key={i} className="space-y-2">
-                      {results.length > 1 && (
-                        <p className="text-xs font-medium text-muted-foreground">
-                          Part {i + 1}
-                        </p>
-                      )}
-                      <video
-                        src={url}
-                        controls
-                        className="max-h-[60vh] w-full rounded-xl border border-border"
-                      />
-                      <Button
-                        variant="outline"
-                        className="gap-2 rounded-xl"
-                        onClick={() =>
-                          downloadMedia(
-                            url,
-                            results.length > 1
-                              ? `video-part${i + 1}-${Date.now()}.mp4`
-                              : `video-${Date.now()}.mp4`,
-                          )
-                        }
-                      >
-                        <Download className="size-4" />
-                        Download{results.length > 1 ? ` Part ${i + 1}` : " video"}
-                      </Button>
-                    </div>
-                  ))}
+                <div className="space-y-2">
+                  <video
+                    src={results[0]}
+                    controls
+                    className="max-h-[60vh] w-full rounded-xl border border-border"
+                  />
+                  <Button
+                    variant="outline"
+                    className="gap-2 rounded-xl"
+                    onClick={() => downloadMedia(results[0], `video-${Date.now()}.mp4`)}
+                  >
+                    <Download className="size-4" />
+                    Download video
+                  </Button>
                 </div>
               ) : null}
             </div>

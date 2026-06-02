@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicProxyRouteImport } from './routes/api/public/proxy'
 import { Route as ApiPublicMergeVideosRouteImport } from './routes/api/public/merge-videos'
 import { Route as ApiPublicMediaProxyRouteImport } from './routes/api/public/media-proxy'
+import { Route as ApiPublicExtractFrameRouteImport } from './routes/api/public/extract-frame'
 
 const VideoRoute = VideoRouteImport.update({
   id: '/video',
@@ -52,12 +53,18 @@ const ApiPublicMediaProxyRoute = ApiPublicMediaProxyRouteImport.update({
   path: '/api/public/media-proxy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicExtractFrameRoute = ApiPublicExtractFrameRouteImport.update({
+  id: '/api/public/extract-frame',
+  path: '/api/public/extract-frame',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/image': typeof ImageRoute
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
+  '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/merge-videos': typeof ApiPublicMergeVideosRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/image': typeof ImageRoute
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
+  '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/merge-videos': typeof ApiPublicMergeVideosRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/image': typeof ImageRoute
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
+  '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/merge-videos': typeof ApiPublicMergeVideosRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/image'
     | '/settings'
     | '/video'
+    | '/api/public/extract-frame'
     | '/api/public/media-proxy'
     | '/api/public/merge-videos'
     | '/api/public/proxy'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/image'
     | '/settings'
     | '/video'
+    | '/api/public/extract-frame'
     | '/api/public/media-proxy'
     | '/api/public/merge-videos'
     | '/api/public/proxy'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/image'
     | '/settings'
     | '/video'
+    | '/api/public/extract-frame'
     | '/api/public/media-proxy'
     | '/api/public/merge-videos'
     | '/api/public/proxy'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   ImageRoute: typeof ImageRoute
   SettingsRoute: typeof SettingsRoute
   VideoRoute: typeof VideoRoute
+  ApiPublicExtractFrameRoute: typeof ApiPublicExtractFrameRoute
   ApiPublicMediaProxyRoute: typeof ApiPublicMediaProxyRoute
   ApiPublicMergeVideosRoute: typeof ApiPublicMergeVideosRoute
   ApiPublicProxyRoute: typeof ApiPublicProxyRoute
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMediaProxyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/extract-frame': {
+      id: '/api/public/extract-frame'
+      path: '/api/public/extract-frame'
+      fullPath: '/api/public/extract-frame'
+      preLoaderRoute: typeof ApiPublicExtractFrameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   ImageRoute: ImageRoute,
   SettingsRoute: SettingsRoute,
   VideoRoute: VideoRoute,
+  ApiPublicExtractFrameRoute: ApiPublicExtractFrameRoute,
   ApiPublicMediaProxyRoute: ApiPublicMediaProxyRoute,
   ApiPublicMergeVideosRoute: ApiPublicMergeVideosRoute,
   ApiPublicProxyRoute: ApiPublicProxyRoute,
