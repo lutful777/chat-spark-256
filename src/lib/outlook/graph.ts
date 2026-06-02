@@ -8,9 +8,12 @@ export interface GraphMessage {
   subject: string | null;
   bodyPreview: string | null;
   receivedDateTime: string;
+  sentDateTime?: string | null;
   hasAttachments: boolean;
-  from: {
-    emailAddress: { name: string; address: string };
+  parentFolderId?: string;
+  folderDisplayName?: string;
+  from?: {
+    emailAddress?: { name?: string; address?: string };
   };
   webLink?: string;
 }
@@ -23,15 +26,28 @@ export interface GraphAttachment {
   contentBytes?: string;
 }
 
+export interface GraphMailFolder {
+  id: string;
+  displayName: string;
+  parentFolderId?: string;
+  childFolderCount?: number;
+  totalItemCount?: number;
+  unreadItemCount?: number;
+  path?: string;
+}
+
 type MessageWithLoadedAttachments = GraphMessage & {
   attachments?: GraphAttachment[];
   attachmentsExpanded?: boolean;
 };
 
 export type SearchIn = "all" | "subject" | "from" | "body" | "filename" | "pdf";
+export type MailFolderTarget = string;
 
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
-const MESSAGE_SELECT = "id,subject,bodyPreview,receivedDateTime,hasAttachments,from,webLink";
+const MESSAGE_SELECT =
+  "id,subject,bodyPreview,receivedDateTime,sentDateTime,hasAttachments,from,webLink,parentFolderId";
+const FOLDER_SELECT = "id,displayName,parentFolderId,childFolderCount,totalItemCount,unreadItemCount";
 const ATTACHMENT_SELECT = "id,name,contentType,size";
 const MAX_ATTACHMENT_SCAN = 150;
 const PAGE_SIZE = 50;
@@ -47,6 +63,10 @@ function escapeSearchValue(value: string): string {
 function includesText(value: string | null | undefined, query: string): boolean {
   if (!query) return true;
   return (value ?? "").toLowerCase().includes(query.toLowerCase());
+}
+
+function messageDate(message: GraphMessage): string {
+  return message.receivedDateTime || message.sentDateTime || "";
 }
 
 function getSenderText(message: GraphMessage): string {
@@ -119,10 +139,18 @@ async function graphGet<T>(token: string, url: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-function inboxMessagesUrl(params: Record<string, string | number>): string {
+function paramsToSearch(params: Record<string, string | number>): string {
   const sp = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => sp.set(key, String(value)));
-  return `${GRAPH_BASE}/me/mailFolders/inbox/messages?${sp}`;
+  return sp.toString();
+}
+
+function messagesUrl(folder: MailFolderTarget = "all", params: Record<string, string | number>): string {
+  const qs = paramsToSearch(params);
+  if (!folder || folder === "all") return `${GRAPH_BASE}/me/messages?${qs}`;
+
+  const folderId = folder.startsWith("wellKnown:") ? folder.replace("wellKnown:", "") : folder;
+  return `${GRAPH_BASE}/me/mailFolders/${encodeURIComponent(folderId)}/messages?${qs}`;
 }
 
 function mergeMessages(
@@ -143,48 +171,107 @@ function mergeMessages(
   });
 
   return Array.from(map.values())
-    .sort(
-      (a, b) =>
-        new Date(b.receivedDateTime).getTime() -
-        new Date(a.receivedDateTime).getTime(),
-    )
+    .sort((a, b) => new Date(messageDate(b)).getTime() - new Date(messageDate(a)).getTime())
     .slice(0, top);
 }
 
-export async function listInboxMessages(token: string, top = 25): Promise<GraphMessage[]> {
-  const url = inboxMessagesUrl({
-    $select: MESSAGE_SELECT,
-    $orderby: "receivedDateTime desc",
-    $top: Math.min(top, PAGE_SIZE),
-  });
+async function listFolderPage(
+  token: string,
+  url: string,
+  parentPath = "",
+): Promise<GraphMailFolder[]> {
+  const folders: GraphMailFolder[] = [];
+  let nextUrl: string | undefined = url;
 
-  const data = await graphGet<{ value?: unknown[] }>(token, url);
+  while (nextUrl) {
+    const data = await graphGet<{ value?: unknown[]; "@odata.nextLink"?: string }>(token, nextUrl);
+    const page = (data.value ?? []) as GraphMailFolder[];
+
+    for (const folder of page) {
+      const path = parentPath ? `${parentPath} / ${folder.displayName}` : folder.displayName;
+      const item = { ...folder, path };
+      folders.push(item);
+
+      if ((folder.childFolderCount ?? 0) > 0) {
+        const childUrl = `${GRAPH_BASE}/me/mailFolders/${encodeURIComponent(folder.id)}/childFolders?${paramsToSearch({
+          $select: FOLDER_SELECT,
+          $top: 100,
+        })}`;
+        folders.push(...(await listFolderPage(token, childUrl, path)));
+      }
+    }
+
+    nextUrl = data["@odata.nextLink"];
+  }
+
+  return folders;
+}
+
+export async function listMailFolders(token: string): Promise<GraphMailFolder[]> {
+  const url = `${GRAPH_BASE}/me/mailFolders?${paramsToSearch({
+    $select: FOLDER_SELECT,
+    $top: 100,
+  })}`;
+  const folders = await listFolderPage(token, url);
+
+  const priority = ["inbox", "sent items", "junk email", "drafts", "archive", "deleted items"];
+  return folders.sort((a, b) => {
+    const ai = priority.indexOf((a.displayName ?? "").toLowerCase());
+    const bi = priority.indexOf((b.displayName ?? "").toLowerCase());
+    if (ai !== -1 || bi !== -1) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    return (a.path ?? a.displayName).localeCompare(b.path ?? b.displayName);
+  });
+}
+
+export async function listRecentMessages(
+  token: string,
+  folder: MailFolderTarget = "all",
+  top = 25,
+): Promise<GraphMessage[]> {
+  const data = await graphGet<{ value?: unknown[] }>(
+    token,
+    messagesUrl(folder, {
+      $select: MESSAGE_SELECT,
+      $orderby: "receivedDateTime desc",
+      $top: Math.min(top, PAGE_SIZE),
+    }),
+  );
+
   return (data.value ?? []) as GraphMessage[];
 }
 
-async function searchInboxMessagesWithGraph(
+// Backward-compatible helper for existing callers.
+export async function listInboxMessages(token: string, top = 25): Promise<GraphMessage[]> {
+  return listRecentMessages(token, "wellKnown:inbox", top);
+}
+
+async function searchMessagesWithGraph(
   token: string,
   query: string,
   searchIn: Exclude<SearchIn, "filename" | "pdf">,
+  folder: MailFolderTarget,
   top: number,
 ): Promise<GraphMessage[]> {
   const searchText = buildSearchText(query, searchIn);
-  const url = inboxMessagesUrl({
-    $search: `"${searchText}"`,
-    $select: MESSAGE_SELECT,
-    $top: Math.min(top, PAGE_SIZE),
-  });
+  const data = await graphGet<{ value?: unknown[] }>(
+    token,
+    messagesUrl(folder, {
+      $search: `"${searchText}"`,
+      $select: MESSAGE_SELECT,
+      $top: Math.min(top, PAGE_SIZE),
+    }),
+  );
 
-  const data = await graphGet<{ value?: unknown[] }>(token, url);
   return (data.value ?? []) as GraphMessage[];
 }
 
-async function listInboxMessagesWithAttachments(
+async function listMessagesWithAttachments(
   token: string,
+  folder: MailFolderTarget,
   maxMessages = MAX_ATTACHMENT_SCAN,
 ): Promise<GraphMessage[]> {
   const messages: GraphMessage[] = [];
-  let url: string | undefined = inboxMessagesUrl({
+  let url: string | undefined = messagesUrl(folder, {
     $select: MESSAGE_SELECT,
     $filter: "hasAttachments eq true",
     $orderby: "receivedDateTime desc",
@@ -192,15 +279,9 @@ async function listInboxMessagesWithAttachments(
   });
 
   while (url && messages.length < maxMessages) {
-    const data = await graphGet<{ value?: unknown[]; "@odata.nextLink"?: string }>(
-      token,
-      url,
-    );
+    const data = await graphGet<{ value?: unknown[]; "@odata.nextLink"?: string }>(token, url);
     messages.push(
-      ...(((data.value ?? []) as GraphMessage[]).slice(
-        0,
-        maxMessages - messages.length,
-      )),
+      ...(((data.value ?? []) as GraphMessage[]).slice(0, maxMessages - messages.length)),
     );
     url = data["@odata.nextLink"];
   }
@@ -208,14 +289,15 @@ async function listInboxMessagesWithAttachments(
   return messages;
 }
 
-async function searchInboxByAttachments(
+async function searchByAttachments(
   token: string,
   query: string,
   mode: "filename" | "pdf",
+  folder: MailFolderTarget,
   top: number,
 ): Promise<MessageWithLoadedAttachments[]> {
   const q = cleanQuery(query);
-  const messages = await listInboxMessagesWithAttachments(token, MAX_ATTACHMENT_SCAN);
+  const messages = await listMessagesWithAttachments(token, folder, MAX_ATTACHMENT_SCAN);
   const matched: MessageWithLoadedAttachments[] = [];
 
   for (const message of messages) {
@@ -228,7 +310,7 @@ async function searchInboxByAttachments(
         return !q || attachmentMatchesKeyword(att, q) || messageMatchesKeyword(message, q);
       }
 
-      return attachmentMatchesKeyword(att, q);
+      return !q || attachmentMatchesKeyword(att, q);
     });
 
     if (filteredAttachments.length > 0) {
@@ -249,26 +331,27 @@ export async function searchMessages(
   token: string,
   query: string,
   searchIn: SearchIn,
+  folder: MailFolderTarget = "all",
   top = 25,
 ): Promise<GraphMessage[]> {
   const q = cleanQuery(query);
   const limit = Math.min(top, PAGE_SIZE);
 
-  if (!q && searchIn !== "pdf") {
-    return listInboxMessages(token, limit);
+  if (!q && searchIn !== "pdf" && searchIn !== "filename") {
+    return listRecentMessages(token, folder, limit);
   }
 
   if (searchIn === "filename" || searchIn === "pdf") {
-    return searchInboxByAttachments(token, q, searchIn, limit);
+    return searchByAttachments(token, q, searchIn, folder, limit);
   }
 
-  const graphMatches = await searchInboxMessagesWithGraph(token, q, searchIn, limit);
+  const graphMatches = await searchMessagesWithGraph(token, q, searchIn, folder, limit);
 
   if (searchIn !== "all") {
     return graphMatches;
   }
 
-  const attachmentMatches = await searchInboxByAttachments(token, q, "filename", limit);
+  const attachmentMatches = await searchByAttachments(token, q, "filename", folder, limit);
   return mergeMessages(graphMatches, attachmentMatches, limit);
 }
 
