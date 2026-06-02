@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -30,11 +30,24 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function cleanUserContent(content: string): string {
+  return content
+    .replace(/\n?---\s*\nFile yang diupload:[\s\S]*$/i, "")
+    .replace(/\n?File yang diupload:[\s\S]*$/i, "")
+    .trim();
+}
+
 function AttachmentPreview({ attachment }: { attachment: ChatAttachment }) {
+  const isImage = attachment.dataUrl && attachment.type.startsWith("image/");
+
   return (
-    <div className="mt-2 overflow-hidden rounded-xl border border-border/60 bg-background/40 text-xs">
-      {attachment.dataUrl && attachment.type.startsWith("image/") ? (
-        <img src={attachment.dataUrl} alt={attachment.name} className="max-h-56 w-full object-cover" />
+    <div className="overflow-hidden rounded-xl border border-border/60 bg-background/40 text-xs">
+      {isImage ? (
+        <img
+          src={attachment.dataUrl}
+          alt={attachment.name}
+          className="max-h-72 w-full rounded-t-xl object-contain"
+        />
       ) : null}
       <div className="flex items-center gap-2 px-2 py-1.5">
         <FileUp className="size-3.5 shrink-0 text-muted-foreground" />
@@ -53,10 +66,14 @@ export function ChatMessageBubble({
 }: Props) {
   const isUser = message.role === "user";
   const [copied, setCopied] = useState(false);
+  const displayContent = useMemo(
+    () => (isUser ? cleanUserContent(message.content) : message.content),
+    [isUser, message.content],
+  );
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(message.content);
+      await navigator.clipboard.writeText(displayContent || message.content);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -89,12 +106,14 @@ export function ChatMessageBubble({
           )}
         >
           {isUser ? (
-            <>
-              <p className="whitespace-pre-wrap break-words">{message.content}</p>
+            <div className="space-y-2">
               {message.attachments?.map((attachment) => (
                 <AttachmentPreview key={attachment.id} attachment={attachment} />
               ))}
-            </>
+              {displayContent && (
+                <p className="whitespace-pre-wrap break-words">{displayContent}</p>
+              )}
+            </div>
           ) : (
             <div
               className={cn(
