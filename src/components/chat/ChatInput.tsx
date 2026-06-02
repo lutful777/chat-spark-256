@@ -6,7 +6,7 @@ import {
   type ChangeEvent,
   type KeyboardEvent,
 } from "react";
-import { FileUp, Send, Square, X } from "lucide-react";
+import { FileUp, Search, Send, Square, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +17,7 @@ export interface ChatInputHandle {
 }
 
 interface ChatInputProps {
-  onSend: (text: string, attachments?: ChatAttachment[]) => void;
+  onSend: (text: string, attachments?: ChatAttachment[], realtime?: boolean) => void;
   onStop?: () => void;
   loading?: boolean;
   disabled?: boolean;
@@ -81,6 +81,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
     const [value, setValue] = useState("");
     const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
     const [readingFiles, setReadingFiles] = useState(false);
+    const [realtime, setRealtime] = useState(false);
     const ref = useRef<HTMLTextAreaElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
 
@@ -104,7 +105,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
     const submit = () => {
       const text = value.trim();
       if ((!text && attachments.length === 0) || loading || disabled || readingFiles) return;
-      onSend(text || "Tolong analisis file yang saya upload.", attachments);
+      onSend(text || "Tolong analisis file yang saya upload.", attachments, realtime);
       setValue("");
       setAttachments([]);
       requestAnimationFrame(() => {
@@ -158,6 +159,18 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             </div>
           )}
 
+          {realtime && (
+            <div className="flex">
+              <button
+                type="button"
+                onClick={() => setRealtime(false)}
+                className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary"
+              >
+                <Search className="size-4" /> Real Time <X className="size-4" />
+              </button>
+            </div>
+          )}
+
           <div className="flex items-end gap-2">
             <input
               ref={fileRef}
@@ -179,6 +192,18 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             >
               {readingFiles ? <Square className="size-4" /> : <FileUp className="size-4" />}
             </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant={realtime ? "default" : "outline"}
+              onClick={() => setRealtime((v) => !v)}
+              disabled={disabled || loading}
+              className="size-11 shrink-0 rounded-2xl"
+              aria-label="Real time search"
+              title="Mode Real Time"
+            >
+              <Search className="size-4" />
+            </Button>
             <Textarea
               ref={ref}
               value={value}
@@ -189,7 +214,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               onKeyDown={onKeyDown}
               rows={1}
               disabled={disabled}
-              placeholder="Ketik pesan"
+              placeholder={realtime ? "Real Time" : "Ketik pesan"}
               className="max-h-40 min-h-[44px] flex-1 resize-none rounded-2xl bg-card"
             />
             {loading ? (
