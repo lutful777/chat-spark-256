@@ -184,14 +184,16 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               <ModeOption active={mode === "normal"} onClick={() => selectMode("normal")} icon={<Sparkles className="size-4" />} label="Plain" />
               <ModeOption active={mode === "github"} onClick={() => selectMode("github")} icon={<Github className="size-4" />} label="GitHub" />
               <ModeOption active={mode === "realtime"} onClick={() => selectMode("realtime")} icon={<Search className="size-4" />} label="Real Time" />
-              <div className="mt-1 border-t border-border p-2">
-                <p className="mb-1 px-1 text-[11px] font-medium text-muted-foreground">Command GitHub</p>
-                <CommandOption onClick={() => fillGithubCommand("Tambah tombol ")} label="Tambah tombol" />
-                <CommandOption onClick={() => fillGithubCommand("Hapus tombol ")} label="Hapus tombol" />
-                <CommandOption onClick={() => fillGithubCommand("Perbaiki error ")} label="Perbaiki error" />
-                <CommandOption onClick={() => fillGithubCommand("cek build")} label="Cek build" />
-                <CommandOption onClick={() => fillGithubCommand("PUSH")} label="Push" />
-              </div>
+              {mode === "github" && (
+                <div className="mt-1 border-t border-border p-2">
+                  <p className="mb-1 px-1 text-[11px] font-medium text-muted-foreground">Command GitHub</p>
+                  <CommandOption onClick={() => fillGithubCommand("Tambah tombol ")} label="Tambah tombol" />
+                  <CommandOption onClick={() => fillGithubCommand("Hapus tombol ")} label="Hapus tombol" />
+                  <CommandOption onClick={() => fillGithubCommand("Perbaiki error ")} label="Perbaiki error" />
+                  <CommandOption onClick={() => fillGithubCommand("cek build")} label="Cek build" />
+                  <CommandOption onClick={() => fillGithubCommand("PUSH")} label="Push" />
+                </div>
+              )}
             </div>
           )}
         </div>
