@@ -124,12 +124,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+type VirtualKeyboardLike = EventTarget & {
+  overlaysContent?: boolean;
+  boundingRect?: { height?: number };
+  addEventListener: (type: "geometrychange", listener: () => void) => void;
+  removeEventListener: (type: "geometrychange", listener: () => void) => void;
+};
+
 function PwaBoot() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const root = document.documentElement;
     let stableHeight = window.innerHeight;
+    const virtualKeyboard = (navigator as Navigator & { virtualKeyboard?: VirtualKeyboardLike }).virtualKeyboard;
+    if (virtualKeyboard) virtualKeyboard.overlaysContent = true;
 
     const activeIsTextInput = () => {
       const el = document.activeElement;
@@ -142,9 +151,10 @@ function PwaBoot() {
       const viewport = window.visualViewport;
       const visualHeight = viewport?.height ?? window.innerHeight;
       const visualOffsetTop = viewport?.offsetTop ?? 0;
-      const rawKeyboardOffset = viewport ? Math.max(0, window.innerHeight - visualHeight - visualOffsetTop) : 0;
-      const resizedByKeyboard = activeIsTextInput() && stableHeight - window.innerHeight > 120;
-      const keyboardOffset = Math.max(rawKeyboardOffset, resizedByKeyboard ? stableHeight - window.innerHeight : 0);
+      const vkHeight = Math.round(virtualKeyboard?.boundingRect?.height ?? 0);
+      const visualGap = viewport ? Math.round(Math.max(0, window.innerHeight - visualHeight - visualOffsetTop)) : 0;
+      const resizeGap = Math.round(Math.max(0, stableHeight - window.innerHeight));
+      const keyboardOffset = activeIsTextInput() ? Math.max(vkHeight, visualGap, resizeGap) : 0;
       const keyboardOpen = keyboardOffset > 60;
 
       if (!keyboardOpen) {
@@ -159,8 +169,11 @@ function PwaBoot() {
     updateViewportVars();
     window.addEventListener("resize", updateViewportVars);
     window.addEventListener("orientationchange", updateViewportVars);
+    window.addEventListener("focusin", updateViewportVars);
+    window.addEventListener("focusout", updateViewportVars);
     window.visualViewport?.addEventListener("resize", updateViewportVars);
     window.visualViewport?.addEventListener("scroll", updateViewportVars);
+    virtualKeyboard?.addEventListener("geometrychange", updateViewportVars);
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
@@ -171,8 +184,11 @@ function PwaBoot() {
     return () => {
       window.removeEventListener("resize", updateViewportVars);
       window.removeEventListener("orientationchange", updateViewportVars);
+      window.removeEventListener("focusin", updateViewportVars);
+      window.removeEventListener("focusout", updateViewportVars);
       window.visualViewport?.removeEventListener("resize", updateViewportVars);
       window.visualViewport?.removeEventListener("scroll", updateViewportVars);
+      virtualKeyboard?.removeEventListener("geometrychange", updateViewportVars);
     };
   }, []);
   return null;
