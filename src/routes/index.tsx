@@ -35,7 +35,7 @@ import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { useChatStore } from "@/lib/chat/store";
 import { uid } from "@/lib/chat/storage";
 import { ChatError, sendChat } from "@/lib/chat/api";
-import type { ChatMessage } from "@/lib/chat/types";
+import type { ChatAttachment, ChatMessage } from "@/lib/chat/types";
 import { runOutlookMailCommand } from "@/lib/outlook/chatCommand";
 
 export const Route = createFileRoute("/")({
@@ -213,7 +213,7 @@ function ChatPage() {
     }
   };
 
-  const handleSend = async (text: string) => {
+  const handleSend = async (text: string, attachments?: ChatAttachment[]) => {
     let convId = activeId;
     if (!convId) {
       convId = createConversation();
@@ -225,6 +225,7 @@ function ChatPage() {
       id: uid(),
       role: "user",
       content: text,
+      attachments,
       createdAt: Date.now(),
     };
     const withUser = [...existing, userMsg];
@@ -310,7 +311,7 @@ function ChatPage() {
         {
           title: activeConversation.title,
           createdAt: activeConversation.createdAt,
-          messages: messages.map((m) => ({ role: m.role, content: m.content })),
+          messages: messages.map((m) => ({ role: m.role, content: m.content, attachments: m.attachments })),
         },
         null,
         2,
@@ -442,7 +443,7 @@ function ChatPage() {
                   </div>
                   <h1 className="text-2xl font-semibold tracking-tight">Mulai chat</h1>
                   <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                    Tulis pertanyaan, atau ketik <span className="font-medium">cek inbox terbaru</span>, <span className="font-medium">cari email dari Shopee</span>, atau <span className="font-medium">cari PDF di Outlook</span>.
+                    Tulis pertanyaan, upload foto/PDF/file, atau ketik <span className="font-medium">cek inbox terbaru</span>, <span className="font-medium">cari email dari Shopee</span>, atau <span className="font-medium">cari PDF di Outlook</span>.
                   </p>
                 </div>
               ) : (
@@ -469,7 +470,7 @@ function ChatPage() {
           onSend={handleSend}
           onStop={handleStop}
           loading={loading}
-          placeholder="Ketik pesan, atau: cek inbox terbaru / cari email dari Shopee / cari PDF di Outlook"
+          placeholder="Ketik pesan, upload file, atau: cek inbox terbaru / cari email dari Shopee"
         />
       </div>
     </div>
