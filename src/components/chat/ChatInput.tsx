@@ -98,7 +98,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
       setText: (text: string) => {
         setValue(text);
         requestAnimationFrame(() => {
-          ref.current?.focus();
+          ref.current?.focus({ preventScroll: true });
           resize();
         });
       },
@@ -147,7 +147,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
     };
 
     return (
-      <div className="border-t border-border bg-background/85 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
+      <div className="keyboard-safe-input border-t border-border bg-background/85 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
         <div className="mx-auto w-full max-w-3xl space-y-2">
           {mode === "github" && (
             <div className="rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
@@ -198,6 +198,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             <Textarea
               ref={ref}
               value={value}
+              onFocus={() => requestAnimationFrame(() => ref.current?.focus({ preventScroll: true }))}
               onChange={(e) => {
                 setValue(e.target.value);
                 resize();
