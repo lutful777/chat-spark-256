@@ -69,6 +69,12 @@ function messageDate(message: GraphMessage): string {
   return message.receivedDateTime || message.sentDateTime || "";
 }
 
+function sortMessagesNewestFirst<T extends GraphMessage>(messages: T[]): T[] {
+  return [...messages].sort(
+    (a, b) => new Date(messageDate(b)).getTime() - new Date(messageDate(a)).getTime(),
+  );
+}
+
 function getSenderText(message: GraphMessage): string {
   const from = message.from?.emailAddress;
   return `${from?.name ?? ""} ${from?.address ?? ""}`.trim();
@@ -170,9 +176,7 @@ function mergeMessages(
     });
   });
 
-  return Array.from(map.values())
-    .sort((a, b) => new Date(messageDate(b)).getTime() - new Date(messageDate(a)).getTime())
-    .slice(0, top);
+  return sortMessagesNewestFirst(Array.from(map.values())).slice(0, top);
 }
 
 async function listFolderPage(
@@ -189,8 +193,7 @@ async function listFolderPage(
 
     for (const folder of page) {
       const path = parentPath ? `${parentPath} / ${folder.displayName}` : folder.displayName;
-      const item = { ...folder, path };
-      folders.push(item);
+      folders.push({ ...folder, path });
 
       if ((folder.childFolderCount ?? 0) > 0) {
         const childUrl = `${GRAPH_BASE}/me/mailFolders/${encodeURIComponent(folder.id)}/childFolders?${paramsToSearch({
@@ -273,8 +276,9 @@ async function listMessagesWithAttachments(
   const messages: GraphMessage[] = [];
   let url: string | undefined = messagesUrl(folder, {
     $select: MESSAGE_SELECT,
+    // Do not combine this filter with $orderby. Some Microsoft Graph tenants reject
+    // that combination with "InefficientFilter", especially on large mailboxes.
     $filter: "hasAttachments eq true",
-    $orderby: "receivedDateTime desc",
     $top: Math.min(PAGE_SIZE, maxMessages),
   });
 
@@ -286,7 +290,7 @@ async function listMessagesWithAttachments(
     url = data["@odata.nextLink"];
   }
 
-  return messages;
+  return sortMessagesNewestFirst(messages).slice(0, maxMessages);
 }
 
 async function searchByAttachments(
