@@ -38,7 +38,8 @@ import { ChatError, sendChat } from "@/lib/chat/api";
 import type { ChatAttachment, ChatMessage } from "@/lib/chat/types";
 import { runOutlookMailCommand } from "@/lib/outlook/chatCommand";
 import { runGitHubChatCommand } from "@/lib/github/chatCommand";
-import { buildAiMemoryContext } from "@/lib/memory/supabaseMemory";
+import { autoSaveImportantMemory, buildAiMemoryContext } from "@/lib/memory/supabaseMemory";
+import { buildRealtimeContext, searchRealtimeWeb } from "@/lib/search/realtime";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -58,6 +59,10 @@ export const Route = createFileRoute("/")({
   }),
   component: ChatPage,
 });
+
+function stripModePrefix(text: string): string {
+  return text.replace(/^\[(GITHUB|REALTIME)\]\s*/i, "").trim();
+}
 
 function ChatPage() {
   const {
@@ -171,7 +176,7 @@ function ChatPage() {
     abortRef.current?.abort();
   };
 
-  const runCompletion = async (convId: string, base: ChatMessage[]) => {
+  const runCompletion = async (convId: string, base: ChatMessage[], realtimeContext = "") => {
     if (!activeProvider) return;
     setConversationProvider(convId, activeProvider.id);
     setLoading(true);
@@ -184,17 +189,18 @@ function ChatPage() {
 
     try {
       const memoryContext = await buildAiMemoryContext();
-      const providerWithMemory = memoryContext.trim()
+      const extraContext = [memoryContext.trim(), realtimeContext.trim()].filter(Boolean).join("\n\n");
+      const providerWithContext = extraContext
         ? {
             ...activeProvider,
-            systemPrompt: [activeProvider.systemPrompt?.trim(), memoryContext.trim()]
+            systemPrompt: [activeProvider.systemPrompt?.trim(), extraContext]
               .filter(Boolean)
               .join("\n\n"),
           }
         : activeProvider;
 
       const res = await sendChat({
-        provider: providerWithMemory,
+        provider: realtimeContext ? { ...providerWithContext, stream: false } : providerWithContext,
         messages: base,
         signal: controller.signal,
         onToken: (full) => {
@@ -215,6 +221,7 @@ function ChatPage() {
         createdAt: Date.now(),
       };
       setConversationMessages(convId, [...base, assistantMsg]);
+      void autoSaveImportantMemory(base[base.length - 1]?.content ?? "", res.content);
     } catch (err) {
       const message =
         err instanceof ChatError ? err.message : "Terjadi kesalahan tak terduga.";
@@ -235,18 +242,19 @@ function ChatPage() {
     }
   };
 
-  const handleSend = async (text: string, attachments?: ChatAttachment[]) => {
+  const handleSend = async (text: string, attachments?: ChatAttachment[], realtime = false) => {
     let convId = activeId;
     if (!convId) {
       convId = createConversation();
       setActiveId(convId);
     }
 
+    const cleanText = stripModePrefix(text);
     const existing = conversations.find((c) => c.id === convId)?.messages ?? [];
     const userMsg: ChatMessage = {
       id: uid(),
       role: "user",
-      content: text,
+      content: cleanText,
       attachments,
       createdAt: Date.now(),
     };
@@ -264,10 +272,11 @@ function ChatPage() {
           createdAt: Date.now(),
         };
         setConversationMessages(convId, [...withUser, assistantMsg]);
+        void autoSaveImportantMemory(text, githubReply);
         return;
       }
 
-      const outlookReply = await runOutlookMailCommand(text);
+      const outlookReply = await runOutlookMailCommand(cleanText);
       if (outlookReply) {
         const assistantMsg: ChatMessage = {
           id: uid(),
@@ -303,7 +312,21 @@ function ChatPage() {
       return;
     }
 
-    await runCompletion(convId, withUser);
+    let realtimeContext = "";
+    if (realtime || text.trim().startsWith("[REALTIME]")) {
+      setLoading(true);
+      try {
+        toast.info("Mencari data real-time...");
+        const result = await searchRealtimeWeb(cleanText);
+        realtimeContext = buildRealtimeContext(result);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Realtime search gagal.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    await runCompletion(convId, withUser, realtimeContext);
   };
 
   const handleRegenerate = async () => {
@@ -481,7 +504,7 @@ function ChatPage() {
                   </div>
                   <h1 className="text-2xl font-semibold tracking-tight">Mulai chat</h1>
                   <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                    Tulis pertanyaan, upload foto/PDF/file, atau gunakan perintah Outlook/GitHub jika sudah terkoneksi.
+                    Tulis pertanyaan, upload file, pilih Real Time untuk data terbaru, atau GitHub untuk update web app.
                   </p>
                 </div>
               ) : (
