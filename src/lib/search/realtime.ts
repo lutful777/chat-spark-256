@@ -10,11 +10,44 @@ export interface RealtimeSearchResult {
   sources: RealtimeSearchSource[];
 }
 
+export interface RealtimeSearchConfig {
+  serperApiKey: string;
+}
+
+const REALTIME_SEARCH_KEY = "ai-chat-realtime-search";
+
+export function loadRealtimeSearchConfig(): RealtimeSearchConfig {
+  if (typeof window === "undefined") return { serperApiKey: "" };
+  try {
+    const raw = localStorage.getItem(REALTIME_SEARCH_KEY);
+    if (!raw) return { serperApiKey: "" };
+    const parsed = JSON.parse(raw) as Partial<RealtimeSearchConfig>;
+    return { serperApiKey: String(parsed.serperApiKey ?? "") };
+  } catch {
+    return { serperApiKey: "" };
+  }
+}
+
+export function saveRealtimeSearchConfig(config: RealtimeSearchConfig) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(
+    REALTIME_SEARCH_KEY,
+    JSON.stringify({ serperApiKey: config.serperApiKey.trim() }),
+  );
+}
+
+export function clearRealtimeSearchConfig() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(REALTIME_SEARCH_KEY);
+}
+
 export async function searchRealtimeWeb(query: string, signal?: AbortSignal): Promise<RealtimeSearchResult> {
   const q = query.trim();
   if (!q) return { query: "", generatedAt: new Date().toISOString(), sources: [] };
 
-  const res = await fetch(`/api/public/realtime-search?q=${encodeURIComponent(q)}`, { signal });
+  const serperApiKey = loadRealtimeSearchConfig().serperApiKey.trim();
+  const headers: HeadersInit = serperApiKey ? { "X-Serper-API-Key": serperApiKey } : {};
+  const res = await fetch(`/api/public/realtime-search?q=${encodeURIComponent(q)}`, { headers, signal });
   const text = await res.text();
   const data = JSON.parse(text) as Partial<RealtimeSearchResult> & { error?: string };
 
