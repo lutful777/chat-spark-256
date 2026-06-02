@@ -80,6 +80,12 @@ function modeLabel(mode: ChatMode): string {
   return "Plain";
 }
 
+function shortModelName(model?: string): string {
+  const clean = model?.trim();
+  if (!clean) return "Pilih model";
+  return clean.split("/").filter(Boolean).at(-1) ?? clean;
+}
+
 function ChatPage() {
   const {
     ready,
@@ -131,6 +137,7 @@ function ChatPage() {
   const githubConfig = loadGitHubConfig();
   const memoryOk = !!(memoryConfig.enabled && memoryConfig.anonKey.trim());
   const githubOk = !!(githubConfig.token.trim() && githubConfig.owner && githubConfig.repo);
+  const activeModelLabel = shortModelName(activeProvider?.model);
 
   const selectedValue =
     activeProviderId && activeProvider?.model
@@ -390,7 +397,9 @@ function ChatPage() {
         <header className="flex items-center gap-2 border-b border-border/70 bg-background/90 px-3 py-2.5 backdrop-blur-xl">
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileOpen(true)} aria-label="Buka menu"><Menu className="size-5" /></Button>
           <Button variant="ghost" size="icon" className="hidden md:inline-flex" onClick={() => setDesktopOpen((v) => !v)} aria-label="Toggle sidebar"><PanelLeftClose className="size-5" /></Button>
-          <div className="min-w-0 flex-1" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold tracking-tight text-foreground" title={activeProvider?.model ?? ""}>{activeModelLabel}</p>
+          </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
