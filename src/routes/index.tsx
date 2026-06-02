@@ -244,7 +244,7 @@ function ChatPage() {
 
     setLoading(true);
     try {
-      const githubReply = await runGitHubChatCommand(text);
+      const githubReply = await runGitHubChatCommand(text, activeProvider);
       if (githubReply) {
         const assistantMsg: ChatMessage = {
           id: uid(),
@@ -470,7 +470,7 @@ function ChatPage() {
                   </div>
                   <h1 className="text-2xl font-semibold tracking-tight">Mulai chat</h1>
                   <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                    Tulis pertanyaan, upload foto/PDF/file, atau ketik <span className="font-medium">cek inbox terbaru</span>, <span className="font-medium">cari email dari Shopee</span>, <span className="font-medium">cari PDF di Outlook</span>, atau <span className="font-medium">tambah provider x.ai di menu setting</span>.
+                    Tulis pertanyaan, upload foto/PDF/file, atau ketik <span className="font-medium">cek inbox terbaru</span>, <span className="font-medium">cari email dari Shopee</span>, <span className="font-medium">cari PDF di Outlook</span>, atau <span className="font-medium">hapus tombol outlook</span>.
                   </p>
                 </div>
               ) : (
