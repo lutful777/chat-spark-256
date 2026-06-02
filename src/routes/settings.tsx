@@ -55,6 +55,7 @@ import {
 } from "@/lib/chat/media";
 import { PROVIDER_PRESETS, type ProviderConfig } from "@/lib/chat/types";
 import { OutlookConnect } from "@/components/outlook/OutlookConnect";
+import { GitHubConnect } from "@/components/github/GitHubConnect";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -1145,6 +1146,10 @@ function SettingsPage() {
 
           {/* Microsoft Outlook (MSAL / OAuth) */}
           <OutlookConnect />
+
+          {/* GitHub */}
+          <GitHubConnect />
+import { GitHubConnect } from "@/components/github/GitHubConnect";
 
           {/* Data & privacy */}
           <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
