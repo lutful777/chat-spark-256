@@ -43,6 +43,24 @@ export interface GitHubFileContent {
   html_url?: string;
 }
 
+export interface GitHubTreeItem {
+  path: string;
+  mode: string;
+  type: "blob" | "tree" | string;
+  sha: string;
+  size?: number;
+  url?: string;
+}
+
+export interface GitHubCommitCheckRun {
+  name: string;
+  status: string;
+  conclusion?: string | null;
+  html_url?: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+}
+
 export function loadGitHubConfig(): GitHubConfig {
   if (typeof localStorage === "undefined") return { token: "", owner: "", repo: "", branch: "main" };
   try {
@@ -148,6 +166,10 @@ function encodeBase64Utf8(text: string): string {
   return btoa(binary);
 }
 
+function encodePath(path: string): string {
+  return path.split("/").map(encodeURIComponent).join("/");
+}
+
 export async function getFileContent(
   tokenValue: string,
   owner: string,
@@ -155,7 +177,7 @@ export async function getFileContent(
   path: string,
   branch: string,
 ): Promise<GitHubFileContent> {
-  const safePath = path.split("/").map(encodeURIComponent).join("/");
+  const safePath = encodePath(path);
   const data = await githubFetch<GitHubFileContent & { type?: string }>(
     tokenValue,
     `/repos/${owner}/${repo}/contents/${safePath}?ref=${encodeURIComponent(branch || "main")}`,
@@ -175,7 +197,7 @@ export async function updateFileContent(args: {
   content: string;
   message: string;
 }): Promise<{ commit?: { sha: string; html_url?: string }; content?: { sha: string } }> {
-  const safePath = args.path.split("/").map(encodeURIComponent).join("/");
+  const safePath = encodePath(args.path);
   return githubFetch(args.token, `/repos/${args.owner}/${args.repo}/contents/${safePath}`, {
     method: "PUT",
     body: JSON.stringify({
@@ -185,4 +207,126 @@ export async function updateFileContent(args: {
       branch: args.branch || "main",
     }),
   });
+}
+
+async function getBranchHead(args: {
+  token: string;
+  owner: string;
+  repo: string;
+  branch: string;
+}): Promise<{ sha: string }> {
+  const safeBranch = encodePath(args.branch || "main");
+  const data = await githubFetch<{ commit?: { sha?: string } }>(
+    args.token,
+    `/repos/${args.owner}/${args.repo}/branches/${safeBranch}`,
+  );
+  const sha = data.commit?.sha;
+  if (!sha) throw new Error("Tidak bisa membaca branch GitHub.");
+  return { sha };
+}
+
+async function getGitCommit(args: {
+  token: string;
+  owner: string;
+  repo: string;
+  sha: string;
+}): Promise<{ tree: { sha: string } }> {
+  return githubFetch(args.token, `/repos/${args.owner}/${args.repo}/git/commits/${args.sha}`);
+}
+
+export async function getRepositoryTree(args: {
+  token: string;
+  owner: string;
+  repo: string;
+  branch: string;
+}): Promise<GitHubTreeItem[]> {
+  const head = await getBranchHead(args);
+  const commit = await getGitCommit({ ...args, sha: head.sha });
+  const tree = await githubFetch<{ tree?: GitHubTreeItem[]; truncated?: boolean }>(
+    args.token,
+    `/repos/${args.owner}/${args.repo}/git/trees/${commit.tree.sha}?recursive=1`,
+  );
+  return tree.tree ?? [];
+}
+
+export async function commitMultipleFiles(args: {
+  token: string;
+  owner: string;
+  repo: string;
+  branch: string;
+  files: Array<{ path: string; content: string }>;
+  message: string;
+}): Promise<{ sha: string; html_url: string }> {
+  if (args.files.length === 0) throw new Error("Tidak ada file untuk di-commit.");
+
+  const head = await getBranchHead(args);
+  const baseCommit = await getGitCommit({ ...args, sha: head.sha });
+
+  const tree = args.files.map((file) => ({
+    path: file.path,
+    mode: "100644",
+    type: "blob",
+    content: file.content,
+  }));
+
+  const newTree = await githubFetch<{ sha: string }>(
+    args.token,
+    `/repos/${args.owner}/${args.repo}/git/trees`,
+    {
+      method: "POST",
+      body: JSON.stringify({ base_tree: baseCommit.tree.sha, tree }),
+    },
+  );
+
+  const newCommit = await githubFetch<{ sha: string }>(
+    args.token,
+    `/repos/${args.owner}/${args.repo}/git/commits`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        message: args.message.trim() || "AI update",
+        tree: newTree.sha,
+        parents: [head.sha],
+      }),
+    },
+  );
+
+  await githubFetch(
+    args.token,
+    `/repos/${args.owner}/${args.repo}/git/refs/heads/${encodePath(args.branch || "main")}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ sha: newCommit.sha, force: false }),
+    },
+  );
+
+  return {
+    sha: newCommit.sha,
+    html_url: `https://github.com/${args.owner}/${args.repo}/commit/${newCommit.sha}`,
+  };
+}
+
+export async function getCommitStatus(args: {
+  token: string;
+  owner: string;
+  repo: string;
+  ref: string;
+}): Promise<{ state?: string; statuses?: Array<{ state: string; context: string; target_url?: string }> }> {
+  return githubFetch(
+    args.token,
+    `/repos/${args.owner}/${args.repo}/commits/${encodeURIComponent(args.ref)}/status`,
+  );
+}
+
+export async function getCommitCheckRuns(args: {
+  token: string;
+  owner: string;
+  repo: string;
+  ref: string;
+}): Promise<GitHubCommitCheckRun[]> {
+  const data = await githubFetch<{ check_runs?: GitHubCommitCheckRun[] }>(
+    args.token,
+    `/repos/${args.owner}/${args.repo}/commits/${encodeURIComponent(args.ref)}/check-runs?per_page=50`,
+  );
+  return data.check_runs ?? [];
 }
