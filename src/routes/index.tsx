@@ -205,6 +205,8 @@ function ChatPage() {
   };
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    if (target.closest("textarea,input,button,a,[role='dialog']")) return;
     const touch = event.touches[0];
     touchStartRef.current = { x: touch.clientX, y: touch.clientY };
   };
@@ -364,7 +366,7 @@ function ChatPage() {
   const lastAssistantId = [...messages].reverse().find((m) => m.role === "assistant" && !m.error)?.id;
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-background text-foreground" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <div className="keyboard-safe-app flex h-[100dvh] w-full overflow-hidden bg-background text-foreground" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {desktopOpen && <aside className="hidden w-72 shrink-0 border-r border-border/70 bg-sidebar/95 md:block">{sidebar}</aside>}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}><SheetContent side="left" className="w-72 p-0">{sidebar}</SheetContent></Sheet>
       <Sheet open={statusOpen} onOpenChange={setStatusOpen}>
@@ -412,7 +414,7 @@ function ChatPage() {
           <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Menu"><FileText className="size-5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-52"><DropdownMenuItem onClick={() => setStatusOpen(true)}><Sparkles className="mr-2 size-4" /> Status</DropdownMenuItem><DropdownMenuItem asChild><Link to="/settings"><Settings className="mr-2 size-4" /> Settings</Link></DropdownMenuItem><DropdownMenuItem onClick={() => handleExport("txt")} disabled={!messages.length}><Download className="mr-2 size-4" /> Export TXT</DropdownMenuItem><DropdownMenuItem onClick={() => handleExport("json")} disabled={!messages.length}><FileJson className="mr-2 size-4" /> Export JSON</DropdownMenuItem><DropdownMenuItem onClick={handleClear} disabled={!messages.length}><Eraser className="mr-2 size-4" /> Clear Chat</DropdownMenuItem><DropdownMenuItem onClick={handleClearAllChats} disabled={!conversations.length} className="text-destructive focus:text-destructive"><Eraser className="mr-2 size-4" /> Hapus semua chat</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-hidden">
+        <main className="keyboard-safe-main min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-3 py-6 sm:px-4">
               {messages.length === 0 ? <div className="flex min-h-[55vh] flex-col items-center justify-center text-center"><div className="mb-5 rounded-[2rem] border border-border/70 bg-card/80 p-5 shadow-2xl shadow-black/20 backdrop-blur"><Sparkles className="size-9 text-primary" /></div><h1 className="text-3xl font-semibold tracking-tight">Ai Chat</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Pilih mode di header, gunakan Real Time untuk data terbaru, atau GitHub untuk update aplikasi.</p><div className="mt-5 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-3"><PremiumCard title="GitHub Mode" desc="Update web app via chat" /><PremiumCard title="Real Time" desc="Cari data terbaru" /><PremiumCard title="Upload File" desc="Analisis foto/dokumen" /></div></div> : messages.map((m) => <ChatMessageBubble key={m.id} message={m} onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined} onEdit={m.role === "user" ? handleEdit : undefined} onDelete={handleDelete} />)}
