@@ -11,16 +11,12 @@ export interface AiMemoryItem {
   title: string;
   content: string;
   category?: string;
-  tags?: string[];
-  priority?: number;
 }
 
 export interface RepoIndexMemoryItem {
   path: string;
   summary: string;
   file_type?: string;
-  tags?: string[];
-  priority?: number;
 }
 
 export function loadSupabaseMemoryConfig(): SupabaseMemoryConfig {
@@ -86,7 +82,7 @@ export async function fetchAiMemory(limit = 20): Promise<AiMemoryItem[]> {
 
   return supabaseRest<AiMemoryItem[]>(
     config,
-    `ai_memory?select=title,content,category,tags,priority&is_active=eq.true&order=priority.desc,updated_at.desc&limit=${limit}`,
+    `ai_memory?select=title,content,category&order=created_at.desc&limit=${limit}`,
   ).catch(() => []);
 }
 
@@ -96,7 +92,7 @@ export async function fetchRepoIndexMemory(limit = 40): Promise<RepoIndexMemoryI
 
   return supabaseRest<RepoIndexMemoryItem[]>(
     config,
-    `repo_index?select=path,summary,file_type,tags,priority&is_active=eq.true&order=priority.desc,updated_at.desc&limit=${limit}`,
+    `repo_index?select=path,summary,file_type&order=created_at.desc&limit=${limit}`,
   ).catch(() => []);
 }
 
@@ -125,7 +121,7 @@ export async function buildAiMemoryContext(): Promise<string> {
 export async function testSupabaseMemoryConnection(config: SupabaseMemoryConfig): Promise<number> {
   const rows = await supabaseRest<Array<{ id?: string }>>(
     config,
-    "ai_memory?select=id&is_active=eq.true&limit=1",
+    "ai_memory?select=id&limit=1",
   );
   return rows.length;
 }
