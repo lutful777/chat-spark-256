@@ -38,6 +38,7 @@ import { ChatError, sendChat } from "@/lib/chat/api";
 import type { ChatAttachment, ChatMessage } from "@/lib/chat/types";
 import { runOutlookMailCommand } from "@/lib/outlook/chatCommand";
 import { runGitHubChatCommand } from "@/lib/github/chatCommand";
+import { buildAiMemoryContext } from "@/lib/memory/supabaseMemory";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -182,8 +183,18 @@ function ChatPage() {
     let streamed = false;
 
     try {
+      const memoryContext = await buildAiMemoryContext();
+      const providerWithMemory = memoryContext.trim()
+        ? {
+            ...activeProvider,
+            systemPrompt: [activeProvider.systemPrompt?.trim(), memoryContext.trim()]
+              .filter(Boolean)
+              .join("\n\n"),
+          }
+        : activeProvider;
+
       const res = await sendChat({
-        provider: activeProvider,
+        provider: providerWithMemory,
         messages: base,
         signal: controller.signal,
         onToken: (full) => {
@@ -470,7 +481,7 @@ function ChatPage() {
                   </div>
                   <h1 className="text-2xl font-semibold tracking-tight">Mulai chat</h1>
                   <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                    Tulis pertanyaan, upload foto/PDF/file, atau ketik <span className="font-medium">cek inbox terbaru</span>, <span className="font-medium">cari email dari Shopee</span>, <span className="font-medium">cari PDF di Outlook</span>, atau <span className="font-medium">hapus tombol outlook</span>.
+                    Tulis pertanyaan, upload foto/PDF/file, atau gunakan perintah Outlook/GitHub jika sudah terkoneksi.
                   </p>
                 </div>
               ) : (
