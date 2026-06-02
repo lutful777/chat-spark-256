@@ -109,7 +109,13 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
       const text = value.trim();
       if ((!text && attachments.length === 0) || loading || disabled || readingFiles) return;
       const messageText = text || "Tolong analisis file yang saya upload.";
-      onSend(mode === "github" ? `[GITHUB]\n${messageText}` : messageText, attachments, mode === "realtime");
+      const withMode =
+        mode === "github"
+          ? `[GITHUB]\n${messageText}`
+          : mode === "realtime"
+            ? `[REALTIME]\n${messageText}`
+            : messageText;
+      onSend(withMode, attachments, mode === "realtime");
       setValue("");
       setAttachments([]);
       requestAnimationFrame(() => {
@@ -182,6 +188,10 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
                 <p className="mb-1 px-1 text-[11px] font-medium text-muted-foreground">Command GitHub</p>
                 <CommandOption onClick={() => fillGithubCommand("Tambah tombol ")} label="Tambah tombol" />
                 <CommandOption onClick={() => fillGithubCommand("Hapus tombol ")} label="Hapus tombol" />
+                <CommandOption onClick={() => fillGithubCommand("Perbaiki error ")} label="Perbaiki error" />
+                <CommandOption onClick={() => fillGithubCommand("cek build")} label="Cek build" />
+                <CommandOption onClick={() => fillGithubCommand("PUSH")} label="Push" />
+                <CommandOption onClick={() => fillGithubCommand("batal")} label="Batal" />
               </div>
             </div>
           )}
