@@ -36,6 +36,7 @@ import { useChatStore } from "@/lib/chat/store";
 import { uid } from "@/lib/chat/storage";
 import { ChatError, sendChat } from "@/lib/chat/api";
 import type { ChatMessage } from "@/lib/chat/types";
+import { runOutlookMailCommand } from "@/lib/outlook/chatCommand";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -99,7 +100,6 @@ function ChatPage() {
     !!activeProvider?.apiKey.trim() &&
     !!activeProvider?.model.trim();
 
-  // value encodes provider + selected model: "providerId:::modelName"
   const selectedValue =
     activeProviderId && activeProvider?.model
       ? `${activeProviderId}:::${activeProvider.model}`
@@ -159,7 +159,6 @@ function ChatPage() {
     abortRef.current?.abort();
   };
 
-  // Run a completion for the given base history and append the assistant reply.
   const runCompletion = async (convId: string, base: ChatMessage[]) => {
     if (!activeProvider) return;
     setConversationProvider(convId, activeProvider.id);
@@ -197,7 +196,6 @@ function ChatPage() {
     } catch (err) {
       const message =
         err instanceof ChatError ? err.message : "Terjadi kesalahan tak terduga.";
-      // keep any partially streamed text only if it was a deliberate stop
       if (!(streamed && message === "Permintaan dibatalkan.")) {
         const errorMsg: ChatMessage = {
           id: uid(),
@@ -216,15 +214,6 @@ function ChatPage() {
   };
 
   const handleSend = async (text: string) => {
-    if (!activeProvider) {
-      toast.error("Tambahkan provider API terlebih dahulu di Settings.");
-      return;
-    }
-    if (!canSend) {
-      toast.error("Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu.");
-      return;
-    }
-
     let convId = activeId;
     if (!convId) {
       convId = createConversation();
@@ -240,12 +229,50 @@ function ChatPage() {
     };
     const withUser = [...existing, userMsg];
     setConversationMessages(convId, withUser);
+
+    setLoading(true);
+    try {
+      const outlookReply = await runOutlookMailCommand(text);
+      if (outlookReply) {
+        const assistantMsg: ChatMessage = {
+          id: uid(),
+          role: "assistant",
+          content: outlookReply,
+          createdAt: Date.now(),
+        };
+        setConversationMessages(convId, [...withUser, assistantMsg]);
+        return;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Gagal mencari email Outlook.";
+      const errorMsg: ChatMessage = {
+        id: uid(),
+        role: "assistant",
+        content: message,
+        createdAt: Date.now(),
+        error: true,
+      };
+      setConversationMessages(convId, [...withUser, errorMsg]);
+      toast.error(message);
+      return;
+    } finally {
+      setLoading(false);
+    }
+
+    if (!activeProvider) {
+      toast.error("Tambahkan provider API terlebih dahulu di Settings.");
+      return;
+    }
+    if (!canSend) {
+      toast.error("Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu.");
+      return;
+    }
+
     await runCompletion(convId, withUser);
   };
 
   const handleRegenerate = async () => {
     if (!activeId || loading || !canSend) return;
-    // drop trailing assistant message(s) and re-run from the last user turn
     let base = [...messages];
     while (base.length && base[base.length - 1].role === "assistant") {
       base = base.slice(0, -1);
@@ -372,10 +399,7 @@ function ChatPage() {
           </div>
 
           {providers.length > 0 && (
-            <Select
-              value={selectedValue}
-              onValueChange={handleProviderModelChange}
-            >
+            <Select value={selectedValue} onValueChange={handleProviderModelChange}>
               <SelectTrigger className="hidden h-9 w-56 rounded-xl text-xs sm:flex">
                 <SelectValue placeholder="Pilih provider" />
               </SelectTrigger>
@@ -385,128 +409,69 @@ function ChatPage() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={!activeConversation || messages.length === 0}
-                aria-label="Ekspor chat"
-              >
-                <Download className="size-5" />
+              <Button variant="ghost" size="icon" aria-label="Menu">
+                <FileText className="size-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport("txt")}>
-                <FileText className="mr-2 size-4" /> Ekspor .txt
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem asChild>
+                <Link to="/settings">
+                  <Settings className="mr-2 size-4" /> Settings
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("json")}>
-                <FileJson className="mr-2 size-4" /> Ekspor .json
+              <DropdownMenuItem onClick={() => handleExport("txt")} disabled={!messages.length}>
+                <Download className="mr-2 size-4" /> Export TXT
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("json")} disabled={!messages.length}>
+                <FileJson className="mr-2 size-4" /> Export JSON
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleClear} disabled={!messages.length}>
+                <Eraser className="mr-2 size-4" /> Clear Chat
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleClear}
-            disabled={!activeConversation || messages.length === 0}
-            aria-label="Bersihkan chat"
-          >
-            <Eraser className="size-5" />
-          </Button>
         </header>
 
-        {/* Mobile provider selector */}
-        {providers.length > 0 && (
-          <div className="border-b border-border px-3 py-2 sm:hidden">
-            <Select
-              value={selectedValue}
-              onValueChange={handleProviderModelChange}
-            >
-              <SelectTrigger className="h-9 w-full rounded-xl text-xs">
-                <SelectValue placeholder="Pilih provider" />
-              </SelectTrigger>
-              <SelectContent>{providerModelItems}</SelectContent>
-            </Select>
-          </div>
-        )}
-
-        <ScrollArea className="min-w-0 flex-1 [&>div>div]:!block [&>div>div]:!min-w-0">
-          <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 overflow-x-hidden px-3 py-5">
-            {messages.length === 0 && !loading ? (
-              <EmptyState hasProvider={providers.length > 0} canSend={canSend} />
-            ) : (
-              messages.map((m) => (
-                <ChatMessageBubble
-                  key={m.id}
-                  message={m}
-                  onRegenerate={
-                    !loading && canSend && m.id === lastAssistantId
-                      ? handleRegenerate
-                      : undefined
-                  }
-                  onEdit={m.role === "user" && !loading ? () => handleEdit(m) : undefined}
-                  onDelete={!loading ? () => handleDelete(m) : undefined}
-                />
-              ))
-            )}
-            {loading && messages[messages.length - 1]?.role === "user" && (
-              <div className="flex justify-start">
-                <div className="rounded-2xl rounded-bl-md border border-border bg-card px-3 py-1">
-                  <TypingIndicator />
+        <main className="min-h-0 flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-3 py-6 sm:px-4">
+              {messages.length === 0 ? (
+                <div className="flex min-h-[55vh] flex-col items-center justify-center text-center">
+                  <div className="mb-4 rounded-3xl border border-border bg-card p-4 shadow-sm">
+                    <Sparkles className="size-8 text-primary" />
+                  </div>
+                  <h1 className="text-2xl font-semibold tracking-tight">Mulai chat</h1>
+                  <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                    Tulis pertanyaan, atau ketik <span className="font-medium">cek inbox terbaru</span>, <span className="font-medium">cari email dari Shopee</span>, atau <span className="font-medium">cari PDF di Outlook</span>.
+                  </p>
                 </div>
-              </div>
-            )}
-            <div ref={scrollEndRef} />
-          </div>
-        </ScrollArea>
+              ) : (
+                messages.map((m) => (
+                  <ChatMessageBubble
+                    key={m.id}
+                    message={m}
+                    onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined}
+                    onEdit={m.role === "user" ? handleEdit : undefined}
+                    onDelete={handleDelete}
+                  />
+                ))
+              )}
+              {loading && <TypingIndicator />}
+              <div ref={scrollEndRef} />
+            </div>
+          </ScrollArea>
+        </main>
 
         <ChatInput
           ref={inputRef}
+          disabled={loading}
+          canSend={true}
           onSend={handleSend}
           onStop={handleStop}
           loading={loading}
-          disabled={!canSend}
-          placeholder={
-            providers.length === 0
-              ? "Tambahkan provider di Settings…"
-              : !canSend
-                ? "Lengkapi Base URL, API Path, API Key, dan Model di Settings…"
-                : `Pesan ke ${activeProvider?.name}…`
-          }
+          placeholder="Ketik pesan, atau: cek inbox terbaru / cari email dari Shopee / cari PDF di Outlook"
         />
       </div>
-    </div>
-  );
-}
-
-function EmptyState({
-  hasProvider,
-  canSend,
-}: {
-  hasProvider: boolean;
-  canSend: boolean;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-      <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-        <Sparkles className="size-7" />
-      </div>
-      <h1 className="text-lg font-semibold">Mulai percakapan</h1>
-      <p className="max-w-sm text-sm text-muted-foreground">
-        {!hasProvider
-          ? "Tambahkan provider API terlebih dahulu di Settings, lalu masukkan API key milik Anda."
-          : !canSend
-            ? "Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu."
-            : "Ketik pesan di bawah untuk mengobrol dengan model AI Anda."}
-      </p>
-      {(!hasProvider || !canSend) && (
-        <Button asChild variant="outline" className="mt-1 rounded-xl">
-          <Link to="/settings">
-            <Settings className="mr-2 size-4" />
-            Buka Settings
-          </Link>
-        </Button>
-      )}
     </div>
   );
 }
