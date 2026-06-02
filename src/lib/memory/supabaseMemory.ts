@@ -1,4 +1,5 @@
 const MEMORY_CONFIG_KEY = "aiapichat:supabase-memory";
+const DEFAULT_SUPABASE_URL = "https://qxzkjnpbavbmolzomrwy.supabase.co";
 
 export interface SupabaseMemoryConfig {
   url: string;
@@ -24,29 +25,32 @@ export interface RepoIndexMemoryItem {
 
 export function loadSupabaseMemoryConfig(): SupabaseMemoryConfig {
   if (typeof localStorage === "undefined") {
-    return { url: "", anonKey: "", enabled: false };
+    return { url: DEFAULT_SUPABASE_URL, anonKey: "", enabled: false };
   }
 
   try {
     const raw = localStorage.getItem(MEMORY_CONFIG_KEY);
-    if (!raw) return { url: "", anonKey: "", enabled: false };
+    if (!raw) return { url: DEFAULT_SUPABASE_URL, anonKey: "", enabled: false };
     const parsed = JSON.parse(raw) as Partial<SupabaseMemoryConfig>;
     return {
-      url: parsed.url ?? "",
+      url: parsed.url || DEFAULT_SUPABASE_URL,
       anonKey: parsed.anonKey ?? "",
       enabled: !!parsed.enabled,
     };
   } catch {
-    return { url: "", anonKey: "", enabled: false };
+    return { url: DEFAULT_SUPABASE_URL, anonKey: "", enabled: false };
   }
 }
 
 export function saveSupabaseMemoryConfig(config: SupabaseMemoryConfig): void {
-  localStorage.setItem(MEMORY_CONFIG_KEY, JSON.stringify(config));
+  localStorage.setItem(
+    MEMORY_CONFIG_KEY,
+    JSON.stringify({ ...config, url: config.url || DEFAULT_SUPABASE_URL }),
+  );
 }
 
 function cleanBaseUrl(url: string): string {
-  return url.trim().replace(/\/$/, "");
+  return (url || DEFAULT_SUPABASE_URL).trim().replace(/\/$/, "");
 }
 
 async function supabaseRest<T>(
