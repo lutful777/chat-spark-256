@@ -21,6 +21,7 @@ interface ChatInputProps {
   onStop?: () => void;
   loading?: boolean;
   disabled?: boolean;
+  canSend?: boolean;
   placeholder?: string;
 }
 
@@ -75,6 +76,26 @@ async function fileToAttachment(file: File): Promise<ChatAttachment> {
   return attachment;
 }
 
+function buildTextWithAttachments(text: string, attachments: ChatAttachment[]): string {
+  if (attachments.length === 0) return text;
+
+  const fileContext = attachments
+    .map((att, i) => {
+      const header = `File ${i + 1}: ${att.name} (${att.type || "unknown"}, ${formatSize(att.size)})`;
+      if (att.text) return `${header}\nIsi file:\n${att.text}`;
+      if (att.type.startsWith("image/")) {
+        return `${header}\nCatatan: ini adalah file gambar/foto yang diupload. Jika model AI mendukung vision, gunakan gambar ini sebagai konteks. Jika tidak, minta user menjelaskan isi gambar.`;
+      }
+      if (att.type === "application/pdf" || att.name.toLowerCase().endsWith(".pdf")) {
+        return `${header}\nCatatan: PDF terlampir. Browser menyimpan file ini sebagai attachment, tetapi isi PDF belum diekstrak otomatis.`;
+      }
+      return `${header}\nCatatan: file terlampir.`;
+    })
+    .join("\n\n");
+
+  return `${text || "Tolong analisis file yang saya upload."}\n\n---\nFile yang diupload:\n${fileContext}`;
+}
+
 export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
   function ChatInput({ onSend, onStop, loading, disabled, placeholder }, handleRef) {
     const [value, setValue] = useState("");
@@ -103,7 +124,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
     const submit = () => {
       const text = value.trim();
       if ((!text && attachments.length === 0) || loading || disabled || readingFiles) return;
-      onSend(text || "Tolong analisis file yang saya upload.", attachments);
+      onSend(buildTextWithAttachments(text, attachments), attachments);
       setValue("");
       setAttachments([]);
       requestAnimationFrame(() => {
