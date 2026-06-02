@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VideoRouteImport } from './routes/video'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as OutlookRouteImport } from './routes/outlook'
 import { Route as ImageRouteImport } from './routes/image'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicProxyRouteImport } from './routes/api/public/proxy'
@@ -26,6 +27,11 @@ const VideoRoute = VideoRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OutlookRoute = OutlookRouteImport.update({
+  id: '/outlook',
+  path: '/outlook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ImageRoute = ImageRouteImport.update({
@@ -62,6 +68,7 @@ const ApiPublicExtractFrameRoute = ApiPublicExtractFrameRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/image': typeof ImageRoute
+  '/outlook': typeof OutlookRoute
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
   '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/image': typeof ImageRoute
+  '/outlook': typeof OutlookRoute
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
   '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/image': typeof ImageRoute
+  '/outlook': typeof OutlookRoute
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
   '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/image'
+    | '/outlook'
     | '/settings'
     | '/video'
     | '/api/public/extract-frame'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/image'
+    | '/outlook'
     | '/settings'
     | '/video'
     | '/api/public/extract-frame'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/image'
+    | '/outlook'
     | '/settings'
     | '/video'
     | '/api/public/extract-frame'
@@ -126,6 +138,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ImageRoute: typeof ImageRoute
+  OutlookRoute: typeof OutlookRoute
   SettingsRoute: typeof SettingsRoute
   VideoRoute: typeof VideoRoute
   ApiPublicExtractFrameRoute: typeof ApiPublicExtractFrameRoute
@@ -148,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/outlook': {
+      id: '/outlook'
+      path: '/outlook'
+      fullPath: '/outlook'
+      preLoaderRoute: typeof OutlookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/image': {
@@ -198,6 +218,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ImageRoute: ImageRoute,
+  OutlookRoute: OutlookRoute,
   SettingsRoute: SettingsRoute,
   VideoRoute: VideoRoute,
   ApiPublicExtractFrameRoute: ApiPublicExtractFrameRoute,

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ImageIcon, MessageSquare, Video } from "lucide-react";
+import { ImageIcon, Mail, MessageSquare, Video } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -7,6 +7,7 @@ const TABS = [
   { to: "/", label: "Chat", icon: MessageSquare, exact: true },
   { to: "/image", label: "Image", icon: ImageIcon, exact: false },
   { to: "/video", label: "Video", icon: Video, exact: false },
+  { to: "/outlook", label: "Outlook", icon: Mail, exact: false },
 ] as const;
 
 export function MediaNav({ className }: { className?: string }) {

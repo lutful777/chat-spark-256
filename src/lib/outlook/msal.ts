@@ -20,8 +20,6 @@ const OUTLOOK_KEY = "aiapichat:outlook";
 export const OUTLOOK_SCOPES = [
   "User.Read",
   "Mail.Read",
-  "Mail.Send",
-  "Calendars.Read",
   "offline_access",
 ];
 
@@ -117,12 +115,18 @@ export async function getActiveAccount(
  * Interactive sign-in. Shows the Microsoft account picker so the user can
  * choose an already-signed-in account or add a new one. Requires explicit
  * user consent — never reads an account silently.
+ *
+ * Pass `promptMode = "select_account"` (default) to always show the picker,
+ * or `"none"` to silently re-use an existing session if one exists.
  */
-export async function connectOutlook(config: OutlookConfig): Promise<AccountInfo> {
+export async function connectOutlook(
+  config: OutlookConfig,
+  promptMode: "select_account" | "none" = "select_account",
+): Promise<AccountInfo> {
   const inst = await getInstance(config);
   const result = await inst.loginPopup({
     scopes: OUTLOOK_SCOPES,
-    prompt: "select_account",
+    prompt: promptMode,
   });
   if (!result.account) {
     throw new Error("Tidak ada akun yang dipilih.");
