@@ -63,6 +63,8 @@
 
 :root {
   --radius: 1rem;
+  --app-stable-height: 100dvh;
+  --keyboard-offset: 0px;
   /* App is dark-only; :root mirrors the dark palette so it works without the .dark class */
   --background: oklch(0.16 0.018 264);
   --foreground: oklch(0.96 0.005 264);
@@ -103,10 +105,45 @@
     border-color: var(--color-border);
   }
 
+  html,
   body {
+    width: 100%;
+    min-height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
+
+  body {
+    position: fixed;
+    inset: 0;
+  }
+
+  #root,
+  #__next {
+    min-height: var(--app-stable-height);
+  }
+}
+
+.keyboard-open body {
+  height: var(--app-stable-height);
+}
+
+.keyboard-safe-app {
+  height: var(--app-stable-height) !important;
+  max-height: var(--app-stable-height) !important;
+  transform: translate3d(0, 0, 0);
+}
+
+.keyboard-open .keyboard-safe-input {
+  transform: translate3d(0, calc(var(--keyboard-offset) * -1), 0);
+  transition: transform 120ms ease-out;
+  will-change: transform;
+}
+
+.keyboard-open .keyboard-safe-main {
+  padding-bottom: calc(var(--keyboard-offset) + 0.75rem);
 }
 
 /* Hide the Lovable editor badge if it is injected inside the app DOM. */
