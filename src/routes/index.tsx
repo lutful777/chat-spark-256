@@ -69,6 +69,7 @@ function ChatPage() {
     createConversation,
     removeConversation,
     clearConversation,
+    clearAllConversations,
     renameConversation,
     setConversationMessages,
     setConversationProvider,
@@ -153,6 +154,15 @@ function ChatPage() {
     if (!activeId) return;
     clearConversation(activeId);
     toast.success("Chat dibersihkan");
+  };
+
+  const handleClearAllChats = () => {
+    if (conversations.length === 0) return;
+    if (!confirm("Hapus semua riwayat chat? API key dan provider tidak akan dihapus.")) return;
+    clearAllConversations();
+    setActiveId(null);
+    setMobileOpen(false);
+    toast.success("Semua riwayat chat dihapus.");
   };
 
   const handleStop = () => {
@@ -353,6 +363,7 @@ function ChatPage() {
         removeConversation(id);
         if (id === activeId) setActiveId(null);
       }}
+      onClearAll={handleClearAllChats}
     />
   );
 
@@ -429,6 +440,9 @@ function ChatPage() {
               <DropdownMenuItem onClick={handleClear} disabled={!messages.length}>
                 <Eraser className="mr-2 size-4" /> Clear Chat
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleClearAllChats} disabled={!conversations.length} className="text-destructive focus:text-destructive">
+                <Eraser className="mr-2 size-4" /> Hapus semua chat
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
@@ -470,7 +484,7 @@ function ChatPage() {
           onSend={handleSend}
           onStop={handleStop}
           loading={loading}
-          placeholder="Ketik pesan, upload file, atau: cek inbox terbaru / cari email dari Shopee"
+          placeholder="Ketik pesan"
         />
       </div>
     </div>
