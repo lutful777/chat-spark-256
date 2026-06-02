@@ -1,4 +1,5 @@
 const MEMORY_CONFIG_KEY = "aiapichat:supabase-memory";
+const AUTO_MEMORY_LAST_KEY = "aiapichat:supabase-memory:last-auto-save";
 const DEFAULT_SUPABASE_URL = "https://qxzkjnpbavbmolzomrwy.supabase.co";
 
 export interface SupabaseMemoryConfig {
@@ -73,7 +74,16 @@ async function supabaseRest<T>(
     throw new Error(`Supabase ${res.status}: ${body || res.statusText}`);
   }
 
-  return (await res.json()) as T;
+  const text = await res.text();
+  return (text ? JSON.parse(text) : null) as T;
+}
+
+async function supabaseInsert(config: SupabaseMemoryConfig, path: string, body: unknown): Promise<void> {
+  await supabaseRest<null>(config, path, {
+    method: "POST",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify(body),
+  });
 }
 
 export async function fetchAiMemory(limit = 20): Promise<AiMemoryItem[]> {
@@ -124,4 +134,94 @@ export async function testSupabaseMemoryConnection(config: SupabaseMemoryConfig)
     "ai_memory?select=id&limit=1",
   );
   return rows.length;
+}
+
+function cleanMemoryText(text: string): string {
+  return text
+    .replace(/^\[(GITHUB|REALTIME)\]\s*/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function containsSensitiveValue(text: string): boolean {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes("sb_secret_") ||
+    lower.includes("service_role") ||
+    lower.includes("api key") ||
+    lower.includes("apikey") ||
+    lower.includes("secret key") ||
+    lower.includes("password") ||
+    /\b(sk-|ghp_|github_pat_|xai-|or-)[a-z0-9_\-]{12,}/i.test(text)
+  );
+}
+
+function isImportantForProject(text: string): boolean {
+  const lower = text.toLowerCase();
+  return [
+    "github",
+    "supabase",
+    "lovable",
+    "settings",
+    "setting",
+    "tombol",
+    "error",
+    "bug",
+    "build",
+    "deploy",
+    "memory",
+    "memori",
+    "outlook",
+    "real time",
+    "realtime",
+    "aplikasi",
+    "web app",
+    "provider",
+    "model",
+  ].some((word) => lower.includes(word));
+}
+
+export async function saveAiMemoryNote(title: string, content: string, category = "auto"): Promise<void> {
+  const config = loadSupabaseMemoryConfig();
+  if (!config.enabled || !config.url || !config.anonKey) return;
+
+  const safeTitle = cleanMemoryText(title).slice(0, 120);
+  const safeContent = cleanMemoryText(content).slice(0, 1800);
+  if (!safeTitle || !safeContent) return;
+  if (containsSensitiveValue(`${safeTitle}\n${safeContent}`)) return;
+
+  await supabaseInsert(config, "ai_memory", {
+    title: safeTitle,
+    content: safeContent,
+    category,
+    tags: ["auto", "chat"],
+    priority: 20,
+    is_active: true,
+  });
+}
+
+export async function autoSaveImportantMemory(userText: string, assistantText: string): Promise<void> {
+  try {
+    const cleanUser = cleanMemoryText(userText);
+    const cleanAssistant = cleanMemoryText(assistantText);
+    if (!cleanUser || !cleanAssistant) return;
+    if (!isImportantForProject(`${cleanUser}\n${cleanAssistant}`)) return;
+    if (containsSensitiveValue(`${cleanUser}\n${cleanAssistant}`)) return;
+
+    const title = `Auto: ${cleanUser.slice(0, 90)}`;
+    const content = [
+      `User request: ${cleanUser.slice(0, 300)}`,
+      `Assistant result: ${cleanAssistant.slice(0, 700)}`,
+    ].join("\n");
+
+    const marker = `${title}\n${content}`;
+    if (typeof localStorage !== "undefined") {
+      if (localStorage.getItem(AUTO_MEMORY_LAST_KEY) === marker) return;
+      localStorage.setItem(AUTO_MEMORY_LAST_KEY, marker);
+    }
+
+    await saveAiMemoryNote(title, content, "auto");
+  } catch {
+    // Memory saving must never break chat.
+  }
 }
