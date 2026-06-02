@@ -1,5 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import {
+  isXaiUrl,
+  estimateCost,
+  checkBudget,
+  debitBudget,
+} from "@/lib/server/budget";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +18,9 @@ const corsHeaders = {
  * Generic forwarding proxy for media (image/video) endpoints.
  * Forwards an arbitrary JSON payload (or a GET poll) to {baseUrl}{path}
  * using the user's own API key. No keys are stored server-side.
+ *
+ * x.ai POST requests (initial generation, not status-polling GETs) are
+ * gated by a configurable daily USD budget (DAILY_XAI_BUDGET_USD env var).
  */
 const RequestSchema = z.object({
   method: z.enum(["GET", "POST"]).optional().default("POST"),
@@ -50,6 +59,21 @@ export const Route = createFileRoute("/api/public/media-proxy")({
         }
 
         const { method, baseUrl, path, apiKey, payload } = parsed.data;
+
+        // ── x.ai daily budget gate ────────────────────────────────────────────
+        // Only applies to POST (initial generation) requests, not GET polls.
+        if (method === "POST" && isXaiUrl(baseUrl)) {
+          const cost = estimateCost({ path, payload });
+          const check = checkBudget(cost);
+          if (!check.allowed) {
+            return json({ error: check.message }, 429);
+          }
+          // Debit optimistically — if upstream fails the cost is still logged
+          // (acceptable for a budget guard; avoids under-counting retries).
+          debitBudget(cost);
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         const target = `${baseUrl.replace(/\/$/, "")}${path.startsWith("/") ? "" : "/"}${path}`;
 
         const controller = new AbortController();

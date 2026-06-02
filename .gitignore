@@ -20,6 +20,9 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# x.ai daily budget tracker (auto-generated, resets daily)
+.xai-budget.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
