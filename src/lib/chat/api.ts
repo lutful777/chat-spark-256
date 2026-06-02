@@ -1,4 +1,4 @@
-import type { ChatMessage, ProviderConfig } from "./types";
+import type { ChatAttachment, ChatMessage, ProviderConfig } from "./types";
 
 export interface ChatResult {
   content: string;
@@ -10,6 +10,16 @@ export class ChatError extends Error {
     this.name = "ChatError";
   }
 }
+
+type ApiMessage = {
+  role: ChatMessage["role"];
+  content:
+    | string
+    | Array<
+        | { type: "text"; text: string }
+        | { type: "image_url"; image_url: { url: string } }
+      >;
+};
 
 function buildTarget(provider: ProviderConfig): string {
   const base = provider.baseUrl.replace(/\/$/, "");
@@ -29,7 +39,7 @@ function mapStatusToMessage(status: number, body: string): string {
 
   switch (status) {
     case 400:
-      return `Permintaan ditolak (400). Model mungkin tidak tersedia atau parameter salah.${
+      return `Permintaan ditolak (400). Model mungkin tidak support gambar/file, model tidak tersedia, atau parameter salah.${
         detail ? ` Detail: ${detail}` : ""
       }`;
     case 401:
@@ -52,10 +62,31 @@ function mapStatusToMessage(status: number, body: string): string {
   }
 }
 
-function toApiMessages(messages: ChatMessage[]) {
+function getImageAttachments(attachments?: ChatAttachment[]): ChatAttachment[] {
+  return (attachments ?? []).filter((att) => att.type.startsWith("image/") && att.dataUrl);
+}
+
+function toApiContent(message: ChatMessage): ApiMessage["content"] {
+  const images = getImageAttachments(message.attachments);
+  if (message.role !== "user" || images.length === 0) return message.content;
+
+  return [
+    { type: "text", text: message.content || "Tolong analisis gambar yang saya upload." },
+    ...images.map((image) => ({
+      type: "image_url" as const,
+      image_url: { url: image.dataUrl! },
+    })),
+  ];
+}
+
+function toApiMessages(messages: ChatMessage[]): ApiMessage[] {
   return messages
-    .filter((m) => !m.error && m.content.trim().length > 0)
-    .map((m) => ({ role: m.role, content: m.content }));
+    .filter(
+      (m) =>
+        !m.error &&
+        (m.content.trim().length > 0 || getImageAttachments(m.attachments).length > 0),
+    )
+    .map((m) => ({ role: m.role, content: toApiContent(m) }));
 }
 
 function buildMessages(provider: ProviderConfig, messages: ChatMessage[]) {
@@ -65,6 +96,10 @@ function buildMessages(provider: ProviderConfig, messages: ChatMessage[]) {
     return [{ role: "system" as const, content: sys }, ...out];
   }
   return out;
+}
+
+function hasImages(messages: ChatMessage[]): boolean {
+  return messages.some((m) => getImageAttachments(m.attachments).length > 0);
 }
 
 export interface SendChatOptions {
@@ -88,7 +123,9 @@ export async function sendChat({
     throw new ChatError("Model belum diisi. Buka Settings untuk mengaturnya.");
   }
 
-  const wantStream = !!provider.stream && !!onToken;
+  // Many OpenAI-compatible providers support image content in non-streaming mode only.
+  const containsImage = hasImages(messages);
+  const wantStream = !!provider.stream && !!onToken && !containsImage;
 
   const payload = {
     model: provider.model.trim(),
