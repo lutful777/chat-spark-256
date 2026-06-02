@@ -6,7 +6,7 @@ import {
   type ChangeEvent,
   type KeyboardEvent,
 } from "react";
-import { FileUp, Search, Send, Square, X } from "lucide-react";
+import { FileUp, Github, Search, Send, Square, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +24,8 @@ interface ChatInputProps {
   canSend?: boolean;
   placeholder?: string;
 }
+
+type ChatMode = "normal" | "realtime" | "github";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -81,7 +83,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
     const [value, setValue] = useState("");
     const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
     const [readingFiles, setReadingFiles] = useState(false);
-    const [realtime, setRealtime] = useState(false);
+    const [mode, setMode] = useState<ChatMode>("normal");
     const ref = useRef<HTMLTextAreaElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
 
@@ -105,7 +107,8 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
     const submit = () => {
       const text = value.trim();
       if ((!text && attachments.length === 0) || loading || disabled || readingFiles) return;
-      onSend(text || "Tolong analisis file yang saya upload.", attachments, realtime);
+      const messageText = text || "Tolong analisis file yang saya upload.";
+      onSend(mode === "github" ? `[GITHUB]\n${messageText}` : messageText, attachments, mode === "realtime");
       setValue("");
       setAttachments([]);
       requestAnimationFrame(() => {
@@ -137,6 +140,9 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
       setAttachments((prev) => prev.filter((x) => x.id !== id));
     };
 
+    const activeLabel = mode === "github" ? "GitHub" : mode === "realtime" ? "Real Time" : "";
+    const ActiveIcon = mode === "github" ? Github : Search;
+
     return (
       <div className="border-t border-border bg-background/80 px-3 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto w-full max-w-3xl space-y-2">
@@ -159,14 +165,14 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             </div>
           )}
 
-          {realtime && (
+          {mode !== "normal" && (
             <div className="flex">
               <button
                 type="button"
-                onClick={() => setRealtime(false)}
+                onClick={() => setMode("normal")}
                 className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary"
               >
-                <Search className="size-4" /> Real Time <X className="size-4" />
+                <ActiveIcon className="size-4" /> {activeLabel} <X className="size-4" />
               </button>
             </div>
           )}
@@ -195,8 +201,20 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             <Button
               type="button"
               size="icon"
-              variant={realtime ? "default" : "outline"}
-              onClick={() => setRealtime((v) => !v)}
+              variant={mode === "github" ? "default" : "outline"}
+              onClick={() => setMode((v) => (v === "github" ? "normal" : "github"))}
+              disabled={disabled || loading}
+              className="size-11 shrink-0 rounded-2xl"
+              aria-label="Mode GitHub"
+              title="Mode GitHub"
+            >
+              <Github className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant={mode === "realtime" ? "default" : "outline"}
+              onClick={() => setMode((v) => (v === "realtime" ? "normal" : "realtime"))}
               disabled={disabled || loading}
               className="size-11 shrink-0 rounded-2xl"
               aria-label="Real time search"
@@ -214,7 +232,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               onKeyDown={onKeyDown}
               rows={1}
               disabled={disabled}
-              placeholder={realtime ? "Real Time" : "Ketik pesan"}
+              placeholder={mode === "github" ? "GitHub" : mode === "realtime" ? "Real Time" : "Ketik pesan"}
               className="max-h-40 min-h-[44px] flex-1 resize-none rounded-2xl bg-card"
             />
             {loading ? (
