@@ -7,6 +7,8 @@ import {
   Download,
   ExternalLink,
   FileText,
+  FolderOpen,
+  Inbox,
   Loader2,
   LogOut,
   Mail,
@@ -42,9 +44,12 @@ import {
   downloadAttachment,
   formatBytes,
   getAttachments,
+  listMailFolders,
   searchMessages,
   type GraphAttachment,
+  type GraphMailFolder,
   type GraphMessage,
+  type MailFolderTarget,
   type SearchIn,
 } from "@/lib/outlook/graph";
 
@@ -54,14 +59,12 @@ export const Route = createFileRoute("/outlook")({
       { title: "Outlook Search — AI Chat" },
       {
         name: "description",
-        content: "Cari email Outlook dengan AI — keyword, pengirim, subjek, lampiran PDF.",
+        content: "Cari email Outlook di semua folder: inbox, sent, junk, custom folder, dan PDF.",
       },
     ],
   }),
   component: OutlookSearchPage,
 });
-
-/* ─── types ─────────────────────────────────────────────────────────────── */
 
 interface MessageWithAttachments extends GraphMessage {
   attachments?: GraphAttachment[];
@@ -70,9 +73,27 @@ interface MessageWithAttachments extends GraphMessage {
   attachmentsError?: string;
 }
 
-/* ─── helpers ────────────────────────────────────────────────────────────── */
+const SEARCH_IN_OPTIONS: { value: SearchIn; label: string }[] = [
+  { value: "all", label: "Semua bidang" },
+  { value: "subject", label: "Subjek" },
+  { value: "from", label: "Pengirim" },
+  { value: "body", label: "Isi email" },
+  { value: "filename", label: "Nama file lampiran" },
+  { value: "pdf", label: "File PDF saja" },
+];
 
-function formatDate(iso: string): string {
+const DEFAULT_FOLDER_OPTIONS: { value: MailFolderTarget; label: string }[] = [
+  { value: "all", label: "All Mail / Semua folder" },
+  { value: "wellKnown:inbox", label: "Inbox" },
+  { value: "wellKnown:sentitems", label: "Sent Items" },
+  { value: "wellKnown:junkemail", label: "Junk Email" },
+  { value: "wellKnown:drafts", label: "Drafts" },
+  { value: "wellKnown:archive", label: "Archive" },
+  { value: "wellKnown:deleteditems", label: "Deleted Items" },
+];
+
+function formatDate(iso?: string | null): string {
+  if (!iso) return "—";
   try {
     return new Date(iso).toLocaleString(undefined, {
       day: "2-digit",
@@ -86,26 +107,27 @@ function formatDate(iso: string): string {
   }
 }
 
-const SEARCH_IN_OPTIONS: { value: SearchIn; label: string }[] = [
-  { value: "all", label: "Semua bidang" },
-  { value: "subject", label: "Subjek" },
-  { value: "from", label: "Pengirim" },
-  { value: "body", label: "Isi email" },
-  { value: "filename", label: "Nama file lampiran" },
-  { value: "pdf", label: "File PDF saja" },
-];
+function messageDate(msg: GraphMessage): string {
+  return msg.receivedDateTime || msg.sentDateTime || "";
+}
 
-/* ─── main page ──────────────────────────────────────────────────────────── */
+function folderLabel(value: MailFolderTarget, folders: GraphMailFolder[]): string {
+  const builtIn = DEFAULT_FOLDER_OPTIONS.find((x) => x.value === value)?.label;
+  if (builtIn) return builtIn;
+  const f = folders.find((x) => x.id === value);
+  return f?.path ?? f?.displayName ?? "Folder";
+}
 
 function OutlookSearchPage() {
-  /* auth state */
   const [config, setConfig] = useState<OutlookConfig>({ clientId: "", tenant: "common" });
   const [connectedEmail, setConnectedEmail] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
 
-  /* search state */
   const [query, setQuery] = useState("");
   const [searchIn, setSearchIn] = useState<SearchIn>("all");
+  const [folderTarget, setFolderTarget] = useState<MailFolderTarget>("all");
+  const [folders, setFolders] = useState<GraphMailFolder[]>([]);
+  const [foldersLoading, setFoldersLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<MessageWithAttachments[]>([]);
   const [searched, setSearched] = useState(false);
@@ -113,7 +135,6 @@ function OutlookSearchPage() {
   const queryRef = useRef(query);
   queryRef.current = query;
 
-  /* ── boot: load config + check for active session ── */
   useEffect(() => {
     const cfg = loadOutlookConfig();
     setConfig(cfg);
@@ -130,7 +151,6 @@ function OutlookSearchPage() {
       });
   }, []);
 
-  /* ── update config field ── */
   const patch = (delta: Partial<OutlookConfig>) =>
     setConfig((prev) => {
       const next = { ...prev, ...delta };
@@ -138,7 +158,23 @@ function OutlookSearchPage() {
       return next;
     });
 
-  /* ── connect / switch account ── */
+  const loadFolders = useCallback(async () => {
+    setFoldersLoading(true);
+    try {
+      const token = await getAccessToken(config);
+      const loaded = await listMailFolders(token);
+      setFolders(loaded);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal memuat folder Outlook.");
+    } finally {
+      setFoldersLoading(false);
+    }
+  }, [config]);
+
+  useEffect(() => {
+    if (connectedEmail) void loadFolders();
+  }, [connectedEmail, loadFolders]);
+
   const handleConnect = async (promptMode: "select_account" | "none" = "select_account") => {
     if (!config.clientId.trim()) {
       toast.error("Isi Microsoft Client ID terlebih dahulu.");
@@ -150,6 +186,8 @@ function OutlookSearchPage() {
       const email = account.username ?? null;
       setConnectedEmail(email);
       patch({ email: email ?? undefined });
+      setResults([]);
+      setSearched(false);
       toast.success(`Terhubung sebagai ${email ?? "akun Microsoft"}.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Gagal menghubungkan akun.");
@@ -158,7 +196,6 @@ function OutlookSearchPage() {
     }
   };
 
-  /* ── disconnect ── */
   const handleDisconnect = async () => {
     try {
       await disconnectOutlook(config);
@@ -169,33 +206,39 @@ function OutlookSearchPage() {
     patch({ email: undefined });
     setResults([]);
     setSearched(false);
+    setFolders([]);
     toast.success("Akun Microsoft diputuskan.");
   };
 
-  /* ── search ── */
-  const handleSearch = useCallback(async () => {
-    const q = queryRef.current.trim();
-    if (!q && searchIn !== "pdf") {
-      toast.error("Masukkan kata kunci pencarian.");
-      return;
-    }
-    setSearching(true);
-    setSearched(false);
-    setResults([]);
-    try {
-      const token = await getAccessToken(config);
-      const msgs = await searchMessages(token, q, searchIn);
-      setResults(msgs.map((m) => ({ ...m })));
-      setSearched(true);
-      if (msgs.length === 0) toast.info("Tidak ada email yang cocok ditemukan.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Pencarian gagal.");
-    } finally {
-      setSearching(false);
-    }
-  }, [config, searchIn]);
+  const runSearch = useCallback(
+    async (targetFolder: MailFolderTarget = folderTarget, forcedQuery?: string, forcedSearchIn?: SearchIn) => {
+      const q = forcedQuery ?? queryRef.current.trim();
+      const mode = forcedSearchIn ?? searchIn;
+      setSearching(true);
+      setSearched(false);
+      setResults([]);
+      try {
+        const token = await getAccessToken(config);
+        const msgs = await searchMessages(token, q, mode, targetFolder);
+        setResults(msgs.map((m) => ({ ...m })));
+        setSearched(true);
+        if (msgs.length === 0) toast.info("Tidak ada email yang cocok ditemukan.");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Pencarian gagal.");
+      } finally {
+        setSearching(false);
+      }
+    },
+    [config, folderTarget, searchIn],
+  );
 
-  /* ── expand attachments for a message ── */
+  const handleRecentInbox = () => {
+    setFolderTarget("wellKnown:inbox");
+    setQuery("");
+    setSearchIn("all");
+    void runSearch("wellKnown:inbox", "", "all");
+  };
+
   const loadAttachments = useCallback(
     async (messageId: string) => {
       const pdfOnly = searchIn === "pdf";
@@ -211,18 +254,14 @@ function OutlookSearchPage() {
         const attachments = await getAttachments(token, messageId, pdfOnly);
         setResults((prev) =>
           prev.map((m) =>
-            m.id === messageId
-              ? { ...m, attachments, attachmentsLoading: false }
-              : m,
+            m.id === messageId ? { ...m, attachments, attachmentsLoading: false } : m,
           ),
         );
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Gagal memuat lampiran.";
         setResults((prev) =>
           prev.map((m) =>
-            m.id === messageId
-              ? { ...m, attachmentsLoading: false, attachmentsError: msg }
-              : m,
+            m.id === messageId ? { ...m, attachmentsLoading: false, attachmentsError: msg } : m,
           ),
         );
       }
@@ -230,7 +269,6 @@ function OutlookSearchPage() {
     [config, searchIn],
   );
 
-  /* ── toggle attachment panel ── */
   const toggleAttachments = (msg: MessageWithAttachments) => {
     if (msg.attachmentsExpanded) {
       setResults((prev) =>
@@ -245,12 +283,7 @@ function OutlookSearchPage() {
     }
   };
 
-  /* ── download attachment ── */
-  const handleDownload = async (
-    messageId: string,
-    att: GraphAttachment,
-    open: boolean,
-  ) => {
+  const handleDownload = async (messageId: string, att: GraphAttachment, open: boolean) => {
     try {
       const token = await getAccessToken(config);
       const { url, filename } = await downloadAttachment(token, messageId, att.id);
@@ -269,11 +302,13 @@ function OutlookSearchPage() {
   };
 
   const connected = Boolean(connectedEmail);
+  const customFolderOptions = folders.filter(
+    (folder) =>
+      !DEFAULT_FOLDER_OPTIONS.some((opt) => opt.label.toLowerCase() === folder.displayName.toLowerCase()),
+  );
 
-  /* ─── render ────────────────────────────────────────────────────────────── */
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
-      {/* ── header ── */}
       <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
         <Link to="/">
           <Button variant="ghost" size="icon" className="size-8 rounded-xl">
@@ -288,7 +323,6 @@ function OutlookSearchPage() {
 
       <ScrollArea className="flex-1">
         <div className="mx-auto max-w-3xl space-y-4 px-4 py-6">
-          {/* ── auth panel ── */}
           <AuthPanel
             config={config}
             connectedEmail={connectedEmail}
@@ -298,32 +332,51 @@ function OutlookSearchPage() {
             onDisconnect={handleDisconnect}
           />
 
-          {/* ── search panel ── */}
           {connected && (
             <div className="rounded-2xl border border-border bg-card p-4">
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="min-w-0 flex-1">
-                  <Label className="mb-1.5 block text-xs">Kata kunci</Label>
-                  <Input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder={
-                      searchIn === "pdf"
-                        ? "Kosongkan untuk semua PDF, atau tulis kata kunci…"
-                        : "Cari email…"
-                    }
-                    className="rounded-xl"
-                    onKeyDown={(e) => e.key === "Enter" && void handleSearch()}
-                    disabled={searching}
-                  />
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-sm font-semibold">Cari email Outlook</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Bisa cek Inbox, Sent, Junk, Archive, Deleted, dan folder custom.
+                  </p>
                 </div>
-                <div className="w-48 shrink-0">
-                  <Label className="mb-1.5 block text-xs">Cari di</Label>
-                  <Select
-                    value={searchIn}
-                    onValueChange={(v) => setSearchIn(v as SearchIn)}
-                    disabled={searching}
-                  >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRecentInbox}
+                  disabled={searching}
+                  className="gap-2 rounded-xl"
+                >
+                  {searching ? <Loader2 className="size-4 animate-spin" /> : <Inbox className="size-4" />}
+                  Recent Inbox
+                </Button>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-[1fr_190px]">
+                <div className="space-y-1.5">
+                  <Label className="block text-xs">Folder</Label>
+                  <Select value={folderTarget} onValueChange={(v) => setFolderTarget(v as MailFolderTarget)} disabled={searching}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEFAULT_FOLDER_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                      {customFolderOptions.map((folder) => (
+                        <SelectItem key={folder.id} value={folder.id}>
+                          {folder.path ?? folder.displayName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="block text-xs">Cari di</Label>
+                  <Select value={searchIn} onValueChange={(v) => setSearchIn(v as SearchIn)} disabled={searching}>
                     <SelectTrigger className="rounded-xl">
                       <SelectValue />
                     </SelectTrigger>
@@ -336,25 +389,38 @@ function OutlookSearchPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button
-                  onClick={() => void handleSearch()}
-                  disabled={searching}
-                  className="gap-2 rounded-xl"
-                >
-                  {searching ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Search className="size-4" />
-                  )}
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-end gap-3">
+                <div className="min-w-0 flex-1">
+                  <Label className="mb-1.5 block text-xs">Kata kunci</Label>
+                  <Input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={
+                      searchIn === "pdf"
+                        ? "Kosongkan untuk semua PDF, atau tulis kata kunci…"
+                        : "Kosongkan untuk email terbaru, atau cari email…"
+                    }
+                    className="rounded-xl"
+                    onKeyDown={(e) => e.key === "Enter" && void runSearch()}
+                    disabled={searching}
+                  />
+                </div>
+                <Button onClick={() => void runSearch()} disabled={searching} className="gap-2 rounded-xl">
+                  {searching ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
                   Cari
+                </Button>
+                <Button variant="outline" onClick={() => void loadFolders()} disabled={foldersLoading} className="gap-2 rounded-xl">
+                  {foldersLoading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+                  Folder
                 </Button>
               </div>
             </div>
           )}
 
-          {/* ── results ── */}
           {searched && results.length === 0 && !searching && (
-            <p className="text-center text-sm text-muted-foreground py-8">
+            <p className="py-8 text-center text-sm text-muted-foreground">
               Tidak ada email yang cocok ditemukan.
             </p>
           )}
@@ -362,7 +428,7 @@ function OutlookSearchPage() {
           {results.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">
-                {results.length} email ditemukan
+                {results.length} email ditemukan di {folderLabel(folderTarget, folders)}
               </p>
               {results.map((msg) => (
                 <EmailCard
@@ -380,8 +446,6 @@ function OutlookSearchPage() {
     </div>
   );
 }
-
-/* ─── AuthPanel ──────────────────────────────────────────────────────────── */
 
 function AuthPanel({
   config,
@@ -429,7 +493,7 @@ function AuthPanel({
           </div>
           <p className="text-xs text-muted-foreground">
             Buat App Registration tipe <span className="font-medium">SPA</span> di Azure Portal.
-            Tambahkan Redirect URI:{" "}
+            Tambahkan Redirect URI: {" "}
             <code className="rounded bg-muted px-1">
               {typeof window !== "undefined" ? window.location.origin : "https://your-app"}
             </code>
@@ -463,12 +527,8 @@ function AuthPanel({
               onClick={() => onConnect("select_account")}
               className="gap-1.5 rounded-xl text-xs"
             >
-              {authLoading ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : (
-                <RefreshCw className="size-3" />
-              )}
-              Ganti Akun
+              {authLoading ? <Loader2 className="size-3 animate-spin" /> : <RefreshCw className="size-3" />}
+              Switch Account
             </Button>
             <Button
               variant="ghost"
@@ -486,8 +546,6 @@ function AuthPanel({
   );
 }
 
-/* ─── EmailCard ──────────────────────────────────────────────────────────── */
-
 function EmailCard({
   msg,
   pdfMode,
@@ -503,35 +561,32 @@ function EmailCard({
     att.contentType === "application/pdf" || att.name?.toLowerCase().endsWith(".pdf");
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden">
-      {/* email header */}
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
       <div className="px-4 py-3">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-medium text-sm truncate">
-                {msg.subject || "(Tanpa Subjek)"}
-              </p>
-              {msg.hasAttachments && (
-                <Paperclip className="size-3 text-muted-foreground shrink-0" />
-              )}
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate text-sm font-medium">{msg.subject || "(Tanpa Subjek)"}</p>
+              {msg.hasAttachments && <Paperclip className="size-3 shrink-0 text-muted-foreground" />}
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
               <span className="font-medium text-foreground/80">
-                {msg.from?.emailAddress?.name || msg.from?.emailAddress?.address}
+                {msg.from?.emailAddress?.name || msg.from?.emailAddress?.address || "Unknown sender"}
               </span>
-              {" — "}
-              {msg.from?.emailAddress?.address}
+              {msg.from?.emailAddress?.address ? ` — ${msg.from.emailAddress.address}` : ""}
             </p>
-            {msg.bodyPreview && (
-              <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2">
-                {msg.bodyPreview}
+            {msg.folderDisplayName && (
+              <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                <FolderOpen className="size-3" /> {msg.folderDisplayName}
               </p>
             )}
+            {msg.bodyPreview && (
+              <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">{msg.bodyPreview}</p>
+            )}
           </div>
-          <div className="shrink-0 text-right space-y-1">
-            <p className="text-[11px] text-muted-foreground whitespace-nowrap">
-              {formatDate(msg.receivedDateTime)}
+          <div className="shrink-0 space-y-1 text-right">
+            <p className="whitespace-nowrap text-[11px] text-muted-foreground">
+              {formatDate(messageDate(msg))}
             </p>
             {msg.webLink && (
               <a
@@ -546,17 +601,12 @@ function EmailCard({
           </div>
         </div>
 
-        {/* attachment toggle */}
         {msg.hasAttachments && (
           <button
             onClick={onToggleAttachments}
-            className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
           >
-            {msg.attachmentsExpanded ? (
-              <ChevronDown className="size-3.5" />
-            ) : (
-              <ChevronRight className="size-3.5" />
-            )}
+            {msg.attachmentsExpanded ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
             <Paperclip className="size-3" />
             {pdfMode ? "Lihat lampiran PDF" : "Lihat lampiran"}
             {msg.attachments !== undefined && (
@@ -568,18 +618,15 @@ function EmailCard({
         )}
       </div>
 
-      {/* attachment list */}
       {msg.attachmentsExpanded && (
-        <div className="border-t border-border bg-muted/30 px-4 py-3 space-y-2">
+        <div className="space-y-2 border-t border-border bg-muted/30 px-4 py-3">
           {msg.attachmentsLoading && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="size-3.5 animate-spin" />
               Memuat lampiran…
             </div>
           )}
-          {msg.attachmentsError && (
-            <p className="text-xs text-destructive">{msg.attachmentsError}</p>
-          )}
+          {msg.attachmentsError && <p className="text-xs text-destructive">{msg.attachmentsError}</p>}
           {msg.attachments !== undefined && !msg.attachmentsLoading && (
             <>
               {(pdfMode ? msg.attachments.filter(isPdf) : msg.attachments).length === 0 ? (
@@ -588,11 +635,7 @@ function EmailCard({
                 </p>
               ) : (
                 (pdfMode ? msg.attachments.filter(isPdf) : msg.attachments).map((att) => (
-                  <AttachmentRow
-                    key={att.id}
-                    att={att}
-                    onDownload={(open) => onDownload(att, open)}
-                  />
+                  <AttachmentRow key={att.id} att={att} onDownload={(open) => onDownload(att, open)} />
                 ))
               )}
             </>
@@ -602,8 +645,6 @@ function EmailCard({
     </div>
   );
 }
-
-/* ─── AttachmentRow ──────────────────────────────────────────────────────── */
 
 function AttachmentRow({
   att,
@@ -623,8 +664,7 @@ function AttachmentRow({
     }
   };
 
-  const isPdf =
-    att.contentType === "application/pdf" || att.name?.toLowerCase().endsWith(".pdf");
+  const isPdf = att.contentType === "application/pdf" || att.name?.toLowerCase().endsWith(".pdf");
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-background px-3 py-2">
