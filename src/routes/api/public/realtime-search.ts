@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, X-Serper-API-Key",
   "Access-Control-Max-Age": "86400",
 };
 
@@ -31,8 +31,8 @@ function uniqueSources(sources: SearchSource[]): SearchSource[] {
   return Array.from(new Map(sources.filter((s) => s.url && s.snippet).map((s) => [s.url || s.title, s])).values()).slice(0, 8);
 }
 
-async function searchSerper(query: string, signal: AbortSignal): Promise<SearchSource[]> {
-  const key = process.env.SERPER_API_KEY;
+async function searchSerper(query: string, signal: AbortSignal, keyOverride = ""): Promise<SearchSource[]> {
+  const key = (keyOverride || process.env.SERPER_API_KEY || "").trim();
   if (!key) return [];
   const res = await fetch("https://google.serper.dev/search", {
     method: "POST",
@@ -186,7 +186,8 @@ export const Route = createFileRoute("/api/public/realtime-search")({
         const timeout = setTimeout(() => controller.abort(), 15000);
 
         try {
-          const serper = await searchSerper(query, controller.signal).catch(() => []);
+          const userSerperKey = request.headers.get("X-Serper-API-Key") ?? "";
+          const serper = await searchSerper(query, controller.signal, userSerperKey).catch(() => []);
           let sources = uniqueSources(serper);
           let provider = serper.length ? "serper" : "duckduckgo";
 
