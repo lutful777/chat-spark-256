@@ -146,6 +146,16 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
       setModeOpen(false);
     };
 
+    const fillGithubCommand = (command: string) => {
+      setMode("github");
+      setModeOpen(false);
+      setValue(command);
+      requestAnimationFrame(() => {
+        ref.current?.focus();
+        resize();
+      });
+    };
+
     const activeLabel = mode === "github" ? "GitHub" : mode === "realtime" ? "Real Time" : "Plain";
     const ActiveIcon = mode === "github" ? Github : mode === "realtime" ? Search : Sparkles;
 
@@ -164,10 +174,15 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
           </button>
 
           {modeOpen && (
-            <div className="mt-2 w-52 overflow-hidden rounded-2xl border border-border bg-popover p-1 text-popover-foreground shadow-xl">
+            <div className="mt-2 w-56 overflow-hidden rounded-2xl border border-border bg-popover p-1 text-popover-foreground shadow-xl">
               <ModeOption active={mode === "normal"} onClick={() => selectMode("normal")} icon={<Sparkles className="size-4" />} label="Plain" />
               <ModeOption active={mode === "github"} onClick={() => selectMode("github")} icon={<Github className="size-4" />} label="GitHub" />
               <ModeOption active={mode === "realtime"} onClick={() => selectMode("realtime")} icon={<Search className="size-4" />} label="Real Time" />
+              <div className="mt-1 border-t border-border p-2">
+                <p className="mb-1 px-1 text-[11px] font-medium text-muted-foreground">Command GitHub</p>
+                <CommandOption onClick={() => fillGithubCommand("Tambah tombol ")} label="Tambah tombol" />
+                <CommandOption onClick={() => fillGithubCommand("Hapus tombol ")} label="Hapus tombol" />
+              </div>
             </div>
           )}
         </div>
@@ -270,6 +285,18 @@ function ModeOption({ active, onClick, icon, label }: { active: boolean; onClick
       <span className="shrink-0">{icon}</span>
       <span className="flex-1">{label}</span>
       {active && <span className="text-primary">✓</span>}
+    </button>
+  );
+}
+
+function CommandOption({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="block w-full rounded-xl px-3 py-2 text-left text-sm transition-colors hover:bg-accent/60"
+    >
+      {label}
     </button>
   );
 }
