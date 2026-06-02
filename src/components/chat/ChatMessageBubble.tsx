@@ -7,15 +7,10 @@ import {
   Check,
   Copy,
   FileUp,
-  MoreVertical,
   Pencil,
-  RefreshCw,
   Share2,
-  ThumbsDown,
-  ThumbsUp,
   Trash2,
   User,
-  Volume2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -65,7 +60,6 @@ function AttachmentPreview({ attachment }: { attachment: ChatAttachment }) {
 
 export function ChatMessageBubble({
   message,
-  onRegenerate,
   onEdit,
   onDelete,
 }: Props) {
@@ -87,20 +81,6 @@ export function ChatMessageBubble({
     }
   };
 
-  const reactGood = () => toast.success("Feedback disimpan.");
-  const reactBad = () => toast.success("Feedback disimpan.");
-
-  const speak = () => {
-    if (!("speechSynthesis" in window)) {
-      toast.error("Text to speech tidak didukung browser ini.");
-      return;
-    }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(displayContent || message.content);
-    utterance.lang = "id-ID";
-    window.speechSynthesis.speak(utterance);
-  };
-
   const share = async () => {
     const text = displayContent || message.content;
     try {
@@ -113,11 +93,6 @@ export function ChatMessageBubble({
     } catch {
       // User may cancel native share sheet.
     }
-  };
-
-  const more = () => {
-    if (onRegenerate) onRegenerate();
-    else toast.info("Tidak ada aksi tambahan.");
   };
 
   return (
@@ -180,20 +155,8 @@ export function ChatMessageBubble({
               <ActionButton label={copied ? "Tersalin" : "Salin"} onClick={copy}>
                 {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
               </ActionButton>
-              <ActionButton label="Suka" onClick={reactGood}>
-                <ThumbsUp className="size-4" />
-              </ActionButton>
-              <ActionButton label="Tidak suka" onClick={reactBad}>
-                <ThumbsDown className="size-4" />
-              </ActionButton>
-              <ActionButton label="Bacakan" onClick={speak}>
-                <Volume2 className="size-4" />
-              </ActionButton>
               <ActionButton label="Bagikan" onClick={share}>
                 <Share2 className="size-4" />
-              </ActionButton>
-              <ActionButton label={onRegenerate ? "Buat ulang" : "Lainnya"} onClick={more}>
-                <MoreVertical className="size-4" />
               </ActionButton>
             </>
           )}
