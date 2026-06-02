@@ -168,7 +168,7 @@ function ChatPage() {
     }
     return models.map((m) => (
       <SelectItem key={`${p.id}:::${m}`} value={`${p.id}:::${m}`}>
-        {p.name} · {m}
+        {shortModelName(m)}
       </SelectItem>
     ));
   });
