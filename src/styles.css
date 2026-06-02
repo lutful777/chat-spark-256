@@ -65,6 +65,7 @@
   --radius: 1rem;
   --app-stable-height: 100dvh;
   --keyboard-offset: 0px;
+  --chat-input-height: 96px;
   /* App is dark-only; :root mirrors the dark palette so it works without the .dark class */
   --background: oklch(0.16 0.018 264);
   --foreground: oklch(0.96 0.005 264);
@@ -136,14 +137,26 @@
   transform: translate3d(0, 0, 0);
 }
 
+.keyboard-safe-input {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: env(safe-area-inset-bottom);
+  z-index: 40;
+  transition: bottom 120ms ease-out;
+  will-change: bottom;
+}
+
 .keyboard-open .keyboard-safe-input {
-  transform: translate3d(0, calc(var(--keyboard-offset) * -1), 0);
-  transition: transform 120ms ease-out;
-  will-change: transform;
+  bottom: calc(var(--keyboard-offset) + 0.25rem);
+}
+
+.keyboard-safe-main {
+  padding-bottom: calc(var(--chat-input-height) + env(safe-area-inset-bottom));
 }
 
 .keyboard-open .keyboard-safe-main {
-  padding-bottom: calc(var(--keyboard-offset) + 0.75rem);
+  padding-bottom: calc(var(--chat-input-height) + var(--keyboard-offset) + 1rem);
 }
 
 /* Settings route must own its own scroll because the app body is fixed for Android keyboard stability. */
