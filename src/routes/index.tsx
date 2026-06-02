@@ -37,6 +37,7 @@ import { uid } from "@/lib/chat/storage";
 import { ChatError, sendChat } from "@/lib/chat/api";
 import type { ChatAttachment, ChatMessage } from "@/lib/chat/types";
 import { runOutlookMailCommand } from "@/lib/outlook/chatCommand";
+import { runGitHubChatCommand } from "@/lib/github/chatCommand";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -243,6 +244,18 @@ function ChatPage() {
 
     setLoading(true);
     try {
+      const githubReply = await runGitHubChatCommand(text);
+      if (githubReply) {
+        const assistantMsg: ChatMessage = {
+          id: uid(),
+          role: "assistant",
+          content: githubReply,
+          createdAt: Date.now(),
+        };
+        setConversationMessages(convId, [...withUser, assistantMsg]);
+        return;
+      }
+
       const outlookReply = await runOutlookMailCommand(text);
       if (outlookReply) {
         const assistantMsg: ChatMessage = {
@@ -255,7 +268,7 @@ function ChatPage() {
         return;
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Gagal mencari email Outlook.";
+      const message = err instanceof Error ? err.message : "Gagal menjalankan perintah.";
       const errorMsg: ChatMessage = {
         id: uid(),
         role: "assistant",
@@ -457,7 +470,7 @@ function ChatPage() {
                   </div>
                   <h1 className="text-2xl font-semibold tracking-tight">Mulai chat</h1>
                   <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                    Tulis pertanyaan, upload foto/PDF/file, atau ketik <span className="font-medium">cek inbox terbaru</span>, <span className="font-medium">cari email dari Shopee</span>, atau <span className="font-medium">cari PDF di Outlook</span>.
+                    Tulis pertanyaan, upload foto/PDF/file, atau ketik <span className="font-medium">cek inbox terbaru</span>, <span className="font-medium">cari email dari Shopee</span>, <span className="font-medium">cari PDF di Outlook</span>, atau <span className="font-medium">tambah provider x.ai di menu setting</span>.
                   </p>
                 </div>
               ) : (
