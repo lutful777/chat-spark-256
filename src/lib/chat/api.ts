@@ -66,12 +66,39 @@ function getImageAttachments(attachments?: ChatAttachment[]): ChatAttachment[] {
   return (attachments ?? []).filter((att) => att.type.startsWith("image/") && att.dataUrl);
 }
 
-function toApiContent(message: ChatMessage): ApiMessage["content"] {
+function getTextFileContext(attachments?: ChatAttachment[]): string {
+  const textAttachments = (attachments ?? []).filter((att) => att.text?.trim());
+  if (textAttachments.length === 0) return "";
+
+  return textAttachments
+    .map((att, i) => `\n\nFile teks ${i + 1}: ${att.name}\n${att.text}`)
+    .join("");
+}
+
+function getAttachmentNote(attachments?: ChatAttachment[]): string {
+  const items = attachments ?? [];
+  if (items.length === 0) return "";
+
+  const notes = items
+    .filter((att) => !att.text)
+    .map((att) => `- ${att.name} (${att.type || "file"})`);
+
+  if (notes.length === 0) return "";
+  return `\n\nCatatan: ada file/gambar yang diupload, tetapi model/provider ini mungkin hanya menerima teks. File: \n${notes.join("\n")}`;
+}
+
+function toTextOnlyContent(message: ChatMessage): string {
+  return `${message.content}${getTextFileContext(message.attachments)}${getAttachmentNote(message.attachments)}`;
+}
+
+function toApiContent(message: ChatMessage, textOnly = false): ApiMessage["content"] {
   const images = getImageAttachments(message.attachments);
-  if (message.role !== "user" || images.length === 0) return message.content;
+  if (textOnly || message.role !== "user" || images.length === 0) {
+    return toTextOnlyContent(message);
+  }
 
   return [
-    { type: "text", text: message.content || "Tolong analisis gambar yang saya upload." },
+    { type: "text", text: toTextOnlyContent(message) || "Tolong analisis gambar yang saya upload." },
     ...images.map((image) => ({
       type: "image_url" as const,
       image_url: { url: image.dataUrl! },
@@ -79,18 +106,20 @@ function toApiContent(message: ChatMessage): ApiMessage["content"] {
   ];
 }
 
-function toApiMessages(messages: ChatMessage[]): ApiMessage[] {
+function toApiMessages(messages: ChatMessage[], textOnly = false): ApiMessage[] {
   return messages
     .filter(
       (m) =>
         !m.error &&
-        (m.content.trim().length > 0 || getImageAttachments(m.attachments).length > 0),
+        (m.content.trim().length > 0 ||
+          getTextFileContext(m.attachments).trim().length > 0 ||
+          getImageAttachments(m.attachments).length > 0),
     )
-    .map((m) => ({ role: m.role, content: toApiContent(m) }));
+    .map((m) => ({ role: m.role, content: toApiContent(m, textOnly) }));
 }
 
-function buildMessages(provider: ProviderConfig, messages: ChatMessage[]) {
-  const out = toApiMessages(messages);
+function buildMessages(provider: ProviderConfig, messages: ChatMessage[], textOnly = false) {
+  const out = toApiMessages(messages, textOnly);
   const sys = provider.systemPrompt?.trim();
   if (sys) {
     return [{ role: "system" as const, content: sys }, ...out];
@@ -100,6 +129,77 @@ function buildMessages(provider: ProviderConfig, messages: ChatMessage[]) {
 
 function hasImages(messages: ChatMessage[]): boolean {
   return messages.some((m) => getImageAttachments(m.attachments).length > 0);
+}
+
+function buildPayload(
+  provider: ProviderConfig,
+  messages: ChatMessage[],
+  stream: boolean,
+  textOnly = false,
+) {
+  return {
+    model: provider.model.trim(),
+    messages: buildMessages(provider, messages, textOnly),
+    temperature: provider.temperature,
+    max_tokens: provider.maxTokens,
+    stream,
+  };
+}
+
+function isImageFormatRejected(status: number, body: string): boolean {
+  if (status !== 400) return false;
+  const lower = body.toLowerCase();
+  return (
+    lower.includes("expected string") ||
+    lower.includes("received array") ||
+    lower.includes("content must be a string") ||
+    lower.includes("invalid type")
+  );
+}
+
+async function postChatPayload(
+  provider: ProviderConfig,
+  payload: unknown,
+  signal?: AbortSignal,
+): Promise<{ status: number; body: string }> {
+  if (provider.directCall) {
+    const res = await fetch(buildTarget(provider), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${provider.apiKey.trim()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal,
+    });
+    return { status: res.status, body: await res.text() };
+  }
+
+  const res = await fetch("/api/public/proxy", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      baseUrl: provider.baseUrl.trim(),
+      path: provider.path.trim(),
+      apiKey: provider.apiKey.trim(),
+      payload,
+    }),
+    signal,
+  });
+  const body = await res.text();
+
+  if (res.status >= 500 || res.status === 400) {
+    try {
+      const parsed = JSON.parse(body);
+      if (parsed?.error && res.status >= 502) {
+        throw new ChatError(String(parsed.error));
+      }
+    } catch (e) {
+      if (e instanceof ChatError) throw e;
+    }
+  }
+
+  return { status: res.status, body };
 }
 
 export interface SendChatOptions {
@@ -123,19 +223,10 @@ export async function sendChat({
     throw new ChatError("Model belum diisi. Buka Settings untuk mengaturnya.");
   }
 
-  // Many OpenAI-compatible providers support image content in non-streaming mode only.
   const containsImage = hasImages(messages);
   const wantStream = !!provider.stream && !!onToken && !containsImage;
+  const payload = buildPayload(provider, messages, wantStream, false);
 
-  const payload = {
-    model: provider.model.trim(),
-    messages: buildMessages(provider, messages),
-    temperature: provider.temperature,
-    max_tokens: provider.maxTokens,
-    stream: wantStream,
-  };
-
-  // -------- Streaming path --------
   if (wantStream) {
     return streamChat({ provider, payload, signal, onToken: onToken! });
   }
@@ -144,43 +235,17 @@ export async function sendChat({
   let body: string;
 
   try {
-    if (provider.directCall) {
-      const res = await fetch(buildTarget(provider), {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${provider.apiKey.trim()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        signal,
-      });
-      status = res.status;
-      body = await res.text();
-    } else {
-      const res = await fetch("/api/public/proxy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          baseUrl: provider.baseUrl.trim(),
-          path: provider.path.trim(),
-          apiKey: provider.apiKey.trim(),
-          payload,
-        }),
-        signal,
-      });
-      status = res.status;
-      body = await res.text();
-      // Proxy-level errors (502/504/400) return { error }
-      if (status >= 500 || status === 400) {
-        try {
-          const parsed = JSON.parse(body);
-          if (parsed?.error && status >= 502) {
-            throw new ChatError(String(parsed.error));
-          }
-        } catch (e) {
-          if (e instanceof ChatError) throw e;
-        }
-      }
+    const result = await postChatPayload(provider, payload, signal);
+    status = result.status;
+    body = result.body;
+
+    // Some OpenAI-compatible providers are text-only and reject multimodal content arrays.
+    // If that happens, retry once with all history converted to plain text.
+    if (containsImage && isImageFormatRejected(status, body)) {
+      const retryPayload = buildPayload(provider, messages, false, true);
+      const retry = await postChatPayload(provider, retryPayload, signal);
+      status = retry.status;
+      body = retry.body;
     }
   } catch (err) {
     if (err instanceof ChatError) throw err;
