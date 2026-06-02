@@ -23,6 +23,7 @@ interface Props {
   onSelect: (id: string) => void;
   onNewChat: () => void;
   onDelete: (id: string) => void;
+  onClearAll?: () => void;
   onRename: (id: string, title: string) => void;
 }
 
@@ -43,6 +44,7 @@ export function ConversationSidebar({
   onSelect,
   onNewChat,
   onDelete,
+  onClearAll,
   onRename,
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -152,7 +154,7 @@ export function ConversationSidebar({
                     type="button"
                     onClick={() => startEdit(c)}
                     aria-label="Ganti nama"
-                    className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+                    className="shrink-0 rounded-md p-1 text-muted-foreground opacity-100 transition-colors hover:text-foreground md:opacity-0 md:group-hover:opacity-100"
                   >
                     <Pencil className="size-3.5" />
                   </button>
@@ -160,7 +162,7 @@ export function ConversationSidebar({
                     type="button"
                     onClick={() => onDelete(c.id)}
                     aria-label="Hapus percakapan"
-                    className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                    className="shrink-0 rounded-md p-1 text-muted-foreground opacity-100 transition-colors hover:text-destructive md:opacity-0 md:group-hover:opacity-100"
                   >
                     <Trash2 className="size-4" />
                   </button>
@@ -171,7 +173,18 @@ export function ConversationSidebar({
         </div>
       </ScrollArea>
 
-      <div className="border-t border-sidebar-border p-3">
+      <div className="space-y-2 border-t border-sidebar-border p-3">
+        {conversations.length > 0 && onClearAll && (
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full justify-start gap-2 rounded-xl text-destructive hover:text-destructive"
+            onClick={onClearAll}
+          >
+            <Trash2 className="size-4" />
+            Hapus semua chat
+          </Button>
+        )}
         <Button asChild variant="ghost" className="w-full justify-start gap-2 rounded-xl">
           <Link to="/settings">
             <Settings className="size-4" />
