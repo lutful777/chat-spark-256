@@ -14,6 +14,7 @@ import {
 
 const PENDING_KEY = "aiapichat:github:pending-change";
 const INDEX_KEY = "aiapichat:github:repo-index";
+const MODE_PREFIX = "[GITHUB]";
 const MAX_FILES_FOR_AI = 8;
 const MAX_FILE_CHARS = 50000;
 const MAX_TOTAL_CHARS = 180000;
@@ -64,10 +65,10 @@ interface AiEditResult {
 }
 
 const STATIC_HINTS: Array<{ path: string; keywords: string[] }> = [
-  { path: "src/routes/index.tsx", keywords: ["chat", "home", "input", "send", "kirim", "header"] },
-  { path: "src/components/chat/ChatInput.tsx", keywords: ["input", "upload", "file", "foto", "gambar", "pdf", "placeholder", "send", "kirim"] },
+  { path: "src/routes/index.tsx", keywords: ["chat", "home", "input", "send", "kirim", "header", "real time", "github mode"] },
+  { path: "src/components/chat/ChatInput.tsx", keywords: ["input", "upload", "file", "foto", "gambar", "pdf", "placeholder", "send", "kirim", "github", "real time", "mode"] },
   { path: "src/components/chat/ChatMessageBubble.tsx", keywords: ["bubble", "pesan", "foto", "gambar", "preview", "tampilan chat"] },
-  { path: "src/components/chat/ConversationSidebar.tsx", keywords: ["sidebar", "riwayat", "history", "new chat", "hapus chat"] },
+  { path: "src/components/chat/ConversationSidebar.tsx", keywords: ["sidebar", "riwayat", "history", "new chat", "hapus chat", "settings"] },
   { path: "src/components/media/MediaNav.tsx", keywords: ["nav", "tab", "menu", "chat", "image", "video", "outlook"] },
   { path: "src/routes/settings.tsx", keywords: ["setting", "settings", "api key", "provider", "github", "outlook"] },
   { path: "src/lib/chat/types.ts", keywords: ["provider", "preset", "model", "x.ai", "xai", "grok", "gemini", "openrouter", "bluesminds", "openai"] },
@@ -81,6 +82,12 @@ const STATIC_HINTS: Array<{ path: string; keywords: string[] }> = [
   { path: "src/lib/github/chatCommand.ts", keywords: ["github agent", "github chat", "ai agent", "command", "push", "commit", "planner"] },
   { path: "src/styles.css", keywords: ["style", "css", "warna", "background", "lovable", "tampilan", "tema"] },
 ];
+
+function stripModePrefix(text: string): { enabled: boolean; cleanText: string } {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith(MODE_PREFIX)) return { enabled: false, cleanText: text };
+  return { enabled: true, cleanText: trimmed.slice(MODE_PREFIX.length).trim() };
+}
 
 function normalize(text: string): string {
   return text.toLowerCase().replace(/\s+/g, " ").trim();
@@ -100,16 +107,6 @@ function isIndexCommand(lower: string): boolean {
 
 function isCheckCommand(lower: string): boolean {
   return lower.includes("cek build") || lower.includes("check build") || lower.includes("cek status") || lower.includes("cek action") || lower.includes("cek workflow");
-}
-
-function looksLikeAppEditRequest(lower: string): boolean {
-  const verbs = ["ubah", "edit", "hapus", "hilangkan", "tambah", "tambahkan", "perbaiki", "fix", "buat", "pindahkan", "ganti", "rapikan"];
-  const appTargets = ["aplikasi", "website", "tombol", "menu", "halaman", "setting", "settings", "chat", "video", "image", "foto", "gambar", "outlook", "github", "provider", "api", "sidebar", "upload", "file", "riwayat", "tampilan", "warna", "lovable"];
-  return verbs.some((v) => lower.includes(v)) && appTargets.some((t) => lower.includes(t));
-}
-
-function hasGitHubIntent(lower: string): boolean {
-  return isPushCommand(lower) || isCancelCommand(lower) || isIndexCommand(lower) || isCheckCommand(lower) || lower.includes("github") || lower.includes("repo") || lower.includes("commit") || lower.includes("push") || looksLikeAppEditRequest(lower);
 }
 
 function isAddXaiProviderRequest(lower: string): boolean {
@@ -182,7 +179,7 @@ async function buildRepoIndex(config: GitHubConfig): Promise<RepoIndex> {
       sha: item.sha,
       size: item.size ?? 0,
       ext: extOf(item.path),
-      scoreText: `${item.path} ${item.path.split(/[/.\-_]/).join(" ")}`.toLowerCase(),
+      scoreText: `${item.path} ${item.path.split(/[/\.\-_]/).join(" ")}`.toLowerCase(),
     }))
     .slice(0, 350);
 
@@ -412,8 +409,10 @@ async function checkBuildStatus(config: GitHubConfig): Promise<string> {
 }
 
 export async function runGitHubChatCommand(text: string, provider?: ProviderConfig | null): Promise<string | null> {
-  const lower = normalize(text);
-  if (!hasGitHubIntent(lower)) return null;
+  const mode = stripModePrefix(text);
+  if (!mode.enabled) return null;
+  const cleanText = mode.cleanText || "index repo";
+  const lower = normalize(cleanText);
   const config = loadGitHubConfig();
   if (isCancelCommand(lower)) { clearPending(); return "Perubahan GitHub pending sudah dibatalkan."; }
   if (isIndexCommand(lower)) {
@@ -423,5 +422,5 @@ export async function runGitHubChatCommand(text: string, provider?: ProviderConf
   if (isCheckCommand(lower)) return checkBuildStatus(config);
   if (isPushCommand(lower)) return pushPending(config);
   if (isAddXaiProviderRequest(lower)) return prepareAddXaiProvider(config);
-  return prepareAiEdit(config, text, provider);
+  return prepareAiEdit(config, cleanText, provider);
 }
