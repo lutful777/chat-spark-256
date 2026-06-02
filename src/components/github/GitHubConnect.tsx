@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SupabaseMemoryKey } from "@/components/memory/SupabaseMemoryKey";
+import { SerperSearchSettings } from "@/components/search/SerperSearchSettings";
 import {
   clearGitHubConfig,
   fetchGitHubUser,
@@ -91,6 +92,7 @@ export function GitHubConnect() {
   return (
     <>
       <SupabaseMemoryKey />
+      <SerperSearchSettings />
 
       <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
         <div className="mb-3 flex items-center gap-2">
