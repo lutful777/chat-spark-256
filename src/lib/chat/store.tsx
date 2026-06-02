@@ -32,6 +32,7 @@ interface ChatStore {
   createConversation: () => string;
   removeConversation: (id: string) => void;
   clearConversation: (id: string) => void;
+  clearAllConversations: () => void;
   renameConversation: (id: string, title: string) => void;
   setConversationMessages: (id: string, messages: ChatMessage[]) => void;
   setConversationProvider: (id: string, providerId: string | null) => void;
@@ -120,6 +121,10 @@ export function ChatStoreProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const clearAllConversations = useCallback(() => {
+    setConversations([]);
+  }, []);
+
   const renameConversation = useCallback((id: string, title: string) => {
     setConversations((prev) =>
       prev.map((c) => (c.id === id ? { ...c, title } : c)),
@@ -197,6 +202,7 @@ export function ChatStoreProvider({ children }: { children: ReactNode }) {
     createConversation,
     removeConversation,
     clearConversation,
+    clearAllConversations,
     renameConversation,
     setConversationMessages,
     setConversationProvider,
