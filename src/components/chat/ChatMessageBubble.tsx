@@ -6,6 +6,7 @@ import {
   Bot,
   Check,
   Copy,
+  FileUp,
   Pencil,
   RefreshCw,
   Trash2,
@@ -14,13 +15,34 @@ import {
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-import type { ChatMessage } from "@/lib/chat/types";
+import type { ChatAttachment, ChatMessage } from "@/lib/chat/types";
 
 interface Props {
   message: ChatMessage;
   onRegenerate?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function AttachmentPreview({ attachment }: { attachment: ChatAttachment }) {
+  return (
+    <div className="mt-2 overflow-hidden rounded-xl border border-border/60 bg-background/40 text-xs">
+      {attachment.dataUrl && attachment.type.startsWith("image/") ? (
+        <img src={attachment.dataUrl} alt={attachment.name} className="max-h-56 w-full object-cover" />
+      ) : null}
+      <div className="flex items-center gap-2 px-2 py-1.5">
+        <FileUp className="size-3.5 shrink-0 text-muted-foreground" />
+        <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
+        <span className="shrink-0 text-[10px] text-muted-foreground">{formatSize(attachment.size)}</span>
+      </div>
+    </div>
+  );
 }
 
 export function ChatMessageBubble({
@@ -51,11 +73,7 @@ export function ChatMessageBubble({
             message.error ? "bg-destructive/15 text-destructive" : "bg-primary/15 text-primary",
           )}
         >
-          {message.error ? (
-            <AlertTriangle className="size-4" />
-          ) : (
-            <Bot className="size-4" />
-          )}
+          {message.error ? <AlertTriangle className="size-4" /> : <Bot className="size-4" />}
         </div>
       )}
 
@@ -71,7 +89,12 @@ export function ChatMessageBubble({
           )}
         >
           {isUser ? (
-            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+            <>
+              <p className="whitespace-pre-wrap break-words">{message.content}</p>
+              {message.attachments?.map((attachment) => (
+                <AttachmentPreview key={attachment.id} attachment={attachment} />
+              ))}
+            </>
           ) : (
             <div
               className={cn(
