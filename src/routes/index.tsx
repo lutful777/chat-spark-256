@@ -4,17 +4,14 @@ import {
   ChevronDown,
   Download,
   Eraser,
-  FileImage,
   FileJson,
   FileText,
   Github,
-  Home,
   Menu,
   PanelLeftClose,
   Search,
   Settings,
   Sparkles,
-  Video,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,20 +41,19 @@ import { ChatError, sendChat } from "@/lib/chat/api";
 import type { ChatAttachment, ChatMessage } from "@/lib/chat/types";
 import { runOutlookMailCommand } from "@/lib/outlook/chatCommand";
 import { runGitHubChatCommand } from "@/lib/github/chatCommand";
-import { autoSaveImportantMemory, buildAiMemoryContext, loadSupabaseMemoryConfig } from "@/lib/memory/supabaseMemory";
+import { autoSaveImportantMemory, buildAiMemoryContext } from "@/lib/memory/supabaseMemory";
 import { buildRealtimeContext, searchRealtimeWeb } from "@/lib/search/realtime";
-import { loadGitHubConfig } from "@/lib/github/api";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "AI API Chat — Multi-Provider AI Client" },
+      { title: "Ai Chat" },
       {
         name: "description",
         content:
-          "Chat AI multi-provider dengan mode GitHub, Real Time Search, upload file, dan memory Supabase.",
+          "Ai Chat — chat AI multi-provider dengan mode GitHub, Real Time Search, upload file, dan memory Supabase.",
       },
-      { property: "og:title", content: "AI API Chat" },
+      { property: "og:title", content: "Ai Chat" },
       {
         property: "og:description",
         content: "Klien chat AI premium untuk API OpenAI-compatible dengan konfigurasi provider sendiri.",
@@ -81,15 +77,6 @@ function modeLabel(mode: ChatMode): string {
   if (mode === "github") return "GitHub";
   if (mode === "realtime") return "Real Time";
   return "Plain";
-}
-
-function StatusDot({ ok, label }: { ok: boolean; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/70 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur">
-      <span className={ok ? "size-1.5 rounded-full bg-emerald-400" : "size-1.5 rounded-full bg-muted-foreground/50"} />
-      {label}
-    </span>
-  );
 }
 
 function ChatPage() {
@@ -136,15 +123,6 @@ function ChatPage() {
     !!activeProvider?.path.trim() &&
     !!activeProvider?.apiKey.trim() &&
     !!activeProvider?.model.trim();
-
-  const memoryOk = (() => {
-    const cfg = loadSupabaseMemoryConfig();
-    return !!(cfg.enabled && cfg.anonKey.trim());
-  })();
-  const githubOk = (() => {
-    const cfg = loadGitHubConfig();
-    return !!(cfg.token.trim() && cfg.owner && cfg.repo);
-  })();
 
   const selectedValue =
     activeProviderId && activeProvider?.model
@@ -357,40 +335,37 @@ function ChatPage() {
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}><SheetContent side="left" className="w-72 p-0">{sidebar}</SheetContent></Sheet>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex flex-col gap-2 border-b border-border/70 bg-background/85 px-3 py-2 backdrop-blur-xl">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileOpen(true)} aria-label="Buka menu"><Menu className="size-5" /></Button>
-            <Button variant="ghost" size="icon" className="hidden md:inline-flex" onClick={() => setDesktopOpen((v) => !v)} aria-label="Toggle sidebar"><PanelLeftClose className="size-5" /></Button>
-            <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{activeConversation?.title ?? "AI API Chat"}</p><p className="truncate text-[11px] text-muted-foreground">Premium multi-provider client</p></div>
+        <header className="flex items-center gap-2 border-b border-border/70 bg-background/90 px-3 py-2.5 backdrop-blur-xl">
+          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileOpen(true)} aria-label="Buka menu"><Menu className="size-5" /></Button>
+          <Button variant="ghost" size="icon" className="hidden md:inline-flex" onClick={() => setDesktopOpen((v) => !v)} aria-label="Toggle sidebar"><PanelLeftClose className="size-5" /></Button>
+          <div className="min-w-0 flex-1" />
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2 rounded-full bg-card/70"><ModeIcon mode={mode} /> {modeLabel(mode)} <ChevronDown className="size-3" /></Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 rounded-2xl">
-                <DropdownMenuItem onClick={() => setMode("normal")}><Sparkles className="mr-2 size-4" /> Plain</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setMode("realtime")}><Search className="mr-2 size-4" /> Real Time</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setMode("github")}><Github className="mr-2 size-4" /> GitHub</DropdownMenuItem>
-                {mode === "github" && <>
-                  <DropdownMenuItem onClick={() => inputRef.current?.setText("Tambah tombol ")}>Tambah tombol</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => inputRef.current?.setText("Hapus tombol ")}>Hapus tombol</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => inputRef.current?.setText("Perbaiki error ")}>Perbaiki error</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => inputRef.current?.setText("cek build")}>Cek build</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => inputRef.current?.setText("PUSH")}>Push</DropdownMenuItem>
-                </>}
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2 rounded-full bg-card/70"><ModeIcon mode={mode} /> {modeLabel(mode)} <ChevronDown className="size-3" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 rounded-2xl">
+              <DropdownMenuItem onClick={() => setMode("normal")}><Sparkles className="mr-2 size-4" /> Plain</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setMode("realtime")}><Search className="mr-2 size-4" /> Real Time</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setMode("github")}><Github className="mr-2 size-4" /> GitHub</DropdownMenuItem>
+              {mode === "github" && <>
+                <DropdownMenuItem onClick={() => inputRef.current?.setText("Tambah tombol ")}>Tambah tombol</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => inputRef.current?.setText("Hapus tombol ")}>Hapus tombol</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => inputRef.current?.setText("Perbaiki error ")}>Perbaiki error</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => inputRef.current?.setText("cek build")}>Cek build</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => inputRef.current?.setText("PUSH")}>Push</DropdownMenuItem>
+              </>}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            {providers.length > 0 && <Select value={selectedValue} onValueChange={handleProviderModelChange}><SelectTrigger className="hidden h-9 w-56 rounded-xl text-xs lg:flex"><SelectValue placeholder="Pilih provider" /></SelectTrigger><SelectContent>{providerModelItems}</SelectContent></Select>}
-            <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Menu"><FileText className="size-5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-52"><DropdownMenuItem asChild><Link to="/settings"><Settings className="mr-2 size-4" /> Settings</Link></DropdownMenuItem><DropdownMenuItem onClick={() => handleExport("txt")} disabled={!messages.length}><Download className="mr-2 size-4" /> Export TXT</DropdownMenuItem><DropdownMenuItem onClick={() => handleExport("json")} disabled={!messages.length}><FileJson className="mr-2 size-4" /> Export JSON</DropdownMenuItem><DropdownMenuItem onClick={handleClear} disabled={!messages.length}><Eraser className="mr-2 size-4" /> Clear Chat</DropdownMenuItem><DropdownMenuItem onClick={handleClearAllChats} disabled={!conversations.length} className="text-destructive focus:text-destructive"><Eraser className="mr-2 size-4" /> Hapus semua chat</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
-          </div>
-          <div className="flex gap-1 overflow-x-auto pb-0.5"><StatusDot ok={canSend} label={canSend ? "Provider OK" : "Provider belum"} /><StatusDot ok={githubOk} label={githubOk ? "GitHub OK" : "GitHub belum"} /><StatusDot ok={memoryOk} label={memoryOk ? "Memory OK" : "Memory belum"} /><StatusDot ok label="Realtime ready" /></div>
+          {providers.length > 0 && <Select value={selectedValue} onValueChange={handleProviderModelChange}><SelectTrigger className="hidden h-9 w-56 rounded-xl text-xs lg:flex"><SelectValue placeholder="Pilih provider" /></SelectTrigger><SelectContent>{providerModelItems}</SelectContent></Select>}
+          <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Menu"><FileText className="size-5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-52"><DropdownMenuItem asChild><Link to="/settings"><Settings className="mr-2 size-4" /> Settings</Link></DropdownMenuItem><DropdownMenuItem onClick={() => handleExport("txt")} disabled={!messages.length}><Download className="mr-2 size-4" /> Export TXT</DropdownMenuItem><DropdownMenuItem onClick={() => handleExport("json")} disabled={!messages.length}><FileJson className="mr-2 size-4" /> Export JSON</DropdownMenuItem><DropdownMenuItem onClick={handleClear} disabled={!messages.length}><Eraser className="mr-2 size-4" /> Clear Chat</DropdownMenuItem><DropdownMenuItem onClick={handleClearAllChats} disabled={!conversations.length} className="text-destructive focus:text-destructive"><Eraser className="mr-2 size-4" /> Hapus semua chat</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-hidden pb-14 md:pb-0">
+        <main className="min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-3 py-6 sm:px-4">
-              {messages.length === 0 ? <div className="flex min-h-[55vh] flex-col items-center justify-center text-center"><div className="mb-5 rounded-[2rem] border border-border/70 bg-card/80 p-5 shadow-2xl shadow-black/20 backdrop-blur"><Sparkles className="size-9 text-primary" /></div><h1 className="text-3xl font-semibold tracking-tight">AI API Chat</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Pilih mode di header, gunakan Real Time untuk data terbaru, atau GitHub untuk update aplikasi.</p><div className="mt-5 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-3"><PremiumCard title="GitHub Mode" desc="Update web app via chat" /><PremiumCard title="Real Time" desc="Cari data terbaru" /><PremiumCard title="Upload File" desc="Analisis foto/dokumen" /></div></div> : messages.map((m) => <ChatMessageBubble key={m.id} message={m} onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined} onEdit={m.role === "user" ? handleEdit : undefined} onDelete={handleDelete} />)}
+              {messages.length === 0 ? <div className="flex min-h-[55vh] flex-col items-center justify-center text-center"><div className="mb-5 rounded-[2rem] border border-border/70 bg-card/80 p-5 shadow-2xl shadow-black/20 backdrop-blur"><Sparkles className="size-9 text-primary" /></div><h1 className="text-3xl font-semibold tracking-tight">Ai Chat</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Pilih mode di header, gunakan Real Time untuk data terbaru, atau GitHub untuk update aplikasi.</p><div className="mt-5 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-3"><PremiumCard title="GitHub Mode" desc="Update web app via chat" /><PremiumCard title="Real Time" desc="Cari data terbaru" /><PremiumCard title="Upload File" desc="Analisis foto/dokumen" /></div></div> : messages.map((m) => <ChatMessageBubble key={m.id} message={m} onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined} onEdit={m.role === "user" ? handleEdit : undefined} onDelete={handleDelete} />)}
               {loading && <TypingIndicator />}
               <div ref={scrollEndRef} />
             </div>
@@ -398,7 +373,6 @@ function ChatPage() {
         </main>
 
         <ChatInput ref={inputRef} disabled={loading} canSend={true} onSend={handleSend} onStop={handleStop} loading={loading} placeholder="Ketik pesan" mode={mode} />
-        <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-border/70 bg-background/90 px-2 py-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden"><BottomLink to="/" icon={<Home className="size-4" />} label="Chat" /><BottomLink to="/image" icon={<FileImage className="size-4" />} label="Image" /><BottomLink to="/video" icon={<Video className="size-4" />} label="Video" /><BottomLink to="/settings" icon={<Settings className="size-4" />} label="Settings" /></nav>
       </div>
     </div>
   );
@@ -406,8 +380,4 @@ function ChatPage() {
 
 function PremiumCard({ title, desc }: { title: string; desc: string }) {
   return <div className="rounded-2xl border border-border/70 bg-card/70 p-4 text-left shadow-xl shadow-black/10 backdrop-blur"><p className="text-sm font-semibold">{title}</p><p className="mt-1 text-xs text-muted-foreground">{desc}</p></div>;
-}
-
-function BottomLink({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
-  return <Link to={to} className="flex flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground">{icon}<span>{label}</span></Link>;
 }
