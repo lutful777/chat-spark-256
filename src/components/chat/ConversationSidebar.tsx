@@ -173,24 +173,26 @@ export function ConversationSidebar({
         </div>
       </ScrollArea>
 
-      <div className="space-y-2 border-t border-sidebar-border p-3">
-        {conversations.length > 0 && onClearAll && (
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full justify-start gap-2 rounded-xl text-destructive hover:text-destructive"
-            onClick={onClearAll}
-          >
-            <Trash2 className="size-4" />
-            Hapus semua chat
-          </Button>
-        )}
-        <Button asChild variant="ghost" className="w-full justify-start gap-2 rounded-xl">
+      <div className="flex items-center gap-2 border-t border-sidebar-border p-3">
+        <Button asChild variant="ghost" className="min-w-0 flex-1 justify-start gap-2 rounded-xl">
           <Link to="/settings">
             <Settings className="size-4" />
             Settings
           </Link>
         </Button>
+        {conversations.length > 0 && onClearAll && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-10 shrink-0 rounded-xl text-destructive hover:text-destructive"
+            onClick={onClearAll}
+            aria-label="Hapus semua chat"
+            title="Hapus semua chat"
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        )}
       </div>
     </div>
   );
