@@ -26,6 +26,7 @@ import {
   MediaError,
   downloadMedia,
   fileToDataUrl,
+  mergeVideos,
   photoToVideo,
   validateImageFile,
 } from "@/lib/chat/media";
@@ -142,7 +143,9 @@ function VideoPage() {
           signal: controller.signal,
           onStatus: (m) => setStatus(`Part 2: ${m}`),
         });
-        setResults([url1, url2]);
+        setStatus("Menggabungkan video di server…");
+        const mergedUrl = await mergeVideos(url1, url2, controller.signal);
+        setResults([mergedUrl]);
       } else {
         const url = await photoToVideo({
           provider,

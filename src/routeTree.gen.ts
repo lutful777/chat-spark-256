@@ -14,6 +14,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ImageRouteImport } from './routes/image'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicProxyRouteImport } from './routes/api/public/proxy'
+import { Route as ApiPublicMergeVideosRouteImport } from './routes/api/public/merge-videos'
 import { Route as ApiPublicMediaProxyRouteImport } from './routes/api/public/media-proxy'
 
 const VideoRoute = VideoRouteImport.update({
@@ -41,6 +42,11 @@ const ApiPublicProxyRoute = ApiPublicProxyRouteImport.update({
   path: '/api/public/proxy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicMergeVideosRoute = ApiPublicMergeVideosRouteImport.update({
+  id: '/api/public/merge-videos',
+  path: '/api/public/merge-videos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMediaProxyRoute = ApiPublicMediaProxyRouteImport.update({
   id: '/api/public/media-proxy',
   path: '/api/public/media-proxy',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
+  '/api/public/merge-videos': typeof ApiPublicMergeVideosRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
+  '/api/public/merge-videos': typeof ApiPublicMergeVideosRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
 }
 export interface FileRoutesById {
@@ -70,6 +78,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
+  '/api/public/merge-videos': typeof ApiPublicMergeVideosRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
 }
 export interface FileRouteTypes {
@@ -80,6 +89,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/video'
     | '/api/public/media-proxy'
+    | '/api/public/merge-videos'
     | '/api/public/proxy'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -88,6 +98,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/video'
     | '/api/public/media-proxy'
+    | '/api/public/merge-videos'
     | '/api/public/proxy'
   id:
     | '__root__'
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/video'
     | '/api/public/media-proxy'
+    | '/api/public/merge-videos'
     | '/api/public/proxy'
   fileRoutesById: FileRoutesById
 }
@@ -105,6 +117,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   VideoRoute: typeof VideoRoute
   ApiPublicMediaProxyRoute: typeof ApiPublicMediaProxyRoute
+  ApiPublicMergeVideosRoute: typeof ApiPublicMergeVideosRoute
   ApiPublicProxyRoute: typeof ApiPublicProxyRoute
 }
 
@@ -145,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicProxyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/merge-videos': {
+      id: '/api/public/merge-videos'
+      path: '/api/public/merge-videos'
+      fullPath: '/api/public/merge-videos'
+      preLoaderRoute: typeof ApiPublicMergeVideosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/media-proxy': {
       id: '/api/public/media-proxy'
       path: '/api/public/media-proxy'
@@ -161,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   VideoRoute: VideoRoute,
   ApiPublicMediaProxyRoute: ApiPublicMediaProxyRoute,
+  ApiPublicMergeVideosRoute: ApiPublicMergeVideosRoute,
   ApiPublicProxyRoute: ApiPublicProxyRoute,
 }
 export const routeTree = rootRouteImport

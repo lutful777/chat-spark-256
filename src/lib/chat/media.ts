@@ -421,6 +421,64 @@ export async function testVideoConnection(opts: {
   });
 }
 
+export async function mergeVideos(
+  url1: string,
+  url2: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  const toSendable = async (url: string): Promise<string> => {
+    if (!url.startsWith("blob:")) return url;
+    const res = await fetch(url);
+    const blob = await res.blob();
+    if (blob.size > 50 * 1024 * 1024) {
+      throw new MediaError(
+        "Video terlalu besar untuk digabungkan via browser. Unduh masing-masing video secara terpisah.",
+      );
+    }
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new MediaError("Gagal membaca file video lokal."));
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  let v1: string, v2: string;
+  try {
+    [v1, v2] = await Promise.all([toSendable(url1), toSendable(url2)]);
+  } catch (err) {
+    if (err instanceof MediaError) throw err;
+    throw new MediaError("Gagal mempersiapkan video untuk digabungkan.");
+  }
+
+  let res: Response;
+  try {
+    res = await fetch("/api/public/merge-videos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url1: v1, url2: v2 }),
+      signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new MediaError("Permintaan dibatalkan.");
+    }
+    throw new MediaError("Gagal menghubungi server untuk menggabungkan video.");
+  }
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    let msg = "Gagal menggabungkan video.";
+    try {
+      msg = (JSON.parse(text) as { error?: string }).error ?? msg;
+    } catch {}
+    throw new MediaError(msg);
+  }
+
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
 export const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB
 
