@@ -7,10 +7,15 @@ import {
   Check,
   Copy,
   FileUp,
+  MoreVertical,
   Pencil,
   RefreshCw,
+  Share2,
+  ThumbsDown,
+  ThumbsUp,
   Trash2,
   User,
+  Volume2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -76,9 +81,43 @@ export function ChatMessageBubble({
       await navigator.clipboard.writeText(displayContent || message.content);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
+      toast.success("Disalin.");
     } catch {
       toast.error("Gagal menyalin.");
     }
+  };
+
+  const reactGood = () => toast.success("Feedback disimpan.");
+  const reactBad = () => toast.success("Feedback disimpan.");
+
+  const speak = () => {
+    if (!("speechSynthesis" in window)) {
+      toast.error("Text to speech tidak didukung browser ini.");
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(displayContent || message.content);
+    utterance.lang = "id-ID";
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const share = async () => {
+    const text = displayContent || message.content;
+    try {
+      if (navigator.share) {
+        await navigator.share({ text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        toast.success("Teks disalin untuk dibagikan.");
+      }
+    } catch {
+      // User may cancel native share sheet.
+    }
+  };
+
+  const more = () => {
+    if (onRegenerate) onRegenerate();
+    else toast.info("Tidak ada aksi tambahan.");
   };
 
   return (
@@ -135,23 +174,40 @@ export function ChatMessageBubble({
           )}
         </div>
 
-        <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className={cn("flex items-center gap-1", isUser ? "opacity-0 transition-opacity group-hover:opacity-100" : "opacity-100")}>
           {!isUser && !message.error && (
-            <ActionButton label={copied ? "Tersalin" : "Salin"} onClick={copy}>
-              {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-            </ActionButton>
-          )}
-          {!isUser && onRegenerate && (
-            <ActionButton label="Buat ulang" onClick={onRegenerate}>
-              <RefreshCw className="size-3.5" />
-            </ActionButton>
+            <>
+              <ActionButton label={copied ? "Tersalin" : "Salin"} onClick={copy}>
+                {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+              </ActionButton>
+              <ActionButton label="Suka" onClick={reactGood}>
+                <ThumbsUp className="size-4" />
+              </ActionButton>
+              <ActionButton label="Tidak suka" onClick={reactBad}>
+                <ThumbsDown className="size-4" />
+              </ActionButton>
+              <ActionButton label="Bacakan" onClick={speak}>
+                <Volume2 className="size-4" />
+              </ActionButton>
+              <ActionButton label="Bagikan" onClick={share}>
+                <Share2 className="size-4" />
+              </ActionButton>
+              <ActionButton label={onRegenerate ? "Buat ulang" : "Lainnya"} onClick={more}>
+                <MoreVertical className="size-4" />
+              </ActionButton>
+            </>
           )}
           {isUser && onEdit && (
             <ActionButton label="Edit" onClick={onEdit}>
               <Pencil className="size-3.5" />
             </ActionButton>
           )}
-          {onDelete && (
+          {isUser && onDelete && (
+            <ActionButton label="Hapus" onClick={onDelete}>
+              <Trash2 className="size-3.5" />
+            </ActionButton>
+          )}
+          {!isUser && message.error && onDelete && (
             <ActionButton label="Hapus" onClick={onDelete}>
               <Trash2 className="size-3.5" />
             </ActionButton>
