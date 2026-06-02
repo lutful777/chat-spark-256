@@ -1,10 +1,20 @@
 export type ChatRole = "system" | "user" | "assistant";
 
+export interface ChatAttachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  dataUrl?: string;
+  text?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: ChatRole;
   content: string;
   createdAt: number;
+  attachments?: ChatAttachment[];
   /** present when this message failed to generate */
   error?: boolean;
 }
