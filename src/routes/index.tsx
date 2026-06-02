@@ -41,8 +41,9 @@ import { ChatError, sendChat } from "@/lib/chat/api";
 import type { ChatAttachment, ChatMessage } from "@/lib/chat/types";
 import { runOutlookMailCommand } from "@/lib/outlook/chatCommand";
 import { runGitHubChatCommand } from "@/lib/github/chatCommand";
-import { autoSaveImportantMemory, buildAiMemoryContext } from "@/lib/memory/supabaseMemory";
+import { autoSaveImportantMemory, buildAiMemoryContext, loadSupabaseMemoryConfig } from "@/lib/memory/supabaseMemory";
 import { buildRealtimeContext, searchRealtimeWeb } from "@/lib/search/realtime";
+import { loadGitHubConfig } from "@/lib/github/api";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -99,12 +100,14 @@ function ChatPage() {
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
   const [desktopOpen, setDesktopOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<ChatMode>("normal");
   const abortRef = useRef<AbortController | null>(null);
   const scrollEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<ChatInputHandle>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!ready) return;
@@ -123,6 +126,11 @@ function ChatPage() {
     !!activeProvider?.path.trim() &&
     !!activeProvider?.apiKey.trim() &&
     !!activeProvider?.model.trim();
+
+  const memoryConfig = loadSupabaseMemoryConfig();
+  const githubConfig = loadGitHubConfig();
+  const memoryOk = !!(memoryConfig.enabled && memoryConfig.anonKey.trim());
+  const githubOk = !!(githubConfig.token.trim() && githubConfig.owner && githubConfig.repo);
 
   const selectedValue =
     activeProviderId && activeProvider?.model
@@ -189,6 +197,32 @@ function ChatPage() {
   };
 
   const handleStop = () => abortRef.current?.abort();
+
+  const fillGitHubCommand = (command: string) => {
+    setMode("github");
+    setStatusOpen(false);
+    inputRef.current?.setText(command);
+  };
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start) return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < 80 || Math.abs(dy) > 90) return;
+    if (dx > 0) {
+      setMobileOpen(true);
+    } else {
+      setStatusOpen(true);
+    }
+  };
 
   const runCompletion = async (convId: string, base: ChatMessage[], realtimeContext = "") => {
     if (!activeProvider) return;
@@ -330,9 +364,25 @@ function ChatPage() {
   const lastAssistantId = [...messages].reverse().find((m) => m.role === "assistant" && !m.error)?.id;
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-background text-foreground">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-background text-foreground" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {desktopOpen && <aside className="hidden w-72 shrink-0 border-r border-border/70 bg-sidebar/95 md:block">{sidebar}</aside>}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}><SheetContent side="left" className="w-72 p-0">{sidebar}</SheetContent></Sheet>
+      <Sheet open={statusOpen} onOpenChange={setStatusOpen}>
+        <SheetContent side="right" className="w-80 p-0">
+          <StatusPanel
+            mode={mode}
+            canSend={canSend}
+            githubOk={githubOk}
+            memoryOk={memoryOk}
+            realtimeOk
+            providerName={activeProvider?.name ?? "Provider"}
+            providerModel={activeProvider?.model ?? "Belum dipilih"}
+            repoName={githubOk ? `${githubConfig.owner}/${githubConfig.repo}` : "Belum connect"}
+            onMode={setMode}
+            onCommand={fillGitHubCommand}
+          />
+        </SheetContent>
+      </Sheet>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-2 border-b border-border/70 bg-background/90 px-3 py-2.5 backdrop-blur-xl">
@@ -359,7 +409,7 @@ function ChatPage() {
           </DropdownMenu>
 
           {providers.length > 0 && <Select value={selectedValue} onValueChange={handleProviderModelChange}><SelectTrigger className="hidden h-9 w-56 rounded-xl text-xs lg:flex"><SelectValue placeholder="Pilih provider" /></SelectTrigger><SelectContent>{providerModelItems}</SelectContent></Select>}
-          <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Menu"><FileText className="size-5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-52"><DropdownMenuItem asChild><Link to="/settings"><Settings className="mr-2 size-4" /> Settings</Link></DropdownMenuItem><DropdownMenuItem onClick={() => handleExport("txt")} disabled={!messages.length}><Download className="mr-2 size-4" /> Export TXT</DropdownMenuItem><DropdownMenuItem onClick={() => handleExport("json")} disabled={!messages.length}><FileJson className="mr-2 size-4" /> Export JSON</DropdownMenuItem><DropdownMenuItem onClick={handleClear} disabled={!messages.length}><Eraser className="mr-2 size-4" /> Clear Chat</DropdownMenuItem><DropdownMenuItem onClick={handleClearAllChats} disabled={!conversations.length} className="text-destructive focus:text-destructive"><Eraser className="mr-2 size-4" /> Hapus semua chat</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+          <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Menu"><FileText className="size-5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-52"><DropdownMenuItem onClick={() => setStatusOpen(true)}><Sparkles className="mr-2 size-4" /> Status</DropdownMenuItem><DropdownMenuItem asChild><Link to="/settings"><Settings className="mr-2 size-4" /> Settings</Link></DropdownMenuItem><DropdownMenuItem onClick={() => handleExport("txt")} disabled={!messages.length}><Download className="mr-2 size-4" /> Export TXT</DropdownMenuItem><DropdownMenuItem onClick={() => handleExport("json")} disabled={!messages.length}><FileJson className="mr-2 size-4" /> Export JSON</DropdownMenuItem><DropdownMenuItem onClick={handleClear} disabled={!messages.length}><Eraser className="mr-2 size-4" /> Clear Chat</DropdownMenuItem><DropdownMenuItem onClick={handleClearAllChats} disabled={!conversations.length} className="text-destructive focus:text-destructive"><Eraser className="mr-2 size-4" /> Hapus semua chat</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
         </header>
 
         <main className="min-h-0 flex-1 overflow-hidden">
@@ -380,4 +430,77 @@ function ChatPage() {
 
 function PremiumCard({ title, desc }: { title: string; desc: string }) {
   return <div className="rounded-2xl border border-border/70 bg-card/70 p-4 text-left shadow-xl shadow-black/10 backdrop-blur"><p className="text-sm font-semibold">{title}</p><p className="mt-1 text-xs text-muted-foreground">{desc}</p></div>;
+}
+
+function StatusPanel({
+  mode,
+  canSend,
+  githubOk,
+  memoryOk,
+  realtimeOk,
+  providerName,
+  providerModel,
+  repoName,
+  onMode,
+  onCommand,
+}: {
+  mode: ChatMode;
+  canSend: boolean;
+  githubOk: boolean;
+  memoryOk: boolean;
+  realtimeOk: boolean;
+  providerName: string;
+  providerModel: string;
+  repoName: string;
+  onMode: (mode: ChatMode) => void;
+  onCommand: (command: string) => void;
+}) {
+  return (
+    <div className="flex h-full flex-col bg-sidebar p-4 text-sidebar-foreground">
+      <div className="mb-4 rounded-3xl border border-sidebar-border bg-sidebar-accent/40 p-4">
+        <p className="text-sm font-semibold">Status Ai Chat</p>
+        <p className="mt-1 text-xs text-muted-foreground">Usap dari kanan ke kiri untuk membuka menu ini.</p>
+      </div>
+
+      <div className="space-y-2">
+        <StatusRow ok={canSend} title="Provider" desc={canSend ? `${providerName} · ${providerModel}` : "Belum lengkap"} />
+        <StatusRow ok={githubOk} title="GitHub" desc={repoName} />
+        <StatusRow ok={memoryOk} title="Memory" desc={memoryOk ? "Supabase aktif" : "Supabase belum aktif"} />
+        <StatusRow ok={realtimeOk} title="Realtime" desc="DuckDuckGo fallback aktif" />
+      </div>
+
+      <div className="mt-5 rounded-3xl border border-sidebar-border bg-sidebar-accent/30 p-3">
+        <p className="mb-2 text-xs font-semibold text-muted-foreground">Mode</p>
+        <div className="grid gap-2">
+          <Button variant={mode === "normal" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("normal")}><Sparkles className="mr-2 size-4" />Plain</Button>
+          <Button variant={mode === "realtime" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("realtime")}><Search className="mr-2 size-4" />Real Time</Button>
+          <Button variant={mode === "github" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("github")}><Github className="mr-2 size-4" />GitHub</Button>
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-3xl border border-sidebar-border bg-sidebar-accent/30 p-3">
+        <p className="mb-2 text-xs font-semibold text-muted-foreground">Command GitHub</p>
+        <div className="grid gap-2">
+          <Button variant="secondary" className="justify-start rounded-2xl" onClick={() => onCommand("Tambah tombol ")}>Tambah tombol</Button>
+          <Button variant="secondary" className="justify-start rounded-2xl" onClick={() => onCommand("Hapus tombol ")}>Hapus tombol</Button>
+          <Button variant="secondary" className="justify-start rounded-2xl" onClick={() => onCommand("Perbaiki error ")}>Perbaiki error</Button>
+          <Button variant="secondary" className="justify-start rounded-2xl" onClick={() => onCommand("cek build")}>Cek build</Button>
+          <Button variant="secondary" className="justify-start rounded-2xl" onClick={() => onCommand("PUSH")}>Push</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatusRow({ ok, title, desc }: { ok: boolean; title: string; desc: string }) {
+  return (
+    <div className="rounded-2xl border border-sidebar-border bg-sidebar-accent/30 p-3">
+      <div className="flex items-center gap-2">
+        <span className={ok ? "size-2 rounded-full bg-emerald-400" : "size-2 rounded-full bg-muted-foreground/50"} />
+        <p className="text-sm font-medium">{title}</p>
+        <span className="ml-auto text-xs text-muted-foreground">{ok ? "OK" : "Belum"}</span>
+      </div>
+      <p className="mt-1 truncate text-xs text-muted-foreground">{desc}</p>
+    </div>
+  );
 }
