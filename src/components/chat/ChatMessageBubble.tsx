@@ -41,15 +41,15 @@ function AttachmentPreview({ attachment }: { attachment: ChatAttachment }) {
   const isImage = attachment.dataUrl && attachment.type.startsWith("image/");
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border/60 bg-background/40 text-xs">
+    <div className="max-w-full overflow-hidden rounded-xl border border-border/60 bg-background/40 text-xs">
       {isImage ? (
         <img
           src={attachment.dataUrl}
           alt={attachment.name}
-          className="max-h-72 w-full rounded-t-xl object-contain"
+          className="max-h-72 max-w-full rounded-t-xl object-contain"
         />
       ) : null}
-      <div className="flex items-center gap-2 px-2 py-1.5">
+      <div className="flex min-w-0 items-center gap-2 px-2 py-1.5">
         <FileUp className="size-3.5 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
         <span className="shrink-0 text-[10px] text-muted-foreground">{formatSize(attachment.size)}</span>
@@ -96,7 +96,7 @@ export function ChatMessageBubble({
   };
 
   return (
-    <div className={cn("group flex w-full gap-2.5", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("group flex w-full min-w-0 gap-2.5 overflow-hidden", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
         <div
           className={cn(
@@ -108,10 +108,10 @@ export function ChatMessageBubble({
         </div>
       )}
 
-      <div className={cn("flex min-w-0 max-w-[82%] flex-col gap-1", isUser ? "items-end" : "items-start")}>
+      <div className={cn("flex min-w-0 max-w-[calc(100vw-4.5rem)] flex-col gap-1 sm:max-w-[82%]", isUser ? "items-end" : "items-start")}>
         <div
           className={cn(
-            "min-w-0 max-w-full rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm",
+            "min-w-0 max-w-full overflow-hidden rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm",
             isUser
               ? "rounded-br-md bg-primary text-primary-foreground"
               : message.error
@@ -120,28 +120,28 @@ export function ChatMessageBubble({
           )}
         >
           {isUser ? (
-            <div className="space-y-2">
+            <div className="min-w-0 max-w-full space-y-2 overflow-hidden">
               {message.attachments?.map((attachment) => (
                 <AttachmentPreview key={attachment.id} attachment={attachment} />
               ))}
               {displayContent && (
-                <p className="whitespace-pre-wrap break-words">{displayContent}</p>
+                <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{displayContent}</p>
               )}
             </div>
           ) : (
             <div
               className={cn(
-                "min-w-0 [overflow-wrap:anywhere] [&_a]:break-all [&_a]:text-primary [&_a]:underline",
-                "[&_p]:my-1.5 first:[&_p]:mt-0 last:[&_p]:mb-0",
+                "min-w-0 max-w-full overflow-hidden [overflow-wrap:anywhere] [&_*]:max-w-full [&_a]:break-all [&_a]:text-primary [&_a]:underline",
+                "[&_p]:my-1.5 first:[&_p]:mt-0 last:[&_p]:mb-0 [&_p]:break-words",
                 "[&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-5",
-                "[&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:text-base [&_h1]:font-semibold",
-                "[&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:text-base [&_h2]:font-semibold",
-                "[&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:font-semibold",
-                "[&_pre]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-secondary [&_pre]:p-3 [&_pre]:text-xs",
-                "[&_code]:rounded [&_code]:bg-secondary [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs",
-                "[&_pre_code]:bg-transparent [&_pre_code]:p-0",
+                "[&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:break-words [&_h1]:text-base [&_h1]:font-semibold",
+                "[&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:break-words [&_h2]:text-base [&_h2]:font-semibold",
+                "[&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:break-words [&_h3]:font-semibold",
+                "[&_pre]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:rounded-lg [&_pre]:bg-secondary [&_pre]:p-3 [&_pre]:text-xs",
+                "[&_code]:rounded [&_code]:bg-secondary [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs [&_code]:break-words [&_code]:[overflow-wrap:anywhere]",
+                "[&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:whitespace-pre-wrap",
                 "[&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground",
-                "[&_table]:my-2 [&_table]:w-full [&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1",
+                "[&_table]:my-2 [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1",
               )}
             >
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
