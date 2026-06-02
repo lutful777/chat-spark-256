@@ -6,11 +6,13 @@ import {
   type ChangeEvent,
   type KeyboardEvent,
 } from "react";
-import { ChevronDown, FileUp, Github, Search, Send, Sparkles, Square, X } from "lucide-react";
+import { FileUp, Send, Square, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { ChatAttachment } from "@/lib/chat/types";
+
+export type ChatMode = "normal" | "realtime" | "github";
 
 export interface ChatInputHandle {
   setText: (text: string) => void;
@@ -23,9 +25,8 @@ interface ChatInputProps {
   disabled?: boolean;
   canSend?: boolean;
   placeholder?: string;
+  mode?: ChatMode;
 }
-
-type ChatMode = "normal" | "realtime" | "github";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -79,12 +80,10 @@ async function fileToAttachment(file: File): Promise<ChatAttachment> {
 }
 
 export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
-  function ChatInput({ onSend, onStop, loading, disabled }, handleRef) {
+  function ChatInput({ onSend, onStop, loading, disabled, mode = "normal" }, handleRef) {
     const [value, setValue] = useState("");
     const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
     const [readingFiles, setReadingFiles] = useState(false);
-    const [mode, setMode] = useState<ChatMode>("normal");
-    const [modeOpen, setModeOpen] = useState(false);
     const ref = useRef<HTMLTextAreaElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
 
@@ -147,167 +146,94 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
       setAttachments((prev) => prev.filter((x) => x.id !== id));
     };
 
-    const selectMode = (next: ChatMode) => {
-      setMode(next);
-      setModeOpen(false);
-    };
-
-    const fillGithubCommand = (command: string) => {
-      setMode("github");
-      setModeOpen(false);
-      setValue(command);
-      requestAnimationFrame(() => {
-        ref.current?.focus();
-        resize();
-      });
-    };
-
-    const activeLabel = mode === "github" ? "GitHub" : mode === "realtime" ? "Real Time" : "Plain";
-    const ActiveIcon = mode === "github" ? Github : mode === "realtime" ? Search : Sparkles;
-
     return (
-      <>
-        <div className="fixed left-1/2 top-16 z-50 -translate-x-1/2">
-          <button
-            type="button"
-            onClick={() => setModeOpen((v) => !v)}
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-card/95 px-4 py-2 text-sm font-medium text-foreground shadow-lg backdrop-blur"
-            aria-label="Pilih mode chat"
-          >
-            <ActiveIcon className="size-4" />
-            {activeLabel}
-            <ChevronDown className="size-4" />
-          </button>
-
-          {modeOpen && (
-            <div className="mt-2 w-56 overflow-hidden rounded-2xl border border-border bg-popover p-1 text-popover-foreground shadow-xl">
-              <ModeOption active={mode === "normal"} onClick={() => selectMode("normal")} icon={<Sparkles className="size-4" />} label="Plain" />
-              <ModeOption active={mode === "github"} onClick={() => selectMode("github")} icon={<Github className="size-4" />} label="GitHub" />
-              <ModeOption active={mode === "realtime"} onClick={() => selectMode("realtime")} icon={<Search className="size-4" />} label="Real Time" />
-              {mode === "github" && (
-                <div className="mt-1 border-t border-border p-2">
-                  <p className="mb-1 px-1 text-[11px] font-medium text-muted-foreground">Command GitHub</p>
-                  <CommandOption onClick={() => fillGithubCommand("Tambah tombol ")} label="Tambah tombol" />
-                  <CommandOption onClick={() => fillGithubCommand("Hapus tombol ")} label="Hapus tombol" />
-                  <CommandOption onClick={() => fillGithubCommand("Perbaiki error ")} label="Perbaiki error" />
-                  <CommandOption onClick={() => fillGithubCommand("cek build")} label="Cek build" />
-                  <CommandOption onClick={() => fillGithubCommand("PUSH")} label="Push" />
-                </div>
-              )}
+      <div className="border-t border-border bg-background/85 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
+        <div className="mx-auto w-full max-w-3xl space-y-2">
+          {mode === "github" && (
+            <div className="rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
+              GitHub Mode aktif — perubahan kode akan disiapkan preview dulu, lalu klik/ketik Push untuk commit.
             </div>
           )}
-        </div>
 
-        <div className="border-t border-border bg-background/80 px-3 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="mx-auto w-full max-w-3xl space-y-2">
-            {attachments.length > 0 && (
-              <div className="flex flex-wrap gap-2 rounded-2xl border border-border bg-card p-2">
-                {attachments.map((att) => (
-                  <div key={att.id} className="flex max-w-full items-center gap-2 rounded-xl bg-muted px-2 py-1 text-xs">
-                    {att.dataUrl ? (
-                      <img src={att.dataUrl} alt={att.name} className="size-8 rounded-lg object-cover" />
-                    ) : (
-                      <FileUp className="size-4 shrink-0 text-muted-foreground" />
-                    )}
-                    <span className="max-w-[150px] truncate">{att.name}</span>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">{formatSize(att.size)}</span>
-                    <button type="button" onClick={() => removeAttachment(att.id)} aria-label="Hapus file" className="rounded p-0.5 hover:bg-background">
-                      <X className="size-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 rounded-2xl border border-border bg-card p-2">
+              {attachments.map((att) => (
+                <div key={att.id} className="flex max-w-full items-center gap-2 rounded-xl bg-muted px-2 py-1 text-xs">
+                  {att.dataUrl ? (
+                    <img src={att.dataUrl} alt={att.name} className="size-8 rounded-lg object-cover" />
+                  ) : (
+                    <FileUp className="size-4 shrink-0 text-muted-foreground" />
+                  )}
+                  <span className="max-w-[150px] truncate">{att.name}</span>
+                  <span className="shrink-0 text-[10px] text-muted-foreground">{formatSize(att.size)}</span>
+                  <button type="button" onClick={() => removeAttachment(att.id)} aria-label="Hapus file" className="rounded p-0.5 hover:bg-background">
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
-            <div className="flex items-end gap-2">
-              <input
-                ref={fileRef}
-                type="file"
-                multiple
-                accept="image/*,.pdf,.txt,.md,.json,.csv,.doc,.docx,.xls,.xlsx"
-                className="hidden"
-                onChange={onFiles}
-              />
+          <div className="flex items-end gap-2 rounded-3xl border border-border/80 bg-card/80 p-2 shadow-2xl shadow-black/20 backdrop-blur">
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              accept="image/*,.pdf,.txt,.md,.json,.csv,.doc,.docx,.xls,.xlsx"
+              className="hidden"
+              onChange={onFiles}
+            />
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              onClick={() => fileRef.current?.click()}
+              disabled={disabled || loading || readingFiles}
+              className="size-10 shrink-0 rounded-2xl"
+              aria-label="Upload file"
+              title="Upload foto/PDF/file"
+            >
+              {readingFiles ? <Square className="size-4" /> : <FileUp className="size-4" />}
+            </Button>
+            <Textarea
+              ref={ref}
+              value={value}
+              onChange={(e) => {
+                setValue(e.target.value);
+                resize();
+              }}
+              onKeyDown={onKeyDown}
+              rows={1}
+              disabled={disabled}
+              placeholder={mode === "github" ? "Perintah GitHub..." : mode === "realtime" ? "Tanya data terbaru..." : "Ketik pesan"}
+              className="max-h-40 min-h-[40px] flex-1 resize-none border-0 bg-transparent px-1 shadow-none focus-visible:ring-0"
+            />
+            {loading ? (
               <Button
                 type="button"
                 size="icon"
-                variant="outline"
-                onClick={() => fileRef.current?.click()}
-                disabled={disabled || loading || readingFiles}
-                className="size-11 shrink-0 rounded-2xl"
-                aria-label="Upload file"
-                title="Upload foto/PDF/file"
+                variant="secondary"
+                onClick={onStop}
+                className="size-10 shrink-0 rounded-2xl"
+                aria-label="Hentikan"
               >
-                {readingFiles ? <Square className="size-4" /> : <FileUp className="size-4" />}
+                <Square className="size-4" />
               </Button>
-              <Textarea
-                ref={ref}
-                value={value}
-                onChange={(e) => {
-                  setValue(e.target.value);
-                  resize();
-                }}
-                onKeyDown={onKeyDown}
-                rows={1}
-                disabled={disabled}
-                placeholder={mode === "github" ? "GitHub" : mode === "realtime" ? "Real Time" : "Ketik pesan"}
-                className="max-h-40 min-h-[44px] flex-1 resize-none rounded-2xl bg-card"
-              />
-              {loading ? (
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="secondary"
-                  onClick={onStop}
-                  className="size-11 shrink-0 rounded-2xl"
-                  aria-label="Hentikan"
-                >
-                  <Square className="size-4" />
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  size="icon"
-                  onClick={submit}
-                  disabled={disabled || readingFiles || (!value.trim() && attachments.length === 0)}
-                  className="size-11 shrink-0 rounded-2xl"
-                  aria-label="Kirim"
-                >
-                  <Send className="size-4" />
-                </Button>
-              )}
-            </div>
+            ) : (
+              <Button
+                type="button"
+                size="icon"
+                onClick={submit}
+                disabled={disabled || readingFiles || (!value.trim() && attachments.length === 0)}
+                className="size-10 shrink-0 rounded-2xl"
+                aria-label="Kirim"
+              >
+                <Send className="size-4" />
+              </Button>
+            )}
           </div>
         </div>
-      </>
+      </div>
     );
   },
 );
-
-function ModeOption({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-        active ? "bg-accent text-accent-foreground" : "hover:bg-accent/60"
-      }`}
-    >
-      <span className="shrink-0">{icon}</span>
-      <span className="flex-1">{label}</span>
-      {active && <span className="text-primary">✓</span>}
-    </button>
-  );
-}
-
-function CommandOption({ onClick, label }: { onClick: () => void; label: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="block w-full rounded-xl px-3 py-2 text-left text-sm transition-colors hover:bg-accent/60"
-    >
-      {label}
-    </button>
-  );
-}
