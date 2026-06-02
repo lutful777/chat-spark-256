@@ -15,9 +15,9 @@ import {
 const PENDING_KEY = "aiapichat:github:pending-change";
 const INDEX_KEY = "aiapichat:github:repo-index";
 const MODE_PREFIX = "[GITHUB]";
-const MAX_FILES_FOR_AI = 8;
+const MAX_FILES_FOR_AI = 12;
 const MAX_FILE_CHARS = 50000;
-const MAX_TOTAL_CHARS = 180000;
+const MAX_TOTAL_CHARS = 220000;
 
 interface PendingFileChange {
   path: string;
@@ -65,22 +65,69 @@ interface AiEditResult {
 }
 
 const STATIC_HINTS: Array<{ path: string; keywords: string[] }> = [
-  { path: "src/routes/index.tsx", keywords: ["chat", "home", "input", "send", "kirim", "header", "real time", "github mode"] },
-  { path: "src/components/chat/ChatInput.tsx", keywords: ["input", "upload", "file", "foto", "gambar", "pdf", "placeholder", "send", "kirim", "github", "real time", "mode"] },
-  { path: "src/components/chat/ChatMessageBubble.tsx", keywords: ["bubble", "pesan", "foto", "gambar", "preview", "tampilan chat"] },
-  { path: "src/components/chat/ConversationSidebar.tsx", keywords: ["sidebar", "riwayat", "history", "new chat", "hapus chat", "settings"] },
+  {
+    path: "src/routes/index.tsx",
+    keywords: [
+      "chat",
+      "home",
+      "header",
+      "atas",
+      "mobile",
+      "hp",
+      "hamburger",
+      "garis tiga",
+      "nama model",
+      "pilih model",
+      "ganti model",
+      "dropdown model",
+      "model aktif",
+      "plain",
+      "real time",
+      "github mode",
+      "status panel",
+      "sidebar",
+    ],
+  },
+  {
+    path: "src/components/chat/ChatInput.tsx",
+    keywords: [
+      "input",
+      "keyboard",
+      "textarea",
+      "upload",
+      "file",
+      "foto",
+      "gambar",
+      "pdf",
+      "placeholder",
+      "send",
+      "kirim",
+      "tombol kirim",
+      "github",
+      "real time",
+      "mode",
+    ],
+  },
+  { path: "src/components/chat/ChatMessageBubble.tsx", keywords: ["bubble", "pesan", "jawaban", "copy", "share", "foto", "gambar", "preview", "tampilan chat", "markdown"] },
+  { path: "src/components/chat/ConversationSidebar.tsx", keywords: ["sidebar", "riwayat", "history", "new chat", "hapus chat", "rename", "settings"] },
   { path: "src/components/media/MediaNav.tsx", keywords: ["nav", "tab", "menu", "chat", "image", "video", "outlook"] },
-  { path: "src/routes/settings.tsx", keywords: ["setting", "settings", "api key", "provider", "github", "outlook"] },
+  { path: "src/routes/settings.tsx", keywords: ["setting", "settings", "api key", "provider", "serper", "search", "github", "outlook", "real time"] },
+  { path: "src/components/search/SerperSearchSettings.tsx", keywords: ["serper", "search", "web search", "real time", "realtime", "api key", "test search"] },
+  { path: "src/lib/search/realtime.ts", keywords: ["serper", "search", "real time", "realtime", "duckduckgo", "web search", "kurs", "usd", "internet"] },
+  { path: "src/routes/api/public/realtime-search.ts", keywords: ["serper", "search", "real time", "realtime", "duckduckgo", "brave", "tavily", "kurs", "usd", "internet"] },
   { path: "src/lib/chat/types.ts", keywords: ["provider", "preset", "model", "x.ai", "xai", "grok", "gemini", "openrouter", "bluesminds", "openai"] },
-  { path: "src/lib/chat/api.ts", keywords: ["chat api", "vision", "stream", "error", "400", "provider", "request"] },
-  { path: "src/lib/chat/media.ts", keywords: ["image", "video", "generate", "edit foto", "media", "x.ai", "grok", "duration", "durasi"] },
-  { path: "src/routes/image.tsx", keywords: ["image", "gambar", "foto", "edit foto", "generate image"] },
-  { path: "src/routes/video.tsx", keywords: ["video", "generate video", "continue", "durasi", "duration", "photo to video"] },
-  { path: "src/routes/outlook.tsx", keywords: ["outlook", "email", "inbox", "sent", "junk", "folder", "mail"] },
-  { path: "src/components/github/GitHubConnect.tsx", keywords: ["github", "connect github", "token", "repo", "permission"] },
-  { path: "src/lib/github/api.ts", keywords: ["github api", "repo", "file", "commit", "token", "update file", "tree"] },
-  { path: "src/lib/github/chatCommand.ts", keywords: ["github agent", "github chat", "ai agent", "command", "push", "commit", "planner"] },
-  { path: "src/styles.css", keywords: ["style", "css", "warna", "background", "lovable", "tampilan", "tema"] },
+  { path: "src/lib/chat/api.ts", keywords: ["chat api", "vision", "stream", "error", "400", "401", "429", "provider", "request", "realtime context"] },
+  { path: "src/lib/chat/media.ts", keywords: ["image", "video", "generate", "edit foto", "media", "x.ai", "grok", "duration", "durasi", "continue"] },
+  { path: "src/routes/image.tsx", keywords: ["image", "gambar", "foto", "edit foto", "generate image", "remove background"] },
+  { path: "src/routes/video.tsx", keywords: ["video", "generate video", "continue", "lanjutan", "sambung", "durasi", "duration", "photo to video"] },
+  { path: "src/routes/outlook.tsx", keywords: ["outlook", "email", "inbox", "sent", "junk", "folder", "mail", "pdf attachment"] },
+  { path: "src/lib/outlook/chatCommand.ts", keywords: ["outlook command", "email command", "mail command", "inbox", "pdf", "attachment"] },
+  { path: "src/components/github/GitHubConnect.tsx", keywords: ["github", "connect github", "token", "repo", "permission", "serper settings", "memory settings"] },
+  { path: "src/lib/github/api.ts", keywords: ["github api", "repo", "file", "commit", "token", "update file", "tree", "safety", "guard"] },
+  { path: "src/lib/github/chatCommand.ts", keywords: ["github agent", "github chat", "ai agent", "command", "push", "commit", "planner", "index repo", "pilih file"] },
+  { path: "src/routes/__root.tsx", keywords: ["root", "viewport", "keyboard", "pwa", "service worker", "android", "mobile"] },
+  { path: "src/styles.css", keywords: ["style", "css", "warna", "background", "lovable", "tampilan", "tema", "keyboard", "scroll", "mobile"] },
+  { path: "public/manifest.json", keywords: ["pwa", "manifest", "icon", "nama aplikasi", "install", "splash"] },
 ];
 
 function stripModePrefix(text: string): { enabled: boolean; cleanText: string } {
@@ -181,7 +228,7 @@ async function buildRepoIndex(config: GitHubConfig): Promise<RepoIndex> {
       ext: extOf(item.path),
       scoreText: `${item.path} ${item.path.split(/[/\.\-_]/).join(" ")}`.toLowerCase(),
     }))
-    .slice(0, 350);
+    .slice(0, 450);
 
   const index = { owner: config.owner, repo: config.repo, branch: config.branch || "main", createdAt: Date.now(), files };
   saveIndex(index);
@@ -194,17 +241,67 @@ async function getOrBuildIndex(config: GitHubConfig): Promise<RepoIndex> {
   return buildRepoIndex(config);
 }
 
+function priorityPathsForRequest(request: string): string[] {
+  const lower = normalize(request);
+  const paths: string[] = [];
+  const add = (...items: string[]) => paths.push(...items);
+
+  const mentionsMobileHeader = ["header", "atas", "hamburger", "garis tiga", "mobile", "hp", "plain"].some((x) => lower.includes(x));
+  const mentionsModelPicker = ["model", "nama model", "ganti model", "pilih model", "dropdown", "provider aktif"].some((x) => lower.includes(x));
+  if (mentionsMobileHeader || mentionsModelPicker) add("src/routes/index.tsx");
+
+  if (["serper", "realtime", "real time", "web search", "search", "kurs", "usd", "internet"].some((x) => lower.includes(x))) {
+    add("src/components/search/SerperSearchSettings.tsx", "src/lib/search/realtime.ts", "src/routes/api/public/realtime-search.ts", "src/routes/index.tsx");
+  }
+
+  if (["settings", "setting", "api key", "provider", "save", "test connection"].some((x) => lower.includes(x))) {
+    add("src/routes/settings.tsx", "src/components/github/GitHubConnect.tsx", "src/lib/chat/types.ts");
+  }
+
+  if (["keyboard", "papan ketik", "input", "textarea", "send", "kirim"].some((x) => lower.includes(x))) {
+    add("src/components/chat/ChatInput.tsx", "src/routes/__root.tsx", "src/styles.css");
+  }
+
+  if (["video", "durasi", "continue", "lanjutan", "sambung"].some((x) => lower.includes(x))) {
+    add("src/routes/video.tsx", "src/lib/chat/media.ts", "src/lib/chat/types.ts");
+  }
+
+  if (["image", "gambar", "foto", "edit foto", "remove background"].some((x) => lower.includes(x))) {
+    add("src/routes/image.tsx", "src/lib/chat/media.ts", "src/lib/chat/types.ts");
+  }
+
+  if (["outlook", "email", "mail", "inbox", "pdf attachment"].some((x) => lower.includes(x))) {
+    add("src/routes/outlook.tsx", "src/lib/outlook/chatCommand.ts", "src/lib/outlook/msal.ts");
+  }
+
+  if (["pwa", "icon", "manifest", "install", "apk", "splash"].some((x) => lower.includes(x))) {
+    add("public/manifest.json", "src/routes/__root.tsx", "src/styles.css");
+  }
+
+  if (["github mode", "index repo", "push", "commit", "planner", "pilih file", "baca repo"].some((x) => lower.includes(x))) {
+    add("src/lib/github/chatCommand.ts", "src/lib/github/api.ts", "src/components/github/GitHubConnect.tsx");
+  }
+
+  return Array.from(new Set(paths));
+}
+
 function scoreFileForRequest(file: RepoIndexFile, request: string): number {
-  const words = normalize(request).split(" ").filter((w) => w.length >= 3);
+  const lower = normalize(request);
+  const words = lower.split(" ").filter((w) => w.length >= 3);
   const staticHint = STATIC_HINTS.find((hint) => hint.path === file.path);
   let score = 0;
+
+  for (const priorityPath of priorityPathsForRequest(request)) {
+    if (file.path === priorityPath) score += 30;
+  }
+
   for (const word of words) {
     if (file.scoreText.includes(word)) score += 3;
     if (file.path.toLowerCase().includes(word)) score += 5;
   }
   if (staticHint) {
     for (const keyword of staticHint.keywords) {
-      if (normalize(request).includes(keyword)) score += 8;
+      if (lower.includes(keyword)) score += 10;
     }
   }
   if (file.path.startsWith("src/")) score += 1;
@@ -213,13 +310,15 @@ function scoreFileForRequest(file: RepoIndexFile, request: string): number {
 }
 
 function selectCandidatePaths(index: RepoIndex, request: string): string[] {
+  const available = new Set(index.files.map((file) => file.path));
+  const priority = priorityPathsForRequest(request).filter((path) => available.has(path));
   const ranked = index.files
     .map((file) => ({ file, score: scoreFileForRequest(file, request) }))
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score || a.file.path.length - b.file.path.length)
     .map((x) => x.file.path);
-  const hints = STATIC_HINTS.map((hint) => hint.path).filter((path) => index.files.some((file) => file.path === path));
-  return Array.from(new Set([...ranked, ...hints])).slice(0, MAX_FILES_FOR_AI);
+  const hints = STATIC_HINTS.map((hint) => hint.path).filter((path) => available.has(path));
+  return Array.from(new Set([...priority, ...ranked, ...hints])).slice(0, MAX_FILES_FOR_AI);
 }
 
 async function loadCandidateFiles(config: GitHubConfig, request: string): Promise<LoadedRepoFile[]> {
@@ -269,8 +368,32 @@ function extractJson(text: string): AiEditResult {
   return JSON.parse(raw.slice(start, end + 1)) as AiEditResult;
 }
 
+function isSourceFile(path: string): boolean {
+  return /\.(ts|tsx|js|jsx)$/i.test(path);
+}
+
+function validateAiGeneratedFile(path: string, oldContent: string, newContent: string): string | null {
+  if (!isSourceFile(path)) return null;
+
+  const oldTrimmed = oldContent.trim();
+  const newTrimmed = newContent.trim();
+  const oldLineCount = oldTrimmed.split("\n").length;
+  const newLineCount = newTrimmed.split("\n").length;
+  const oldHasModuleShape = /^import\s/m.test(oldTrimmed) || /^export\s/m.test(oldTrimmed);
+  const newHasModuleShape = /^import\s/m.test(newTrimmed) || /^export\s/m.test(newTrimmed);
+
+  if (!newTrimmed) return "file baru kosong";
+  if (/^<[^>]+/m.test(newTrimmed) || /^return\s*\(/m.test(newTrimmed)) return "hasil terlihat seperti potongan JSX, bukan full file";
+  if (oldHasModuleShape && !newHasModuleShape) return "hasil tidak punya import/export seperti file asli";
+  if (oldLineCount >= 80 && newLineCount < Math.max(40, Math.floor(oldLineCount * 0.55))) {
+    return `hasil terlalu pendek (${newLineCount} baris dari ${oldLineCount} baris asli)`;
+  }
+
+  return null;
+}
+
 function buildAiPrompt(request: string, files: LoadedRepoFile[], index: RepoIndex): string {
-  const fileList = index.files.slice(0, 180).map((file) => `- ${file.path} (${file.ext}, ${file.size} bytes)`).join("\n");
+  const fileList = index.files.slice(0, 220).map((file) => `- ${file.path} (${file.ext}, ${file.size} bytes)`).join("\n");
   const fileBlock = files.map((file) => `--- FILE: ${file.path}\n${file.content}\n--- END FILE: ${file.path}`).join("\n\n");
   return [
     "User request:", request, "",
@@ -279,10 +402,14 @@ function buildAiPrompt(request: string, files: LoadedRepoFile[], index: RepoInde
     "JSON schema:", '{"summary":"short Indonesian summary","files":[{"path":"exact provided path","content":"full new file content"}]}',
     "Rules:",
     "- Read the repo index to understand available files.",
-    "- Return full content for every edited file.",
+    "- Return full content for every edited file, not a snippet or patch.",
+    "- For TS/TSX/JS/JSX files, preserve existing imports, exports, component structure, and unrelated features.",
+    "- Never return only a JSX fragment such as <header>...</header> or return (...).",
     "- Do not include unchanged files.",
     "- Do not invent paths not provided in FILE blocks.",
     "- Keep API keys/secrets unchanged. Never add hardcoded secret keys.",
+    "- If request mentions mobile/header/model/provider/plain/status/sidebar, prefer editing src/routes/index.tsx when provided.",
+    "- If request mentions Serper/Real Time/web search, inspect src/components/search/SerperSearchSettings.tsx, src/lib/search/realtime.ts, and src/routes/api/public/realtime-search.ts when provided.",
     "- If unclear, return an empty files array with a clear Indonesian summary.",
     "", "Repo index:", fileList, "", fileBlock,
   ].join("\n");
@@ -352,9 +479,9 @@ async function prepareAiEdit(config: GitHubConfig, request: string, provider?: P
   const files = await loadCandidateFiles(config, request);
   const prompt = buildAiPrompt(request, files, index);
   const result = await sendChat({
-    provider: { ...provider, stream: false, maxTokens: Math.max(provider.maxTokens ?? 0, 6000) },
+    provider: { ...provider, stream: false, maxTokens: Math.max(provider.maxTokens ?? 0, 8000) },
     messages: [
-      { id: "github-agent-system", role: "system", content: "Return only valid JSON for the requested code edit.", createdAt: Date.now() },
+      { id: "github-agent-system", role: "system", content: "Return only valid JSON for the requested code edit. Never return partial source files.", createdAt: Date.now() },
       { id: "github-agent-user", role: "user", content: prompt, createdAt: Date.now() },
     ] as ChatMessage[],
   });
@@ -365,6 +492,14 @@ async function prepareAiEdit(config: GitHubConfig, request: string, provider?: P
     .filter((file) => allowed.has(file.path))
     .filter((file) => file.content !== allowed.get(file.path)?.content)
     .map((file) => ({ path: file.path, sha: allowed.get(file.path)!.sha, content: file.content, oldContent: allowed.get(file.path)!.content }));
+
+  const unsafe = changes
+    .map((change) => ({ path: change.path, reason: validateAiGeneratedFile(change.path, change.oldContent ?? "", change.content) }))
+    .find((item) => item.reason);
+  if (unsafe?.reason) {
+    return `AI menghasilkan edit yang tidak aman untuk \`${unsafe.path}\`: ${unsafe.reason}. Tidak ada perubahan yang disimpan. Coba ulangi dengan perintah lebih spesifik atau minta AI membaca file lengkap.`;
+  }
+
   if (changes.length === 0) return edit.summary || "AI tidak menemukan perubahan yang aman untuk dibuat. Coba tulis perintah lebih spesifik.";
   const summary = ["AI Planner:", edit.summary || "Perubahan kode sudah disiapkan.", "", "File yang akan diedit:", ...changes.map((change) => `- \`${change.path}\``)].join("\n");
   savePending({ owner: config.owner, repo: config.repo, branch: config.branch || "main", changes, message: `AI update: ${request.slice(0, 60)}`, summary, createdAt: Date.now() });
