@@ -97,7 +97,7 @@ function buildTextWithAttachments(text: string, attachments: ChatAttachment[]): 
 }
 
 export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
-  function ChatInput({ onSend, onStop, loading, disabled, placeholder }, handleRef) {
+  function ChatInput({ onSend, onStop, loading, disabled }, handleRef) {
     const [value, setValue] = useState("");
     const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
     const [readingFiles, setReadingFiles] = useState(false);
@@ -209,7 +209,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               onKeyDown={onKeyDown}
               rows={1}
               disabled={disabled}
-              placeholder={placeholder ?? "Ketik pesan…"}
+              placeholder="Ketik pesan"
               className="max-h-40 min-h-[44px] flex-1 resize-none rounded-2xl bg-card"
             />
             {loading ? (
