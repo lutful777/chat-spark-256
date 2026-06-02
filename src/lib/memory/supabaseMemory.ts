@@ -86,7 +86,7 @@ async function supabaseInsert(config: SupabaseMemoryConfig, path: string, body: 
   });
 }
 
-export async function fetchAiMemory(limit = 20): Promise<AiMemoryItem[]> {
+export async function fetchAiMemory(limit = 80): Promise<AiMemoryItem[]> {
   const config = loadSupabaseMemoryConfig();
   if (!config.enabled || !config.url || !config.anonKey) return [];
 
@@ -96,7 +96,7 @@ export async function fetchAiMemory(limit = 20): Promise<AiMemoryItem[]> {
   ).catch(() => []);
 }
 
-export async function fetchRepoIndexMemory(limit = 40): Promise<RepoIndexMemoryItem[]> {
+export async function fetchRepoIndexMemory(limit = 80): Promise<RepoIndexMemoryItem[]> {
   const config = loadSupabaseMemoryConfig();
   if (!config.enabled || !config.url || !config.anonKey) return [];
 
@@ -106,8 +106,38 @@ export async function fetchRepoIndexMemory(limit = 40): Promise<RepoIndexMemoryI
   ).catch(() => []);
 }
 
-export async function buildAiMemoryContext(): Promise<string> {
-  const [memory, repoIndex] = await Promise.all([fetchAiMemory(), fetchRepoIndexMemory()]);
+function words(text: string): string[] {
+  return cleanMemoryText(text)
+    .toLowerCase()
+    .split(/[^a-z0-9_.-]+/i)
+    .filter((word) => word.length >= 3)
+    .slice(0, 40);
+}
+
+function scoreText(text: string, query: string): number {
+  const q = words(query);
+  if (q.length === 0) return 1;
+  const haystack = cleanMemoryText(text).toLowerCase();
+  let score = 0;
+  for (const word of q) {
+    if (haystack.includes(word)) score += word.length >= 6 ? 3 : 1;
+  }
+  return score;
+}
+
+function rankMemory<T>(items: T[], query: string, textOf: (item: T) => string, limit: number): T[] {
+  return items
+    .map((item, index) => ({ item, index, score: scoreText(textOf(item), query) }))
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .filter((row, index) => row.score > 0 || index < Math.min(8, limit))
+    .slice(0, limit)
+    .map((row) => row.item);
+}
+
+export async function buildAiMemoryContext(query = ""): Promise<string> {
+  const [memoryRaw, repoRaw] = await Promise.all([fetchAiMemory(), fetchRepoIndexMemory()]);
+  const memory = rankMemory(memoryRaw, query, (item) => `${item.title} ${item.category ?? ""} ${item.content}`, 16);
+  const repoIndex = rankMemory(repoRaw, query, (item) => `${item.path} ${item.file_type ?? ""} ${item.summary}`, 24);
   if (memory.length === 0 && repoIndex.length === 0) return "";
 
   const memoryText = memory
@@ -120,8 +150,9 @@ export async function buildAiMemoryContext(): Promise<string> {
 
   return [
     "AI APP MEMORY FROM SUPABASE:",
-    memoryText ? `General memory:\n${memoryText}` : "",
-    repoText ? `Repo index memory:\n${repoText}` : "",
+    query ? `Memory search query: ${cleanMemoryText(query).slice(0, 240)}` : "",
+    memoryText ? `Most relevant general memory:\n${memoryText}` : "",
+    repoText ? `Most relevant repo index memory:\n${repoText}` : "",
     "Important privacy rule: never store or reveal user API keys, provider settings, or chat history in Supabase memory.",
   ]
     .filter(Boolean)
