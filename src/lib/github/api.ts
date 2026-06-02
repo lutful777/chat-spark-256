@@ -119,6 +119,31 @@ async function githubFetch<T>(tokenValue: string, path: string, init?: RequestIn
   return (await res.json()) as T;
 }
 
+async function githubTextFetch(tokenValue: string, path: string, init?: RequestInit): Promise<string> {
+  const res = await fetch(`${GITHUB_API}${path}`, {
+    ...init,
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token(tokenValue)}`,
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const body = await res.json();
+      detail = body?.message ?? "";
+    } catch {
+      detail = await res.text().catch(() => "");
+    }
+    throw new Error(`GitHub ${res.status}: ${detail || res.statusText}`);
+  }
+
+  return res.text();
+}
+
 export async function fetchGitHubUser(tokenValue: string): Promise<GitHubUser> {
   return githubFetch<GitHubUser>(tokenValue, "/user");
 }
@@ -329,4 +354,23 @@ export async function getCommitCheckRuns(args: {
     `/repos/${args.owner}/${args.repo}/commits/${encodeURIComponent(args.ref)}/check-runs?per_page=50`,
   );
   return data.check_runs ?? [];
+}
+
+export async function getWorkflowRunLogText(args: {
+  token: string;
+  owner: string;
+  repo: string;
+  runUrl: string;
+}): Promise<string> {
+  const match = args.runUrl.match(/\/actions\/runs\/(\d+)/);
+  if (!match?.[1]) throw new Error("Tidak bisa membaca run id GitHub Actions.");
+  const runId = match[1];
+  const jobs = await githubFetch<{ jobs?: Array<{ id: number; name: string; conclusion?: string | null; status?: string }> }>(
+    args.token,
+    `/repos/${args.owner}/${args.repo}/actions/runs/${runId}/jobs?per_page=20`,
+  );
+  const failed = (jobs.jobs ?? []).find((job) => job.conclusion === "failure") ?? jobs.jobs?.[0];
+  if (!failed?.id) return "Tidak ada job log yang bisa dibaca.";
+  const raw = await githubTextFetch(args.token, `/repos/${args.owner}/${args.repo}/actions/jobs/${failed.id}/logs`);
+  return raw.slice(-12000);
 }
