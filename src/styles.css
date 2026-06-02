@@ -119,3 +119,8 @@ iframe[src*="lovable" i] {
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+/* Hide welcome helper examples so no command list appears on the empty chat screen. */
+.min-h-\[55vh\] > p {
+  display: none !important;
+}
