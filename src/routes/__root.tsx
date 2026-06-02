@@ -78,7 +78,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=overlays-content" },
       { title: "Ai Chat" },
       {
         name: "description",
@@ -126,10 +126,54 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function PwaBoot() {
   useEffect(() => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-    });
+    if (typeof window === "undefined") return;
+
+    const root = document.documentElement;
+    let stableHeight = window.innerHeight;
+
+    const activeIsTextInput = () => {
+      const el = document.activeElement;
+      if (!el) return false;
+      const tag = el.tagName.toLowerCase();
+      return tag === "textarea" || tag === "input" || (el as HTMLElement).isContentEditable;
+    };
+
+    const updateViewportVars = () => {
+      const viewport = window.visualViewport;
+      const visualHeight = viewport?.height ?? window.innerHeight;
+      const visualOffsetTop = viewport?.offsetTop ?? 0;
+      const rawKeyboardOffset = viewport ? Math.max(0, window.innerHeight - visualHeight - visualOffsetTop) : 0;
+      const resizedByKeyboard = activeIsTextInput() && stableHeight - window.innerHeight > 120;
+      const keyboardOffset = Math.max(rawKeyboardOffset, resizedByKeyboard ? stableHeight - window.innerHeight : 0);
+      const keyboardOpen = keyboardOffset > 60;
+
+      if (!keyboardOpen) {
+        stableHeight = window.innerHeight;
+      }
+
+      root.style.setProperty("--app-stable-height", `${Math.max(stableHeight, 480)}px`);
+      root.style.setProperty("--keyboard-offset", `${keyboardOffset}px`);
+      root.classList.toggle("keyboard-open", keyboardOpen);
+    };
+
+    updateViewportVars();
+    window.addEventListener("resize", updateViewportVars);
+    window.addEventListener("orientationchange", updateViewportVars);
+    window.visualViewport?.addEventListener("resize", updateViewportVars);
+    window.visualViewport?.addEventListener("scroll", updateViewportVars);
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+      });
+    }
+
+    return () => {
+      window.removeEventListener("resize", updateViewportVars);
+      window.removeEventListener("orientationchange", updateViewportVars);
+      window.visualViewport?.removeEventListener("resize", updateViewportVars);
+      window.visualViewport?.removeEventListener("scroll", updateViewportVars);
+    };
   }, []);
   return null;
 }
