@@ -146,6 +146,20 @@
   padding-bottom: calc(var(--keyboard-offset) + 0.75rem);
 }
 
+/* Settings route must own its own scroll because the app body is fixed for Android keyboard stability. */
+.min-h-\[100dvh\].bg-background.text-foreground {
+  height: var(--app-stable-height);
+  max-height: var(--app-stable-height);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.min-h-\[100dvh\].bg-background.text-foreground > .mx-auto {
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+
 /* Hide the Lovable editor badge if it is injected inside the app DOM. */
 [id*="lovable" i],
 [class*="lovable" i],
