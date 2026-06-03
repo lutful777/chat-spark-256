@@ -1,16 +1,116 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="48dp"
-    android:height="48dp"
-    android:viewportWidth="48"
-    android:viewportHeight="48">
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="1080"
+    android:viewportHeight="1080">
+
+    <!-- Dark background like the uploaded neon bot icon -->
     <path
-        android:fillColor="#0B0F1A"
-        android:pathData="M24,2C11.85,2 2,11.85 2,24s9.85,22 22,22 22,-9.85 22,-22S36.15,2 24,2z" />
+        android:fillColor="#02040C"
+        android:pathData="M0,0h1080v1080h-1080z" />
+
+    <!-- Soft cyan glow -->
     <path
-        android:fillColor="#5C8DFF"
-        android:pathData="M14,15h20c2.21,0 4,1.79 4,4v9c0,2.21 -1.79,4 -4,4H23l-7,5v-5h-2c-2.21,0 -4,-1.79 -4,-4v-9c0,-2.21 1.79,-4 4,-4z" />
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#00E7FF"
+        android:strokeAlpha="0.26"
+        android:strokeWidth="56"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M350,725 L260,760 Q225,774 237,737 L270,638 Q217,568 235,478 Q260,360 392,323 Q456,305 580,305 Q760,305 834,408 Q906,509 870,620 Q830,748 675,776 Q560,796 455,760 L350,725z" />
+
+    <!-- Soft purple glow -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M16,22h16v3H16zM16,27h10v3H16z" />
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#C05BFF"
+        android:strokeAlpha="0.28"
+        android:strokeWidth="58"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M350,725 L260,760 Q225,774 237,737 L270,638 Q217,568 235,478 Q260,360 392,323 Q456,305 580,305 Q760,305 834,408 Q906,509 870,620 Q830,748 675,776 Q560,796 455,760 L350,725z" />
+
+    <!-- Main chat bubble outline -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#7CEBFF"
+        android:strokeWidth="27"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M350,725 L260,760 Q225,774 237,737 L270,638 Q217,568 235,478 Q260,360 392,323 Q456,305 580,305 Q760,305 834,408 Q906,509 870,620 Q830,748 675,776 Q560,796 455,760 L350,725z" />
+
+    <!-- Purple side accent -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#D46BFF"
+        android:strokeWidth="27"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M350,725 L260,760 Q225,774 237,737 L270,638 Q217,568 235,478 Q260,360 392,323" />
+
+    <!-- Robot head glow -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#56E9FF"
+        android:strokeAlpha="0.25"
+        android:strokeWidth="46"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M392,456 H668 Q720,456 720,508 V590 Q720,642 668,642 H392 Q340,642 340,590 V508 Q340,456 392,456z" />
+
+    <!-- Robot head -->
+    <path
+        android:fillColor="#071A33"
+        android:strokeColor="#83F4FF"
+        android:strokeWidth="24"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M392,456 H668 Q720,456 720,508 V590 Q720,642 668,642 H392 Q340,642 340,590 V508 Q340,456 392,456z" />
+
+    <!-- Robot head purple accent -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#D46BFF"
+        android:strokeWidth="24"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M392,456 H500" />
+
+    <!-- Antenna lines -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#A8F7FF"
+        android:strokeWidth="24"
+        android:strokeLineCap="round"
+        android:pathData="M530,456 V370 M530,642 V710 M340,548 H282 L240,505 M720,548 H778 L820,505" />
+
+    <!-- Antenna dots -->
+    <path
+        android:fillColor="#061326"
+        android:strokeColor="#B6F8FF"
+        android:strokeWidth="22"
+        android:pathData="M530,329 m-28,0 a28,28 0,1 0,56 0 a28,28 0,1 0,-56 0" />
+    <path
+        android:fillColor="#061326"
+        android:strokeColor="#D46BFF"
+        android:strokeWidth="22"
+        android:pathData="M220,485 m-28,0 a28,28 0,1 0,56 0 a28,28 0,1 0,-56 0" />
+    <path
+        android:fillColor="#061326"
+        android:strokeColor="#72F0FF"
+        android:strokeWidth="22"
+        android:pathData="M840,485 m-28,0 a28,28 0,1 0,56 0 a28,28 0,1 0,-56 0" />
+    <path
+        android:fillColor="#061326"
+        android:strokeColor="#A8F7FF"
+        android:strokeWidth="22"
+        android:pathData="M530,734 m-28,0 a28,28 0,1 0,56 0 a28,28 0,1 0,-56 0" />
+
+    <!-- Eyes -->
+    <path
+        android:fillColor="#F4E8FF"
+        android:pathData="M442,548 m-25,0 a25,25 0,1 0,50 0 a25,25 0,1 0,-50 0" />
+    <path
+        android:fillColor="#BFFAFF"
+        android:pathData="M620,548 m-25,0 a25,25 0,1 0,50 0 a25,25 0,1 0,-50 0" />
 </vector>
