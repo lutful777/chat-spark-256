@@ -80,10 +80,10 @@ function modeLabel(mode: ChatMode): string {
   return "Plain";
 }
 
-function shortModelName(model?: string): string {
+function displayModelName(model?: string): string {
   const clean = model?.trim();
   if (!clean) return "Pilih model";
-  return clean.split("/").filter(Boolean).at(-1) ?? clean;
+  return clean;
 }
 
 function ChatPage() {
@@ -139,7 +139,7 @@ function ChatPage() {
   const memoryOk = !!(memoryConfig.enabled && memoryConfig.anonKey.trim());
   const githubOk = !!(githubConfig.token.trim() && githubConfig.owner && githubConfig.repo);
   const realtimeDesc = realtimeConfig.serperApiKey.trim() ? "Serper aktif" : "DuckDuckGo fallback aktif";
-  const activeModelLabel = shortModelName(activeProvider?.model);
+  const activeModelLabel = displayModelName(activeProvider?.model);
 
   const selectedValue =
     activeProviderId && activeProvider?.model
@@ -170,7 +170,7 @@ function ChatPage() {
     }
     return models.map((m) => (
       <SelectItem key={`${p.id}:::${m}`} value={`${p.id}:::${m}`}>
-        {shortModelName(m)}
+        {providers.length > 1 ? `${p.name} · ${m}` : m}
       </SelectItem>
     ));
   });
