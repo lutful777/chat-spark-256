@@ -1,11 +1,6 @@
 [build]
   command = "npm run build"
-  publish = "dist/client"
+  publish = "dist"
 
 [build.environment]
   NITRO_PRESET = "netlify"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
