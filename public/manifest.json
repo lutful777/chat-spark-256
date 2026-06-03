@@ -18,28 +18,22 @@
   },
   "icons": [
     {
-      "src": "/icon-192x192.png?v=6",
+      "src": "/ai-chat-icon.svg?v=7",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192x192.png?v=7",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-512x512.png?v=6",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/maskable-icon-512x512.png?v=6",
+      "src": "/icon-512x512.png?v=7",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    },
-    {
-      "src": "/maskable-icon-512x512.png?v=6",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
     }
   ],
   "shortcuts": [
@@ -48,21 +42,21 @@
       "short_name": "Chat",
       "description": "Buka chat baru",
       "url": "/?action=new-chat",
-      "icons": [{ "src": "/icon-192x192.png?v=6", "sizes": "192x192" }]
+      "icons": [{ "src": "/ai-chat-icon.svg?v=7", "sizes": "512x512" }]
     },
     {
       "name": "Image Generator",
       "short_name": "Image",
       "description": "Buka fitur gambar",
       "url": "/image",
-      "icons": [{ "src": "/icon-192x192.png?v=6", "sizes": "192x192" }]
+      "icons": [{ "src": "/ai-chat-icon.svg?v=7", "sizes": "512x512" }]
     },
     {
       "name": "Video Generator",
       "short_name": "Video",
       "description": "Buka fitur video",
       "url": "/video",
-      "icons": [{ "src": "/icon-192x192.png?v=6", "sizes": "192x192" }]
+      "icons": [{ "src": "/ai-chat-icon.svg?v=7", "sizes": "512x512" }]
     }
   ]
 }
