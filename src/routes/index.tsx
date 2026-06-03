@@ -42,7 +42,7 @@ import type { ChatAttachment, ChatMessage } from "@/lib/chat/types";
 import { runOutlookMailCommand } from "@/lib/outlook/chatCommand";
 import { runGitHubChatCommand } from "@/lib/github/chatCommand";
 import { autoSaveImportantMemory, buildAiMemoryContext, loadSupabaseMemoryConfig } from "@/lib/memory/supabaseMemory";
-import { buildRealtimeContext, searchRealtimeWeb } from "@/lib/search/realtime";
+import { buildRealtimeContext, loadRealtimeSearchConfig, searchRealtimeWeb } from "@/lib/search/realtime";
 import { loadGitHubConfig } from "@/lib/github/api";
 
 export const Route = createFileRoute("/")({
@@ -135,8 +135,10 @@ function ChatPage() {
 
   const memoryConfig = loadSupabaseMemoryConfig();
   const githubConfig = loadGitHubConfig();
+  const realtimeConfig = loadRealtimeSearchConfig();
   const memoryOk = !!(memoryConfig.enabled && memoryConfig.anonKey.trim());
   const githubOk = !!(githubConfig.token.trim() && githubConfig.owner && githubConfig.repo);
+  const realtimeDesc = realtimeConfig.serperApiKey.trim() ? "Serper aktif" : "DuckDuckGo fallback aktif";
   const activeModelLabel = shortModelName(activeProvider?.model);
 
   const selectedValue =
@@ -384,6 +386,7 @@ function ChatPage() {
             githubOk={githubOk}
             memoryOk={memoryOk}
             realtimeOk
+            realtimeDesc={realtimeDesc}
             providerName={activeProvider?.name ?? "Provider"}
             providerModel={activeProvider?.model ?? "Belum dipilih"}
             repoName={githubOk ? `${githubConfig.owner}/${githubConfig.repo}` : "Belum connect"}
@@ -459,6 +462,7 @@ function StatusPanel({
   githubOk,
   memoryOk,
   realtimeOk,
+  realtimeDesc,
   providerName,
   providerModel,
   repoName,
@@ -470,6 +474,7 @@ function StatusPanel({
   githubOk: boolean;
   memoryOk: boolean;
   realtimeOk: boolean;
+  realtimeDesc: string;
   providerName: string;
   providerModel: string;
   repoName: string;
@@ -487,7 +492,7 @@ function StatusPanel({
         <StatusRow ok={canSend} title="Provider" desc={canSend ? `${providerName} · ${providerModel}` : "Belum lengkap"} />
         <StatusRow ok={githubOk} title="GitHub" desc={repoName} />
         <StatusRow ok={memoryOk} title="Memory" desc={memoryOk ? "Supabase aktif" : "Supabase belum aktif"} />
-        <StatusRow ok={realtimeOk} title="Realtime" desc="DuckDuckGo fallback aktif" />
+        <StatusRow ok={realtimeOk} title="Realtime" desc={realtimeDesc} />
       </div>
 
       <div className="mt-5 rounded-3xl border border-sidebar-border bg-sidebar-accent/30 p-3">
