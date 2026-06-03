@@ -1,14 +1,7 @@
 [build]
   command = "npm run build"
-  publish = "dist/client"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "22"
   NITRO_PRESET = "netlify"
-
-# Serve the built client app for direct visits/refreshes.
-# This prevents Netlify from returning 404 for app routes.
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
