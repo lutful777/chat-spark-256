@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getRoleForEmail } from "@/lib/app/roles";
 import {
   loadSupabaseAuthSession,
   loadSupabaseMemoryConfig,
@@ -101,6 +102,8 @@ export function SupabaseMemoryKey() {
     }
   };
 
+  const roleLabel = getRoleForEmail(session?.user.email);
+
   return (
     <div className="rounded-2xl border border-border bg-muted/20 p-3">
       <div className="mb-2 flex items-center gap-2">
@@ -134,6 +137,9 @@ export function SupabaseMemoryKey() {
           <div className="rounded-xl border border-primary/25 bg-primary/10 p-3 text-xs">
             <div className="mb-2 flex items-center gap-2 font-medium text-primary">
               <UserRound className="size-4" /> Memory login: {session.user.email || session.user.id}
+            </div>
+            <div className="mb-3 inline-flex rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+              {roleLabel}
             </div>
             <Button variant="outline" size="sm" onClick={logout} disabled={loading !== null} className="gap-2 rounded-xl">
               {loading === "logout" ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />}
@@ -174,7 +180,7 @@ export function SupabaseMemoryKey() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Setelah login, AI hanya membaca/menyimpan memory milik akun ini.
+                Email lutfulh19@gmail.com dikenali sebagai Owner · Admin · Developer setelah login/register.
               </p>
             </div>
           </div>
