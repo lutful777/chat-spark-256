@@ -27,6 +27,34 @@ function buildTarget(provider: ProviderConfig): string {
   return `${base}${path}`;
 }
 
+function isThinkingMode(provider: ProviderConfig): boolean {
+  return provider.systemPrompt?.toLowerCase().includes("thinking mode aktif") ?? false;
+}
+
+function isThinkingModelName(model: string): boolean {
+  const lower = model.toLowerCase();
+  return (
+    lower.includes("thinking") ||
+    lower.includes("reasoning") ||
+    lower.includes("reasoner") ||
+    lower.includes("deepseek-r1") ||
+    lower.includes("/r1") ||
+    lower.endsWith("-r1") ||
+    lower.includes("o1") ||
+    lower.includes("o3") ||
+    lower.includes("o4")
+  );
+}
+
+function selectRequestModel(provider: ProviderConfig): string {
+  const selected = provider.model.trim();
+  if (!isThinkingMode(provider)) return selected;
+  if (isThinkingModelName(selected)) return selected;
+
+  const models = Array.from(new Set([selected, ...(provider.models ?? [])].map((m) => m.trim()).filter(Boolean)));
+  return models.find(isThinkingModelName) ?? selected;
+}
+
 function mapStatusToMessage(status: number, body: string): string {
   let detail = "";
   try {
@@ -138,7 +166,7 @@ function buildPayload(
   textOnly = false,
 ) {
   return {
-    model: provider.model.trim(),
+    model: selectRequestModel(provider),
     messages: buildMessages(provider, messages, textOnly),
     temperature: provider.temperature,
     max_tokens: provider.maxTokens,
@@ -382,7 +410,7 @@ export async function testConnection(provider: ProviderConfig): Promise<string> 
       {
         id: "test",
         role: "user",
-        content: "Say hello in one short sentence.",
+        content: "Reply with exactly: OK",
         createdAt: Date.now(),
       },
     ],
