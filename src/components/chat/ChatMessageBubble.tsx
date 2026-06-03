@@ -46,6 +46,32 @@ function textFromNode(node: React.ReactNode): string {
   return "";
 }
 
+function looksLikeScript(content: string): boolean {
+  const text = content.trim();
+  if (text.includes("```")) return false;
+  const markers = [
+    "import ",
+    "export ",
+    "function ",
+    "const ",
+    "let ",
+    "class ",
+    "return ",
+    "<div",
+    "<script",
+    "android {",
+    "dependencies {",
+    "plugins {",
+    "public class ",
+    "package ",
+    "<?xml",
+    "<manifest",
+  ];
+  const lineCount = text.split("\n").filter((line) => line.trim()).length;
+  const markerCount = markers.filter((marker) => text.includes(marker)).length;
+  return text.length > 120 && lineCount >= 4 && markerCount >= 2;
+}
+
 function AttachmentPreview({ attachment }: { attachment: ChatAttachment }) {
   const isImage = attachment.dataUrl && attachment.type.startsWith("image/");
 
@@ -67,13 +93,12 @@ function AttachmentPreview({ attachment }: { attachment: ChatAttachment }) {
   );
 }
 
-function CodeBlock({ children }: { children?: React.ReactNode }) {
+function CopyScriptButton({ text, compact = false }: { text: string; compact?: boolean }) {
   const [copied, setCopied] = useState(false);
-  const code = textFromNode(children).replace(/\n$/, "");
 
   const copyCode = async () => {
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(text.trim());
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
       toast.success("Script disalin.");
@@ -83,20 +108,31 @@ function CodeBlock({ children }: { children?: React.ReactNode }) {
   };
 
   return (
+    <button
+      type="button"
+      onClick={copyCode}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-lg text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground active:scale-95",
+        compact ? "px-2 py-1" : "px-2.5 py-1.5",
+      )}
+      aria-label="Copy script"
+    >
+      {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+      {copied ? "Copied" : "Copy script"}
+    </button>
+  );
+}
+
+function CodeBlock({ children }: { children?: React.ReactNode }) {
+  const code = textFromNode(children).replace(/\n$/, "");
+
+  return (
     <div className="my-2 overflow-hidden rounded-xl border border-border bg-secondary/80">
       <pre className="m-0 max-w-full overflow-x-auto whitespace-pre-wrap break-words p-3 pb-2 text-xs">
         <code className="bg-transparent p-0">{children}</code>
       </pre>
       <div className="flex justify-end border-t border-border/70 bg-background/40 px-2 py-1.5">
-        <button
-          type="button"
-          onClick={copyCode}
-          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground active:scale-95"
-          aria-label="Copy script"
-        >
-          {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-          {copied ? "Copied" : "Copy script"}
-        </button>
+        <CopyScriptButton text={code} compact />
       </div>
     </div>
   );
@@ -113,6 +149,7 @@ export function ChatMessageBubble({
     () => (isUser ? cleanUserContent(message.content) : message.content),
     [isUser, message.content],
   );
+  const showScriptFallback = !isUser && !message.error && looksLikeScript(message.content);
 
   const copy = async () => {
     try {
@@ -173,27 +210,34 @@ export function ChatMessageBubble({
               )}
             </div>
           ) : (
-            <div
-              className={cn(
-                "min-w-0 max-w-full overflow-hidden [overflow-wrap:anywhere] [&_*]:max-w-full [&_a]:break-all [&_a]:text-primary [&_a]:underline",
-                "[&_p]:my-1.5 first:[&_p]:mt-0 last:[&_p]:mb-0 [&_p]:break-words",
-                "[&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-5",
-                "[&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:break-words [&_h1]:text-base [&_h1]:font-semibold",
-                "[&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:break-words [&_h2]:text-base [&_h2]:font-semibold",
-                "[&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:break-words [&_h3]:font-semibold",
-                "[&_code]:rounded [&_code]:bg-secondary [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs [&_code]:break-words [&_code]:[overflow-wrap:anywhere]",
-                "[&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground",
-                "[&_table]:my-2 [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1",
-              )}
-            >
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
-                }}
+            <div className="space-y-2">
+              <div
+                className={cn(
+                  "min-w-0 max-w-full overflow-hidden [overflow-wrap:anywhere] [&_*]:max-w-full [&_a]:break-all [&_a]:text-primary [&_a]:underline",
+                  "[&_p]:my-1.5 first:[&_p]:mt-0 last:[&_p]:mb-0 [&_p]:break-words",
+                  "[&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-5",
+                  "[&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:break-words [&_h1]:text-base [&_h1]:font-semibold",
+                  "[&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:break-words [&_h2]:text-base [&_h2]:font-semibold",
+                  "[&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:break-words [&_h3]:font-semibold",
+                  "[&_code]:rounded [&_code]:bg-secondary [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs [&_code]:break-words [&_code]:[overflow-wrap:anywhere]",
+                  "[&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground",
+                  "[&_table]:my-2 [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1",
+                )}
               >
-                {message.content}
-              </ReactMarkdown>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              </div>
+              {showScriptFallback && (
+                <div className="flex justify-end border-t border-border/60 pt-2">
+                  <CopyScriptButton text={message.content} />
+                </div>
+              )}
             </div>
           )}
         </div>
