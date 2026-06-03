@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
 import {
+  Brain,
   ChevronDown,
   Download,
   Eraser,
@@ -53,7 +54,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Ai Chat — chat AI multi-provider dengan mode GitHub, Real Time Search, upload file, dan memory Supabase.",
+          "Ai Chat — chat AI multi-provider dengan mode GitHub, Real Time Search, Thinking, upload file, dan memory Supabase.",
       },
       { property: "og:title", content: "Ai Chat" },
       {
@@ -65,19 +66,29 @@ export const Route = createFileRoute("/")({
   component: ChatPage,
 });
 
+const THINKING_CONTEXT = [
+  "Thinking Mode aktif.",
+  "Jawab dengan lebih teliti dan terstruktur.",
+  "Periksa asumsi, risiko, dan langkah yang mungkin salah sebelum memberi solusi.",
+  "Jangan tampilkan proses berpikir panjang atau chain-of-thought internal.",
+  "Tampilkan hanya: Analisis singkat, Solusi, dan Langkah jika relevan.",
+].join("\n");
+
 function stripModePrefix(text: string): string {
-  return text.replace(/^\[(GITHUB|REALTIME)\]\s*/i, "").trim();
+  return text.replace(/^\[(GITHUB|REALTIME|THINKING)\]\s*/i, "").trim();
 }
 
 function ModeIcon({ mode }: { mode: ChatMode }) {
   if (mode === "github") return <Github className="size-4" />;
   if (mode === "realtime") return <Search className="size-4" />;
+  if (mode === "thinking") return <Brain className="size-4" />;
   return <Sparkles className="size-4" />;
 }
 
 function modeLabel(mode: ChatMode): string {
   if (mode === "github") return "GitHub";
   if (mode === "realtime") return "Real Time";
+  if (mode === "thinking") return "Thinking";
   return "Plain";
 }
 
@@ -249,7 +260,7 @@ function ChatPage() {
     }
   };
 
-  const runCompletion = async (convId: string, base: ChatMessage[], realtimeContext = "") => {
+  const runCompletion = async (convId: string, base: ChatMessage[], extraContext = "", thinking = false) => {
     if (!activeProvider) return;
     setConversationProvider(convId, activeProvider.id);
     setLoading(true);
@@ -260,13 +271,14 @@ function ChatPage() {
 
     try {
       const memoryContext = await buildAiMemoryContext(base[base.length - 1]?.content ?? "");
-      const extraContext = [memoryContext.trim(), realtimeContext.trim()].filter(Boolean).join("\n\n");
-      const providerWithContext = extraContext
-        ? { ...activeProvider, systemPrompt: [activeProvider.systemPrompt?.trim(), extraContext].filter(Boolean).join("\n\n") }
+      const modeContext = thinking ? THINKING_CONTEXT : "";
+      const combinedContext = [memoryContext.trim(), modeContext.trim(), extraContext.trim()].filter(Boolean).join("\n\n");
+      const providerWithContext = combinedContext
+        ? { ...activeProvider, systemPrompt: [activeProvider.systemPrompt?.trim(), combinedContext].filter(Boolean).join("\n\n") }
         : activeProvider;
 
       const res = await sendChat({
-        provider: realtimeContext ? { ...providerWithContext, stream: false } : providerWithContext,
+        provider: extraContext || thinking ? { ...providerWithContext, stream: false } : providerWithContext,
         messages: base,
         signal: controller.signal,
         onToken: (full) => {
@@ -329,6 +341,7 @@ function ChatPage() {
     if (!activeProvider) return toast.error("Tambahkan provider API terlebih dahulu di Settings.");
     if (!canSend) return toast.error("Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu.");
 
+    const thinking = text.trim().startsWith("[THINKING]");
     let realtimeContext = "";
     if (realtime || text.trim().startsWith("[REALTIME]")) {
       setLoading(true);
@@ -341,7 +354,7 @@ function ChatPage() {
         setLoading(false);
       }
     }
-    await runCompletion(convId, withUser, realtimeContext);
+    await runCompletion(convId, withUser, realtimeContext, thinking);
   };
 
   const handleRegenerate = async () => {
@@ -350,7 +363,7 @@ function ChatPage() {
     while (base.length && base[base.length - 1].role === "assistant") base = base.slice(0, -1);
     if (!base.length) return;
     setConversationMessages(activeId, base);
-    await runCompletion(activeId, base);
+    await runCompletion(activeId, base, "", mode === "thinking");
   };
 
   const handleEdit = (msg: ChatMessage) => {
@@ -437,6 +450,7 @@ function ChatPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-2xl">
               <DropdownMenuItem onClick={() => setMode("normal")}><Sparkles className="mr-2 size-4" /> Plain</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setMode("thinking")}><Brain className="mr-2 size-4" /> Thinking</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setMode("realtime")}><Search className="mr-2 size-4" /> Real Time</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setMode("github")}><Github className="mr-2 size-4" /> GitHub</DropdownMenuItem>
               {mode === "github" && <>
@@ -456,7 +470,7 @@ function ChatPage() {
         <main className="keyboard-safe-main min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-3 py-6 sm:px-4">
-              {messages.length === 0 ? <div className="flex min-h-[55vh] flex-col items-center justify-center text-center"><div className="mb-5 rounded-[2rem] border border-border/70 bg-card/80 p-5 shadow-2xl shadow-black/20 backdrop-blur"><Sparkles className="size-9 text-primary" /></div><h1 className="text-3xl font-semibold tracking-tight">Ai Chat</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Pilih mode di header, gunakan Real Time untuk data terbaru, atau GitHub untuk update aplikasi.</p><div className="mt-5 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-3"><PremiumCard title="GitHub Mode" desc="Update web app via chat" /><PremiumCard title="Real Time" desc="Cari data terbaru" /><PremiumCard title="Upload File" desc="Analisis foto/dokumen" /></div></div> : messages.map((m) => <ChatMessageBubble key={m.id} message={m} onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined} onEdit={m.role === "user" ? handleEdit : undefined} onDelete={handleDelete} />)}
+              {messages.length === 0 ? <div className="flex min-h-[55vh] flex-col items-center justify-center text-center"><div className="mb-5 rounded-[2rem] border border-border/70 bg-card/80 p-5 shadow-2xl shadow-black/20 backdrop-blur"><Sparkles className="size-9 text-primary" /></div><h1 className="text-3xl font-semibold tracking-tight">Ai Chat</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Pilih mode di header, gunakan Thinking untuk jawaban lebih teliti, Real Time untuk data terbaru, atau GitHub untuk update aplikasi.</p><div className="mt-5 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-3"><PremiumCard title="Thinking Mode" desc="Jawaban lebih teliti" /><PremiumCard title="Real Time" desc="Cari data terbaru" /><PremiumCard title="GitHub Mode" desc="Update web app via chat" /></div></div> : messages.map((m) => <ChatMessageBubble key={m.id} message={m} onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined} onEdit={m.role === "user" ? handleEdit : undefined} onDelete={handleDelete} />)}
               {loading && <TypingIndicator />}
               <div ref={scrollEndRef} />
             </div>
@@ -516,6 +530,7 @@ function StatusPanel({
         <p className="mb-2 text-xs font-semibold text-muted-foreground">Mode</p>
         <div className="grid gap-2">
           <Button variant={mode === "normal" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("normal")}><Sparkles className="mr-2 size-4" />Plain</Button>
+          <Button variant={mode === "thinking" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("thinking")}><Brain className="mr-2 size-4" />Thinking</Button>
           <Button variant={mode === "realtime" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("realtime")}><Search className="mr-2 size-4" />Real Time</Button>
           <Button variant={mode === "github" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("github")}><Github className="mr-2 size-4" />GitHub</Button>
         </div>
