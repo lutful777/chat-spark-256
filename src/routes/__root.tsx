@@ -96,8 +96,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "Ai Chat" },
       { name: "twitter:description", content: "Chat AI multi-provider dengan GitHub mode dan Real Time Search." },
-      { property: "og:image", content: "/icon-512x512.png?v=6" },
-      { name: "twitter:image", content: "/icon-512x512.png?v=6" },
+      { property: "og:image", content: "/ai-chat-icon.svg?v=8" },
+      { name: "twitter:image", content: "/ai-chat-icon.svg?v=8" },
       { name: "theme-color", content: "#0f172a" },
       { name: "color-scheme", content: "dark" },
       { name: "mobile-web-app-capable", content: "yes" },
@@ -111,11 +111,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "manifest", href: "/manifest.json?v=6" },
-      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192x192.png?v=6" },
-      { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512x512.png?v=6" },
-      { rel: "apple-touch-icon", sizes: "192x192", href: "/icon-192x192.png?v=6" },
-      { rel: "apple-touch-icon", sizes: "512x512", href: "/icon-512x512.png?v=6" },
+      { rel: "manifest", href: "/manifest.json?v=8" },
+      { rel: "icon", type: "image/svg+xml", sizes: "512x512", href: "/ai-chat-icon.svg?v=8" },
+      { rel: "shortcut icon", type: "image/svg+xml", href: "/ai-chat-icon.svg?v=8" },
+      { rel: "apple-touch-icon", sizes: "512x512", href: "/ai-chat-icon.svg?v=8" },
     ],
   }),
   shellComponent: RootShell,
@@ -177,7 +176,7 @@ function PwaBoot() {
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+        navigator.serviceWorker.register("/sw.js?v=8").catch(() => undefined);
       });
     }
 
