@@ -4,8 +4,9 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type FormEvent,
   type KeyboardEvent,
-  type PointerEvent,
+  type TouchEvent,
 } from "react";
 import { Brain, FileUp, Send, Square, X } from "lucide-react";
 
@@ -115,10 +116,11 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
 
     const submit = () => {
       const text = value.trim();
-      if ((!text && attachments.length === 0) || loading || disabled || readingFiles) return;
+      const currentAttachments = attachments;
+      if ((!text && currentAttachments.length === 0) || loading || disabled || readingFiles) return;
 
       const now = Date.now();
-      if (now - lastSubmitAtRef.current < 450) return;
+      if (now - lastSubmitAtRef.current < 700) return;
       lastSubmitAtRef.current = now;
 
       const messageText = text || "Tolong analisis file yang saya upload.";
@@ -130,15 +132,21 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             : mode === "thinking"
               ? `[THINKING]\n${messageText}`
               : messageText;
-      onSend(withMode, attachments, mode === "realtime");
+
       setValue("");
       setAttachments([]);
       requestAnimationFrame(() => {
         if (ref.current) ref.current.style.height = "auto";
       });
+      onSend(withMode, currentAttachments, mode === "realtime");
     };
 
-    const handleSendPointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      submit();
+    };
+
+    const handleSendTouchEnd = (event: TouchEvent<HTMLButtonElement>) => {
       if (disabled || loading || readingFiles || (!value.trim() && attachments.length === 0)) return;
       event.preventDefault();
       submit();
@@ -169,7 +177,10 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
     };
 
     return (
-      <div className="keyboard-safe-input border-t border-border bg-background/85 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
+      <form
+        onSubmit={handleSubmit}
+        className="keyboard-safe-input border-t border-border bg-background/85 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl supports-[backdrop-filter]:bg-background/70"
+      >
         <div className="mx-auto w-full max-w-3xl space-y-2">
           {mode === "github" && (
             <div className="rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
@@ -249,12 +260,11 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               </Button>
             ) : (
               <Button
-                type="button"
+                type="submit"
                 size="icon"
-                onPointerDown={handleSendPointerDown}
-                onClick={submit}
+                onTouchEnd={handleSendTouchEnd}
                 disabled={disabled || readingFiles || (!value.trim() && attachments.length === 0)}
-                className="size-11 shrink-0 rounded-2xl active:scale-95 touch-manipulation"
+                className="send-button size-11 shrink-0 rounded-2xl active:scale-95 touch-manipulation"
                 aria-label="Kirim"
               >
                 <Send className="size-4" />
@@ -262,7 +272,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             )}
           </div>
         </div>
-      </div>
+      </form>
     );
   },
 );
