@@ -37,6 +37,15 @@ function cleanUserContent(content: string): string {
     .trim();
 }
 
+function textFromNode(node: React.ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textFromNode).join("");
+  if (node && typeof node === "object" && "props" in node) {
+    return textFromNode((node as { props?: { children?: React.ReactNode } }).props?.children);
+  }
+  return "";
+}
+
 function AttachmentPreview({ attachment }: { attachment: ChatAttachment }) {
   const isImage = attachment.dataUrl && attachment.type.startsWith("image/");
 
@@ -53,6 +62,41 @@ function AttachmentPreview({ attachment }: { attachment: ChatAttachment }) {
         <FileUp className="size-3.5 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
         <span className="shrink-0 text-[10px] text-muted-foreground">{formatSize(attachment.size)}</span>
+      </div>
+    </div>
+  );
+}
+
+function CodeBlock({ children }: { children?: React.ReactNode }) {
+  const [copied, setCopied] = useState(false);
+  const code = textFromNode(children).replace(/\n$/, "");
+
+  const copyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+      toast.success("Script disalin.");
+    } catch {
+      toast.error("Gagal menyalin script.");
+    }
+  };
+
+  return (
+    <div className="my-2 overflow-hidden rounded-xl border border-border bg-secondary/80">
+      <pre className="m-0 max-w-full overflow-x-auto whitespace-pre-wrap break-words p-3 pb-2 text-xs">
+        <code className="bg-transparent p-0">{children}</code>
+      </pre>
+      <div className="flex justify-end border-t border-border/70 bg-background/40 px-2 py-1.5">
+        <button
+          type="button"
+          onClick={copyCode}
+          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground active:scale-95"
+          aria-label="Copy script"
+        >
+          {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+          {copied ? "Copied" : "Copy script"}
+        </button>
       </div>
     </div>
   );
@@ -137,19 +181,24 @@ export function ChatMessageBubble({
                 "[&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:break-words [&_h1]:text-base [&_h1]:font-semibold",
                 "[&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:break-words [&_h2]:text-base [&_h2]:font-semibold",
                 "[&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:break-words [&_h3]:font-semibold",
-                "[&_pre]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:rounded-lg [&_pre]:bg-secondary [&_pre]:p-3 [&_pre]:text-xs",
                 "[&_code]:rounded [&_code]:bg-secondary [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs [&_code]:break-words [&_code]:[overflow-wrap:anywhere]",
-                "[&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:whitespace-pre-wrap",
                 "[&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground",
                 "[&_table]:my-2 [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1",
               )}
             >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
             </div>
           )}
         </div>
 
-        <div className={cn("flex items-center gap-1", isUser ? "opacity-0 transition-opacity group-hover:opacity-100" : "opacity-100")}>
+        <div className={cn("flex items-center gap-1", isUser ? "opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100" : "opacity-100")}>
           {!isUser && !message.error && (
             <>
               <ActionButton label={copied ? "Tersalin" : "Salin"} onClick={copy}>
@@ -202,7 +251,7 @@ function ActionButton({
       onClick={onClick}
       title={label}
       aria-label={label}
-      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground active:scale-95"
     >
       {children}
     </button>
