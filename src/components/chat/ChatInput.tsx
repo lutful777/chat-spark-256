@@ -6,13 +6,13 @@ import {
   type ChangeEvent,
   type KeyboardEvent,
 } from "react";
-import { FileUp, Send, Square, X } from "lucide-react";
+import { Brain, FileUp, Send, Square, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { ChatAttachment } from "@/lib/chat/types";
 
-export type ChatMode = "normal" | "realtime" | "github";
+export type ChatMode = "normal" | "realtime" | "github" | "thinking";
 
 export interface ChatInputHandle {
   setText: (text: string) => void;
@@ -79,6 +79,13 @@ async function fileToAttachment(file: File): Promise<ChatAttachment> {
   return attachment;
 }
 
+function placeholderForMode(mode: ChatMode): string {
+  if (mode === "github") return "Perintah GitHub...";
+  if (mode === "realtime") return "Tanya data terbaru...";
+  if (mode === "thinking") return "Tanya dengan Thinking Mode...";
+  return "Ketik pesan";
+}
+
 export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
   function ChatInput({ onSend, onStop, loading, disabled, mode = "normal" }, handleRef) {
     const [value, setValue] = useState("");
@@ -113,7 +120,9 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
           ? `[GITHUB]\n${messageText}`
           : mode === "realtime"
             ? `[REALTIME]\n${messageText}`
-            : messageText;
+            : mode === "thinking"
+              ? `[THINKING]\n${messageText}`
+              : messageText;
       onSend(withMode, attachments, mode === "realtime");
       setValue("");
       setAttachments([]);
@@ -152,6 +161,12 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
           {mode === "github" && (
             <div className="rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
               GitHub Mode aktif — perubahan kode akan disiapkan preview dulu, lalu klik/ketik Push untuk commit.
+            </div>
+          )}
+
+          {mode === "thinking" && (
+            <div className="flex items-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
+              <Brain className="size-3.5" /> Thinking Mode aktif — AI akan menjawab lebih teliti tanpa menampilkan proses berpikir panjang.
             </div>
           )}
 
@@ -206,7 +221,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               onKeyDown={onKeyDown}
               rows={1}
               disabled={disabled}
-              placeholder={mode === "github" ? "Perintah GitHub..." : mode === "realtime" ? "Tanya data terbaru..." : "Ketik pesan"}
+              placeholder={placeholderForMode(mode)}
               className="max-h-40 min-h-[40px] flex-1 resize-none border-0 bg-transparent px-1 shadow-none focus-visible:ring-0"
             />
             {loading ? (
