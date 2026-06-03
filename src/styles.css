@@ -14,7 +14,7 @@
  * All colors MUST use oklch format.
  *
  * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
+ * 1. Add the variable to :root (light value)
  * 2. Register it in @theme inline as --color-<name>: var(--<name>)
  */
 
@@ -187,4 +187,63 @@ iframe[src*="lovable" i] {
 /* Hide welcome helper examples so no command list appears on the empty chat screen. */
 .min-h-\[55vh\] > p {
   display: none !important;
+}
+
+/* Make the right status sheet compact on mobile so more menu features can fit. */
+@media (max-width: 640px) {
+  [role="dialog"].right-0.w-80 {
+    width: min(76vw, 18rem) !important;
+  }
+
+  [role="dialog"].right-0 .bg-sidebar.p-4 {
+    padding: 0.75rem !important;
+  }
+
+  [role="dialog"].right-0 .rounded-3xl {
+    border-radius: 1.1rem !important;
+    padding: 0.75rem !important;
+  }
+
+  [role="dialog"].right-0 .rounded-2xl.border-sidebar-border {
+    border-radius: 0.95rem !important;
+    padding: 0.55rem 0.7rem !important;
+  }
+
+  [role="dialog"].right-0 .mb-4 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  [role="dialog"].right-0 .mt-5 {
+    margin-top: 0.65rem !important;
+  }
+
+  [role="dialog"].right-0 .mt-1 {
+    margin-top: 0.15rem !important;
+  }
+
+  [role="dialog"].right-0 .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.4rem !important;
+  }
+
+  [role="dialog"].right-0 .grid.gap-2 {
+    gap: 0.4rem !important;
+  }
+
+  [role="dialog"].right-0 button.justify-start {
+    min-height: 2.25rem !important;
+    padding: 0.42rem 0.75rem !important;
+    font-size: 0.86rem !important;
+    border-radius: 0.9rem !important;
+  }
+
+  [role="dialog"].right-0 p.text-sm {
+    font-size: 0.9rem !important;
+    line-height: 1.2rem !important;
+  }
+
+  [role="dialog"].right-0 p.text-xs,
+  [role="dialog"].right-0 span.text-xs {
+    font-size: 0.72rem !important;
+    line-height: 1rem !important;
+  }
 }
