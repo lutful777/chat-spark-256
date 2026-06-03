@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -43,9 +44,9 @@ public class MainActivity extends Activity {
     private FrameLayout rootLayout;
     private WebView webView;
     private View loadingView;
-    private View errorView;
     private ValueCallback<Uri[]> filePathCallback;
     private Uri cameraImageUri;
+    private boolean mainFrameError = false;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -56,19 +57,22 @@ public class MainActivity extends Activity {
         requestNeededPermissions();
 
         rootLayout = new FrameLayout(this);
-        rootLayout.setBackgroundColor(Color.BLACK);
+        rootLayout.setBackgroundColor(Color.rgb(2, 4, 12));
 
         webView = new WebView(this);
         webView.setBackgroundColor(Color.BLACK);
+        webView.setVisibility(View.GONE);
         webView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
         ));
 
-        loadingView = createMessageView("Ai Chat", "Memuat aplikasi...");
-        errorView = createMessageView("Koneksi bermasalah", "Ketuk layar untuk memuat ulang.");
-        errorView.setVisibility(View.GONE);
-        errorView.setOnClickListener(v -> reloadApp());
+        loadingView = createAiChatView();
+        loadingView.setOnClickListener(v -> {
+            if (mainFrameError) {
+                reloadApp();
+            }
+        });
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -128,6 +132,7 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 if (uri != null && ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))) {
+                    showLoadingOnly();
                     view.loadUrl(uri.toString());
                     return true;
                 }
@@ -135,17 +140,33 @@ public class MainActivity extends Activity {
             }
 
             @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                if (!"about:blank".equals(url)) {
+                    mainFrameError = false;
+                    showLoadingOnly();
+                }
+                super.onPageStarted(view, url, favicon);
+            }
+
+            @Override
             public void onPageFinished(WebView view, String url) {
-                loadingView.setVisibility(View.GONE);
-                errorView.setVisibility(View.GONE);
-                webView.setVisibility(View.VISIBLE);
+                if (!mainFrameError && !"about:blank".equals(url)) {
+                    loadingView.setVisibility(View.GONE);
+                    webView.setVisibility(View.VISIBLE);
+                }
                 super.onPageFinished(view, url);
             }
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if (request != null && request.isForMainFrame()) {
-                    showError();
+                    mainFrameError = true;
+                    showLoadingOnly();
+                    try {
+                        view.stopLoading();
+                        view.loadUrl("about:blank");
+                    } catch (Exception ignored) {
+                    }
                 }
                 super.onReceivedError(view, request, error);
             }
@@ -153,7 +174,6 @@ public class MainActivity extends Activity {
 
         rootLayout.addView(webView);
         rootLayout.addView(loadingView);
-        rootLayout.addView(errorView);
         setContentView(rootLayout);
 
         if (savedInstanceState == null) {
@@ -161,10 +181,11 @@ public class MainActivity extends Activity {
         } else {
             webView.restoreState(savedInstanceState);
             loadingView.setVisibility(View.GONE);
+            webView.setVisibility(View.VISIBLE);
         }
     }
 
-    private View createMessageView(String title, String subtitle) {
+    private View createAiChatView() {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setGravity(Gravity.CENTER);
@@ -176,28 +197,25 @@ public class MainActivity extends Activity {
         ));
 
         TextView titleView = new TextView(this);
-        titleView.setText(title);
+        titleView.setText("Ai Chat");
         titleView.setTextColor(Color.WHITE);
-        titleView.setTextSize(28);
+        titleView.setTextSize(30);
         titleView.setGravity(Gravity.CENTER);
         titleView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-
-        TextView subtitleView = new TextView(this);
-        subtitleView.setText(subtitle);
-        subtitleView.setTextColor(Color.rgb(170, 180, 205));
-        subtitleView.setTextSize(15);
-        subtitleView.setGravity(Gravity.CENTER);
-        subtitleView.setPadding(0, 14, 0, 0);
+        titleView.setLetterSpacing(0.03f);
 
         layout.addView(titleView);
-        layout.addView(subtitleView);
         return layout;
     }
 
-    private void loadApp() {
+    private void showLoadingOnly() {
         loadingView.setVisibility(View.VISIBLE);
-        errorView.setVisibility(View.GONE);
-        webView.setVisibility(View.VISIBLE);
+        webView.setVisibility(View.GONE);
+    }
+
+    private void loadApp() {
+        mainFrameError = false;
+        showLoadingOnly();
         webView.loadUrl(APP_URL);
     }
 
@@ -207,12 +225,6 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {
         }
         loadApp();
-    }
-
-    private void showError() {
-        loadingView.setVisibility(View.GONE);
-        errorView.setVisibility(View.VISIBLE);
-        webView.setVisibility(View.GONE);
     }
 
     private void requestNeededPermissions() {
@@ -304,7 +316,7 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (errorView != null && errorView.getVisibility() == View.VISIBLE) {
+        if (mainFrameError) {
             reloadApp();
         } else if (webView.canGoBack()) {
             webView.goBack();
