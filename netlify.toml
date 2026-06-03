@@ -1,7 +1,25 @@
 [build]
   command = "npm run build"
-  publish = "dist"
+  publish = "dist/client"
 
 [build.environment]
   NODE_VERSION = "22"
   NITRO_PRESET = "netlify"
+
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/api/public/proxy"
+  to = "/.netlify/functions/api-public-proxy"
+  status = 200
+
+[[redirects]]
+  from = "/api/public/media-proxy"
+  to = "/.netlify/functions/api-public-media-proxy"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
