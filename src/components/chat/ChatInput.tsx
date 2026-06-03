@@ -5,6 +5,7 @@ import {
   useState,
   type ChangeEvent,
   type KeyboardEvent,
+  type PointerEvent,
 } from "react";
 import { Brain, FileUp, Send, Square, X } from "lucide-react";
 
@@ -93,6 +94,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
     const [readingFiles, setReadingFiles] = useState(false);
     const ref = useRef<HTMLTextAreaElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
+    const lastSubmitAtRef = useRef(0);
 
     const resize = () => {
       const el = ref.current;
@@ -114,6 +116,11 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
     const submit = () => {
       const text = value.trim();
       if ((!text && attachments.length === 0) || loading || disabled || readingFiles) return;
+
+      const now = Date.now();
+      if (now - lastSubmitAtRef.current < 450) return;
+      lastSubmitAtRef.current = now;
+
       const messageText = text || "Tolong analisis file yang saya upload.";
       const withMode =
         mode === "github"
@@ -129,6 +136,12 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
       requestAnimationFrame(() => {
         if (ref.current) ref.current.style.height = "auto";
       });
+    };
+
+    const handleSendPointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+      if (disabled || loading || readingFiles || (!value.trim() && attachments.length === 0)) return;
+      event.preventDefault();
+      submit();
     };
 
     const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -204,7 +217,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               variant="ghost"
               onClick={() => fileRef.current?.click()}
               disabled={disabled || loading || readingFiles}
-              className="size-10 shrink-0 rounded-2xl"
+              className="size-10 shrink-0 rounded-2xl active:scale-95"
               aria-label="Upload file"
               title="Upload foto/PDF/file"
             >
@@ -213,7 +226,6 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             <Textarea
               ref={ref}
               value={value}
-              onFocus={() => requestAnimationFrame(() => ref.current?.focus({ preventScroll: true }))}
               onChange={(e) => {
                 setValue(e.target.value);
                 resize();
@@ -230,7 +242,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
                 size="icon"
                 variant="secondary"
                 onClick={onStop}
-                className="size-10 shrink-0 rounded-2xl"
+                className="size-10 shrink-0 rounded-2xl active:scale-95"
                 aria-label="Hentikan"
               >
                 <Square className="size-4" />
@@ -239,9 +251,10 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               <Button
                 type="button"
                 size="icon"
+                onPointerDown={handleSendPointerDown}
                 onClick={submit}
                 disabled={disabled || readingFiles || (!value.trim() && attachments.length === 0)}
-                className="size-10 shrink-0 rounded-2xl"
+                className="size-11 shrink-0 rounded-2xl active:scale-95 touch-manipulation"
                 aria-label="Kirim"
               >
                 <Send className="size-4" />
