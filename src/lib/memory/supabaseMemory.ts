@@ -1,4 +1,5 @@
 const MEMORY_CONFIG_KEY = "aiapichat:supabase-memory";
+const AUTH_SESSION_KEY = "aiapichat:supabase-auth-session";
 const AUTO_MEMORY_LAST_KEY = "aiapichat:supabase-memory:last-auto-save";
 const AUTO_MEMORY_SEEN_KEY = "aiapichat:supabase-memory:seen-auto-save";
 const DEFAULT_SUPABASE_URL = "https://qxzkjnpbavbmolzomrwy.supabase.co";
@@ -7,6 +8,18 @@ export interface SupabaseMemoryConfig {
   url: string;
   anonKey: string;
   enabled: boolean;
+}
+
+export interface SupabaseAuthUser {
+  id: string;
+  email?: string;
+}
+
+export interface SupabaseAuthSession {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;
+  user: SupabaseAuthUser;
 }
 
 export interface AiMemoryItem {
@@ -19,6 +32,14 @@ export interface RepoIndexMemoryItem {
   path: string;
   summary: string;
   file_type?: string;
+}
+
+interface SupabaseAuthResponse {
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  expires_at?: number;
+  user?: SupabaseAuthUser;
 }
 
 interface AutoMemoryDecision {
@@ -55,24 +76,155 @@ export function saveSupabaseMemoryConfig(config: SupabaseMemoryConfig): void {
   );
 }
 
+export function loadSupabaseAuthSession(): SupabaseAuthSession | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(AUTH_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<SupabaseAuthSession>;
+    if (!parsed.accessToken || !parsed.user?.id) return null;
+    return {
+      accessToken: parsed.accessToken,
+      refreshToken: parsed.refreshToken ?? "",
+      expiresAt: Number(parsed.expiresAt || 0),
+      user: { id: parsed.user.id, email: parsed.user.email },
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveSupabaseAuthSession(session: SupabaseAuthSession): void {
+  localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+}
+
+export function clearSupabaseAuthSession(): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.removeItem(AUTH_SESSION_KEY);
+}
+
 function cleanBaseUrl(url: string): string {
   return (url || DEFAULT_SUPABASE_URL).trim().replace(/\/$/, "");
+}
+
+function getSupabaseAuthUrl(config: SupabaseMemoryConfig, path: string): string {
+  return `${cleanBaseUrl(config.url)}/auth/v1/${path}`;
+}
+
+function requireSupabaseKey(config: SupabaseMemoryConfig): string {
+  const key = config.anonKey.trim();
+  if (!config.enabled || !key) throw new Error("Aktifkan Supabase Memory dan isi publishable key dulu.");
+  return key;
+}
+
+function sessionFromAuthResponse(data: SupabaseAuthResponse): SupabaseAuthSession | null {
+  if (!data.access_token || !data.user?.id) return null;
+  const expiresAt = data.expires_at ? data.expires_at * 1000 : Date.now() + (data.expires_in ?? 3600) * 1000;
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token ?? "",
+    expiresAt,
+    user: { id: data.user.id, email: data.user.email },
+  };
+}
+
+async function authRequest<T>(path: string, init: RequestInit = {}, accessToken?: string): Promise<T> {
+  const config = loadSupabaseMemoryConfig();
+  const key = requireSupabaseKey(config);
+  const res = await fetch(getSupabaseAuthUrl(config, path), {
+    ...init,
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${accessToken || key}`,
+      "Content-Type": "application/json",
+      ...(init.headers ?? {}),
+    },
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(body || `Supabase Auth ${res.status}`);
+  }
+
+  const text = await res.text();
+  return (text ? JSON.parse(text) : null) as T;
+}
+
+export async function signInSupabaseAuth(email: string, password: string): Promise<SupabaseAuthSession> {
+  const data = await authRequest<SupabaseAuthResponse>("token?grant_type=password", {
+    method: "POST",
+    body: JSON.stringify({ email: email.trim(), password }),
+  });
+  const session = sessionFromAuthResponse(data);
+  if (!session) throw new Error("Login gagal. Cek email dan password.");
+  saveSupabaseAuthSession(session);
+  return session;
+}
+
+export async function signUpSupabaseAuth(email: string, password: string): Promise<SupabaseAuthSession | null> {
+  const data = await authRequest<SupabaseAuthResponse>("signup", {
+    method: "POST",
+    body: JSON.stringify({ email: email.trim(), password }),
+  });
+  const session = sessionFromAuthResponse(data);
+  if (session) saveSupabaseAuthSession(session);
+  return session;
+}
+
+export async function refreshSupabaseAuthSession(): Promise<SupabaseAuthSession | null> {
+  const current = loadSupabaseAuthSession();
+  if (!current?.refreshToken) return current;
+
+  const data = await authRequest<SupabaseAuthResponse>("token?grant_type=refresh_token", {
+    method: "POST",
+    body: JSON.stringify({ refresh_token: current.refreshToken }),
+  });
+  const session = sessionFromAuthResponse(data);
+  if (session) saveSupabaseAuthSession(session);
+  return session;
+}
+
+export async function getValidSupabaseAuthSession(): Promise<SupabaseAuthSession | null> {
+  const current = loadSupabaseAuthSession();
+  if (!current) return null;
+  if (current.expiresAt > Date.now() + 60_000) return current;
+  try {
+    return await refreshSupabaseAuthSession();
+  } catch {
+    clearSupabaseAuthSession();
+    return null;
+  }
+}
+
+export async function signOutSupabaseAuth(): Promise<void> {
+  const current = loadSupabaseAuthSession();
+  try {
+    if (current?.accessToken) {
+      await authRequest<null>("logout", { method: "POST" }, current.accessToken);
+    }
+  } finally {
+    clearSupabaseAuthSession();
+  }
 }
 
 async function supabaseRest<T>(
   config: SupabaseMemoryConfig,
   path: string,
   init?: RequestInit,
+  options: { auth?: boolean } = {},
 ): Promise<T> {
   const url = cleanBaseUrl(config.url);
   const key = config.anonKey.trim();
   if (!config.enabled || !url || !key) throw new Error("Supabase AI Memory belum aktif.");
 
+  const session = options.auth ? await getValidSupabaseAuthSession() : null;
+  if (options.auth && !session) throw new Error("Login Supabase dulu agar memory per akun aktif.");
+
   const res = await fetch(`${url}/rest/v1/${path}`, {
     ...init,
     headers: {
       apikey: key,
-      Authorization: `Bearer ${key}`,
+      Authorization: `Bearer ${session?.accessToken || key}`,
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
     },
@@ -87,21 +239,30 @@ async function supabaseRest<T>(
   return (text ? JSON.parse(text) : null) as T;
 }
 
-async function supabaseInsert(config: SupabaseMemoryConfig, path: string, body: unknown): Promise<void> {
+async function supabaseInsert(
+  config: SupabaseMemoryConfig,
+  path: string,
+  body: unknown,
+  options: { auth?: boolean } = {},
+): Promise<void> {
   await supabaseRest<null>(config, path, {
     method: "POST",
     headers: { Prefer: "return=minimal" },
     body: JSON.stringify(body),
-  });
+  }, options);
 }
 
 export async function fetchAiMemory(limit = 80): Promise<AiMemoryItem[]> {
   const config = loadSupabaseMemoryConfig();
   if (!config.enabled || !config.url || !config.anonKey) return [];
+  const session = await getValidSupabaseAuthSession();
+  if (!session?.user.id) return [];
 
   return supabaseRest<AiMemoryItem[]>(
     config,
-    `ai_memory?select=title,content,category&order=created_at.desc&limit=${limit}`,
+    `ai_memory?select=title,content,category&user_id=eq.${encodeURIComponent(session.user.id)}&is_active=eq.true&order=created_at.desc&limit=${limit}`,
+    undefined,
+    { auth: true },
   ).catch(() => []);
 }
 
@@ -160,10 +321,10 @@ export async function buildAiMemoryContext(query = ""): Promise<string> {
   return [
     "AI APP MEMORY FROM SUPABASE:",
     query ? `Memory search query: ${cleanMemoryText(query).slice(0, 240)}` : "",
-    memoryText ? `Most relevant general memory:\n${memoryText}` : "",
+    memoryText ? `Most relevant user-scoped memory:\n${memoryText}` : "",
     repoText ? `Most relevant repo index memory:\n${repoText}` : "",
-    "Memory is automatic and private by design. Use it only to improve answers; do not expose the memory list unless the user explicitly asks.",
-    "Important privacy rule: never store or reveal user API keys, provider settings, secrets, passwords, tokens, or full chat history in Supabase memory.",
+    "Memory is automatic, private, and scoped to the logged-in Supabase user. Do not expose the memory list unless the user explicitly asks.",
+    "Important privacy rule: never store or reveal user API keys, provider settings, secrets, passwords, tokens, full chat history, uploaded files, images, videos, or large attachments in Supabase memory.",
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -195,6 +356,22 @@ function containsSensitiveValue(text: string): boolean {
     lower.includes("password") ||
     lower.includes("token") ||
     /\b(sk-|ghp_|github_pat_|xai-|or-)[a-z0-9_\-]{12,}/i.test(text)
+  );
+}
+
+function containsLargeMediaOrAttachment(text: string): boolean {
+  const lower = text.toLowerCase();
+  return (
+    text.length > 2400 ||
+    lower.includes("data:image") ||
+    lower.includes("data:video") ||
+    lower.includes("data:audio") ||
+    lower.includes("base64,") ||
+    lower.includes("blob:") ||
+    lower.includes("attachment:") ||
+    lower.includes("uploaded file") ||
+    lower.includes("file upload") ||
+    lower.includes("lampiran besar")
   );
 }
 
@@ -271,7 +448,7 @@ function makeAutomaticMemoryDecision(userText: string, assistantText: string): A
   if (isTemporaryLookup(cleanUser) && category === "auto") {
     return { shouldSave: false, title: "", content: "", category, priority: 0 };
   }
-  if (containsSensitiveValue(combined)) {
+  if (containsSensitiveValue(combined) || containsLargeMediaOrAttachment(combined)) {
     return { shouldSave: false, title: "", content: "", category, priority: 0 };
   }
 
@@ -315,20 +492,23 @@ function recentlySaved(marker: string): boolean {
 export async function saveAiMemoryNote(title: string, content: string, category = "auto", priority = 20): Promise<void> {
   const config = loadSupabaseMemoryConfig();
   if (!config.enabled || !config.url || !config.anonKey) return;
+  const session = await getValidSupabaseAuthSession();
+  if (!session?.user.id) return;
 
   const safeTitle = cleanMemoryText(title).slice(0, 120);
   const safeContent = cleanMemoryText(content).slice(0, 1800);
   if (!safeTitle || !safeContent) return;
-  if (containsSensitiveValue(`${safeTitle}\n${safeContent}`)) return;
+  if (containsSensitiveValue(`${safeTitle}\n${safeContent}`) || containsLargeMediaOrAttachment(`${safeTitle}\n${safeContent}`)) return;
 
   await supabaseInsert(config, "ai_memory", {
+    user_id: session.user.id,
     title: safeTitle,
     content: safeContent,
     category,
     tags: ["auto", "chat", category],
     priority,
     is_active: true,
-  });
+  }, { auth: true });
 }
 
 export async function autoSaveImportantMemory(userText: string, assistantText: string): Promise<void> {
