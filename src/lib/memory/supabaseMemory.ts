@@ -1,5 +1,6 @@
 const MEMORY_CONFIG_KEY = "aiapichat:supabase-memory";
 const AUTO_MEMORY_LAST_KEY = "aiapichat:supabase-memory:last-auto-save";
+const AUTO_MEMORY_SEEN_KEY = "aiapichat:supabase-memory:seen-auto-save";
 const DEFAULT_SUPABASE_URL = "https://qxzkjnpbavbmolzomrwy.supabase.co";
 
 export interface SupabaseMemoryConfig {
@@ -18,6 +19,14 @@ export interface RepoIndexMemoryItem {
   path: string;
   summary: string;
   file_type?: string;
+}
+
+interface AutoMemoryDecision {
+  shouldSave: boolean;
+  title: string;
+  content: string;
+  category: string;
+  priority: number;
 }
 
 export function loadSupabaseMemoryConfig(): SupabaseMemoryConfig {
@@ -153,7 +162,8 @@ export async function buildAiMemoryContext(query = ""): Promise<string> {
     query ? `Memory search query: ${cleanMemoryText(query).slice(0, 240)}` : "",
     memoryText ? `Most relevant general memory:\n${memoryText}` : "",
     repoText ? `Most relevant repo index memory:\n${repoText}` : "",
-    "Important privacy rule: never store or reveal user API keys, provider settings, or chat history in Supabase memory.",
+    "Memory is automatic and private by design. Use it only to improve answers; do not expose the memory list unless the user explicitly asks.",
+    "Important privacy rule: never store or reveal user API keys, provider settings, secrets, passwords, tokens, or full chat history in Supabase memory.",
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -183,8 +193,33 @@ function containsSensitiveValue(text: string): boolean {
     lower.includes("apikey") ||
     lower.includes("secret key") ||
     lower.includes("password") ||
+    lower.includes("token") ||
     /\b(sk-|ghp_|github_pat_|xai-|or-)[a-z0-9_\-]{12,}/i.test(text)
   );
+}
+
+function isTemporaryLookup(text: string): boolean {
+  const lower = text.toLowerCase();
+  return [
+    "harga usd",
+    "usd sekarang",
+    "kurs sekarang",
+    "cuaca sekarang",
+    "berita terbaru",
+    "cek harga",
+    "hari ini",
+    "sekarang",
+  ].some((word) => lower.includes(word));
+}
+
+function categoryFor(text: string): string {
+  const lower = text.toLowerCase();
+  if (["jawaban singkat", "singkat", "bahasa indonesia", "copas", "prompt"].some((word) => lower.includes(word))) return "user_preference";
+  if (["jangan hardcode", "api key", "secret", "token", "privacy", "privasi"].some((word) => lower.includes(word))) return "privacy_rule";
+  if (["github", "repo", "commit", "push", "build", "deploy", "lovable", "sync", "redeploy"].some((word) => lower.includes(word))) return "project_workflow";
+  if (["memory", "memori", "ingat", "settings", "setting", "serper", "realtime", "real time", "outlook", "supabase"].some((word) => lower.includes(word))) return "app_feature";
+  if (["tampilan", "menu", "mobile", "hp", "header", "sidebar", "status"].some((word) => lower.includes(word))) return "ui_decision";
+  return "auto";
 }
 
 function isImportantForProject(text: string): boolean {
@@ -196,6 +231,10 @@ function isImportantForProject(text: string): boolean {
     "settings",
     "setting",
     "tombol",
+    "menu",
+    "header",
+    "mobile",
+    "hp",
     "error",
     "bug",
     "build",
@@ -203,16 +242,77 @@ function isImportantForProject(text: string): boolean {
     "memory",
     "memori",
     "outlook",
+    "serper",
     "real time",
     "realtime",
     "aplikasi",
     "web app",
     "provider",
     "model",
+    "jawaban singkat",
+    "bahasa indonesia",
+    "copas",
+    "prompt",
   ].some((word) => lower.includes(word));
 }
 
-export async function saveAiMemoryNote(title: string, content: string, category = "auto"): Promise<void> {
+function makeAutomaticMemoryDecision(userText: string, assistantText: string): AutoMemoryDecision {
+  const cleanUser = cleanMemoryText(userText);
+  const cleanAssistant = cleanMemoryText(assistantText);
+  const combined = `${cleanUser}\n${cleanAssistant}`;
+  const category = categoryFor(combined);
+
+  if (!cleanUser || !cleanAssistant) {
+    return { shouldSave: false, title: "", content: "", category, priority: 0 };
+  }
+  if (!isImportantForProject(combined)) {
+    return { shouldSave: false, title: "", content: "", category, priority: 0 };
+  }
+  if (isTemporaryLookup(cleanUser) && category === "auto") {
+    return { shouldSave: false, title: "", content: "", category, priority: 0 };
+  }
+  if (containsSensitiveValue(combined)) {
+    return { shouldSave: false, title: "", content: "", category, priority: 0 };
+  }
+
+  const titlePrefix: Record<string, string> = {
+    user_preference: "Preference",
+    privacy_rule: "Privacy rule",
+    project_workflow: "Project workflow",
+    app_feature: "App feature",
+    ui_decision: "UI decision",
+    auto: "Auto",
+  };
+  const title = `${titlePrefix[category] ?? "Auto"}: ${cleanUser.slice(0, 90)}`;
+  const content = [
+    `User preference/request: ${cleanUser.slice(0, 360)}`,
+    `Useful result/decision: ${cleanAssistant.slice(0, 900)}`,
+  ].join("\n");
+  const priority = category === "user_preference" || category === "privacy_rule" || category === "project_workflow" ? 40 : 25;
+
+  return { shouldSave: true, title, content, category, priority };
+}
+
+function recentlySaved(marker: string): boolean {
+  if (typeof localStorage === "undefined") return false;
+
+  const shortMarker = marker.toLowerCase().replace(/\s+/g, " ").slice(0, 500);
+  if (localStorage.getItem(AUTO_MEMORY_LAST_KEY) === shortMarker) return true;
+
+  try {
+    const seen = JSON.parse(localStorage.getItem(AUTO_MEMORY_SEEN_KEY) || "[]") as string[];
+    if (seen.includes(shortMarker)) return true;
+    const next = [shortMarker, ...seen].slice(0, 40);
+    localStorage.setItem(AUTO_MEMORY_SEEN_KEY, JSON.stringify(next));
+    localStorage.setItem(AUTO_MEMORY_LAST_KEY, shortMarker);
+    return false;
+  } catch {
+    localStorage.setItem(AUTO_MEMORY_LAST_KEY, shortMarker);
+    return false;
+  }
+}
+
+export async function saveAiMemoryNote(title: string, content: string, category = "auto", priority = 20): Promise<void> {
   const config = loadSupabaseMemoryConfig();
   if (!config.enabled || !config.url || !config.anonKey) return;
 
@@ -225,33 +325,21 @@ export async function saveAiMemoryNote(title: string, content: string, category 
     title: safeTitle,
     content: safeContent,
     category,
-    tags: ["auto", "chat"],
-    priority: 20,
+    tags: ["auto", "chat", category],
+    priority,
     is_active: true,
   });
 }
 
 export async function autoSaveImportantMemory(userText: string, assistantText: string): Promise<void> {
   try {
-    const cleanUser = cleanMemoryText(userText);
-    const cleanAssistant = cleanMemoryText(assistantText);
-    if (!cleanUser || !cleanAssistant) return;
-    if (!isImportantForProject(`${cleanUser}\n${cleanAssistant}`)) return;
-    if (containsSensitiveValue(`${cleanUser}\n${cleanAssistant}`)) return;
+    const decision = makeAutomaticMemoryDecision(userText, assistantText);
+    if (!decision.shouldSave) return;
 
-    const title = `Auto: ${cleanUser.slice(0, 90)}`;
-    const content = [
-      `User request: ${cleanUser.slice(0, 300)}`,
-      `Assistant result: ${cleanAssistant.slice(0, 700)}`,
-    ].join("\n");
+    const marker = `${decision.category}\n${decision.title}\n${decision.content}`;
+    if (recentlySaved(marker)) return;
 
-    const marker = `${title}\n${content}`;
-    if (typeof localStorage !== "undefined") {
-      if (localStorage.getItem(AUTO_MEMORY_LAST_KEY) === marker) return;
-      localStorage.setItem(AUTO_MEMORY_LAST_KEY, marker);
-    }
-
-    await saveAiMemoryNote(title, content, "auto");
+    await saveAiMemoryNote(decision.title, decision.content, decision.category, decision.priority);
   } catch {
     // Memory saving must never break chat.
   }
