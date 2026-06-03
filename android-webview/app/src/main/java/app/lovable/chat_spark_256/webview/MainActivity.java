@@ -10,13 +10,19 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -30,11 +36,14 @@ import java.util.Date;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
-    private static final String APP_URL = "https://chat-spark-256.lovable.app";
+    private static final String APP_URL = "https://chat-spark-256.lovable.app/?apk=1.0.3";
     private static final int FILE_CHOOSER_REQUEST = 1001;
     private static final int PERMISSION_REQUEST = 1002;
 
+    private FrameLayout rootLayout;
     private WebView webView;
+    private View loadingView;
+    private View errorView;
     private ValueCallback<Uri[]> filePathCallback;
     private Uri cameraImageUri;
 
@@ -46,12 +55,20 @@ public class MainActivity extends Activity {
         getWindow().setNavigationBarColor(Color.BLACK);
         requestNeededPermissions();
 
+        rootLayout = new FrameLayout(this);
+        rootLayout.setBackgroundColor(Color.BLACK);
+
         webView = new WebView(this);
         webView.setBackgroundColor(Color.BLACK);
-        webView.setLayoutParams(new ViewGroup.LayoutParams(
+        webView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
         ));
+
+        loadingView = createMessageView("Ai Chat", "Memuat aplikasi...");
+        errorView = createMessageView("Koneksi bermasalah", "Ketuk layar untuk memuat ulang.");
+        errorView.setVisibility(View.GONE);
+        errorView.setOnClickListener(v -> reloadApp());
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -66,6 +83,12 @@ public class MainActivity extends Activity {
         settings.setLoadWithOverviewMode(true);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            settings.setSafeBrowsingEnabled(true);
+        }
+
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        WebView.setWebContentsDebuggingEnabled(false);
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -103,17 +126,93 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                view.loadUrl(request.getUrl().toString());
-                return true;
+                Uri uri = request.getUrl();
+                if (uri != null && ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))) {
+                    view.loadUrl(uri.toString());
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                loadingView.setVisibility(View.GONE);
+                errorView.setVisibility(View.GONE);
+                webView.setVisibility(View.VISIBLE);
+                super.onPageFinished(view, url);
+            }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                if (request != null && request.isForMainFrame()) {
+                    showError();
+                }
+                super.onReceivedError(view, request, error);
             }
         });
 
-        setContentView(webView);
+        rootLayout.addView(webView);
+        rootLayout.addView(loadingView);
+        rootLayout.addView(errorView);
+        setContentView(rootLayout);
+
         if (savedInstanceState == null) {
-            webView.loadUrl(APP_URL);
+            loadApp();
         } else {
             webView.restoreState(savedInstanceState);
+            loadingView.setVisibility(View.GONE);
         }
+    }
+
+    private View createMessageView(String title, String subtitle) {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setGravity(Gravity.CENTER);
+        layout.setPadding(42, 42, 42, 42);
+        layout.setBackgroundColor(Color.rgb(2, 4, 12));
+        layout.setLayoutParams(new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        ));
+
+        TextView titleView = new TextView(this);
+        titleView.setText(title);
+        titleView.setTextColor(Color.WHITE);
+        titleView.setTextSize(28);
+        titleView.setGravity(Gravity.CENTER);
+        titleView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+
+        TextView subtitleView = new TextView(this);
+        subtitleView.setText(subtitle);
+        subtitleView.setTextColor(Color.rgb(170, 180, 205));
+        subtitleView.setTextSize(15);
+        subtitleView.setGravity(Gravity.CENTER);
+        subtitleView.setPadding(0, 14, 0, 0);
+
+        layout.addView(titleView);
+        layout.addView(subtitleView);
+        return layout;
+    }
+
+    private void loadApp() {
+        loadingView.setVisibility(View.VISIBLE);
+        errorView.setVisibility(View.GONE);
+        webView.setVisibility(View.VISIBLE);
+        webView.loadUrl(APP_URL);
+    }
+
+    private void reloadApp() {
+        try {
+            webView.clearCache(true);
+        } catch (Exception ignored) {
+        }
+        loadApp();
+    }
+
+    private void showError() {
+        loadingView.setVisibility(View.GONE);
+        errorView.setVisibility(View.VISIBLE);
+        webView.setVisibility(View.GONE);
     }
 
     private void requestNeededPermissions() {
@@ -205,7 +304,9 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (webView.canGoBack()) {
+        if (errorView != null && errorView.getVisibility() == View.VISIBLE) {
+            reloadApp();
+        } else if (webView.canGoBack()) {
             webView.goBack();
         } else {
             super.onBackPressed();
