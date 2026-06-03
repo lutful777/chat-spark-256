@@ -41,9 +41,10 @@ import { ChatError, sendChat } from "@/lib/chat/api";
 import type { ChatAttachment, ChatMessage } from "@/lib/chat/types";
 import { runOutlookMailCommand } from "@/lib/outlook/chatCommand";
 import { runGitHubChatCommand } from "@/lib/github/chatCommand";
-import { autoSaveImportantMemory, buildAiMemoryContext, loadSupabaseMemoryConfig } from "@/lib/memory/supabaseMemory";
+import { autoSaveImportantMemory, buildAiMemoryContext, getValidSupabaseAuthSession, loadSupabaseMemoryConfig } from "@/lib/memory/supabaseMemory";
 import { buildRealtimeContext, loadRealtimeSearchConfig, searchRealtimeWeb } from "@/lib/search/realtime";
 import { loadGitHubConfig } from "@/lib/github/api";
+import { OWNER_EMAIL } from "@/lib/app/roles";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -84,6 +85,19 @@ function displayModelName(model?: string): string {
   const clean = model?.trim();
   if (!clean) return "Pilih model";
   return clean;
+}
+
+function isProtectedAppRepo(owner?: string, repo?: string): boolean {
+  return owner?.trim().toLowerCase() === "lutful777" && repo?.trim().toLowerCase() === "chat-spark-256";
+}
+
+async function assertGitHubModeAllowed(owner?: string, repo?: string): Promise<void> {
+  if (!isProtectedAppRepo(owner, repo)) return;
+  const session = await getValidSupabaseAuthSession();
+  const email = session?.user.email?.trim().toLowerCase();
+  if (email !== OWNER_EMAIL) {
+    throw new Error(`Repo website ini hanya bisa diedit oleh Owner/Admin/Developer. Login Memory dengan ${OWNER_EMAIL} dulu.`);
+  }
 }
 
 function ChatPage() {
@@ -289,6 +303,9 @@ function ChatPage() {
 
     setLoading(true);
     try {
+      if (/^\[GITHUB\]/i.test(text.trim())) {
+        await assertGitHubModeAllowed(githubConfig.owner, githubConfig.repo);
+      }
       const githubReply = await runGitHubChatCommand(text, activeProvider);
       if (githubReply) {
         setConversationMessages(convId, [...withUser, { id: uid(), role: "assistant", content: githubReply, createdAt: Date.now() }]);
