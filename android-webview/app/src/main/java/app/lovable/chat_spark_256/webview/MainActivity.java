@@ -37,7 +37,7 @@ import java.util.Date;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
-    private static final String APP_URL = "https://chat-spark-256.lovable.app/?apk=1.0.3";
+    private static final String APP_URL = "https://chat-spark-256-git-main-lutful-s-projects.vercel.app/?apk=1.0.4";
     private static final int FILE_CHOOSER_REQUEST = 1001;
     private static final int PERMISSION_REQUEST = 1002;
 
@@ -220,11 +220,24 @@ public class MainActivity extends Activity {
     }
 
     private void reloadApp() {
-        try {
-            webView.clearCache(true);
-        } catch (Exception ignored) {
+        mainFrameError = false;
+        showLoadingOnly();
+        webView.loadUrl(APP_URL);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        webView.saveState(outState);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (filePathCallback != null) {
+            filePathCallback.onReceiveValue(null);
+            filePathCallback = null;
         }
-        loadApp();
+        super.onDestroy();
     }
 
     private void requestNeededPermissions() {
@@ -232,7 +245,7 @@ public class MainActivity extends Activity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             permissions.add(Manifest.permission.CAMERA);
         }
-        if (Build.VERSION.SDK_INT >= 33) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(Manifest.permission.READ_MEDIA_IMAGES);
             }
@@ -248,80 +261,59 @@ public class MainActivity extends Activity {
     }
 
     private Intent createCameraIntent() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            return null;
-        }
         Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (cameraIntent.resolveActivity(getPackageManager()) == null) {
             return null;
         }
+        File photoFile;
         try {
-            File imageFile = createImageFile();
-            cameraImageUri = FileProvider.getUriForFile(
-                    this,
-                    "app.lovable.chat_spark_256.webview.fileprovider",
-                    imageFile
-            );
-            cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraImageUri);
-            cameraIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            return cameraIntent;
+            photoFile = createImageFile();
         } catch (IOException e) {
             return null;
         }
+        cameraImageUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photoFile);
+        cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraImageUri);
+        cameraIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        return cameraIntent;
     }
 
     private File createImageFile() throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
-        File storageDir = new File(getCacheDir(), "camera");
+        File storageDir = new File(getCacheDir(), "images");
         if (!storageDir.exists()) {
             storageDir.mkdirs();
         }
-        return File.createTempFile("AI_CHAT_" + timeStamp + "_", ".jpg", storageDir);
+        return File.createTempFile("IMG_" + timeStamp + "_", ".jpg", storageDir);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != FILE_CHOOSER_REQUEST || filePathCallback == null) {
+        if (requestCode != FILE_CHOOSER_REQUEST) {
             return;
         }
-
+        if (filePathCallback == null) {
+            return;
+        }
         Uri[] results = null;
         if (resultCode == RESULT_OK) {
-            if (data == null || data.getData() == null) {
-                if (cameraImageUri != null) {
-                    results = new Uri[]{cameraImageUri};
+            if (data != null) {
+                if (data.getClipData() != null) {
+                    int count = data.getClipData().getItemCount();
+                    results = new Uri[count];
+                    for (int i = 0; i < count; i++) {
+                        results[i] = data.getClipData().getItemAt(i).getUri();
+                    }
+                } else if (data.getData() != null) {
+                    results = new Uri[]{data.getData()};
                 }
-            } else if (data.getClipData() != null) {
-                int count = data.getClipData().getItemCount();
-                results = new Uri[count];
-                for (int i = 0; i < count; i++) {
-                    results[i] = data.getClipData().getItemAt(i).getUri();
-                }
-            } else {
-                results = new Uri[]{data.getData()};
+            }
+            if (results == null && cameraImageUri != null) {
+                results = new Uri[]{cameraImageUri};
             }
         }
-
         filePathCallback.onReceiveValue(results);
         filePathCallback = null;
         cameraImageUri = null;
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        webView.saveState(outState);
-        super.onSaveInstanceState(outState);
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (mainFrameError) {
-            reloadApp();
-        } else if (webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
     }
 }
