@@ -7,6 +7,12 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  // Vercel is not a Lovable environment, so force-enable Nitro's deploy plugin.
+  // Without this, Vercel uploads dist/client and dist/server as static folders,
+  // which makes the production domain return 404.
+  nitro: {
+    preset: "vercel",
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
