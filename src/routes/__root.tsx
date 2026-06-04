@@ -199,10 +199,18 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
         <style>{`
-          .min-h-\[55vh\] > .mb-5,
           .min-h-\[55vh\] > .mt-5,
           .min-h-\[55vh\] > p {
             display: none !important;
+          }
+          .min-h-\[55vh\] > .mb-5 {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+          }
+          .min-h-\[55vh\] > .mb-5 svg {
+            width: clamp(2.5rem, 12vw, 3.4rem) !important;
+            height: clamp(2.5rem, 12vw, 3.4rem) !important;
           }
           .min-h-\[55vh\] {
             min-height: 66vh !important;
@@ -221,6 +229,25 @@ function RootShell({ children }: { children: ReactNode }) {
             letter-spacing: -0.07em;
             line-height: 1;
             padding: 1.15rem 1.65rem 1.25rem;
+          }
+          .flex.h-\[100dvh\].w-full.items-center.justify-center.bg-background.text-muted-foreground {
+            flex-direction: column !important;
+            gap: 0.85rem !important;
+            color: #e5f2ff !important;
+          }
+          .flex.h-\[100dvh\].w-full.items-center.justify-center.bg-background.text-muted-foreground > svg {
+            width: 3rem !important;
+            height: 3rem !important;
+            filter: drop-shadow(0 12px 32px rgba(96, 165, 250, 0.38));
+          }
+          .flex.h-\[100dvh\].w-full.items-center.justify-center.bg-background.text-muted-foreground::after {
+            content: "Ai Chat";
+            display: block;
+            font-size: clamp(2.2rem, 12vw, 4rem);
+            font-weight: 850;
+            letter-spacing: -0.06em;
+            color: #e5f2ff;
+            text-shadow: 0 24px 80px rgba(37, 99, 235, 0.32);
           }
         `}</style>
       </head>
