@@ -96,8 +96,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "Ai Chat" },
       { name: "twitter:description", content: "Chat AI multi-provider dengan GitHub mode dan Real Time Search." },
-      { property: "og:image", content: "/ai-chat-icon.svg?v=8" },
-      { name: "twitter:image", content: "/ai-chat-icon.svg?v=8" },
+      { property: "og:image", content: "/ai-chat-icon.svg?v=10" },
+      { name: "twitter:image", content: "/ai-chat-icon.svg?v=10" },
       { name: "theme-color", content: "#0f172a" },
       { name: "color-scheme", content: "dark" },
       { name: "mobile-web-app-capable", content: "yes" },
@@ -111,10 +111,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "manifest", href: "/manifest.json?v=8" },
-      { rel: "icon", type: "image/svg+xml", sizes: "512x512", href: "/ai-chat-icon.svg?v=8" },
-      { rel: "shortcut icon", type: "image/svg+xml", href: "/ai-chat-icon.svg?v=8" },
-      { rel: "apple-touch-icon", sizes: "512x512", href: "/ai-chat-icon.svg?v=8" },
+      { rel: "manifest", href: "/manifest.json?v=10" },
+      { rel: "icon", type: "image/svg+xml", sizes: "512x512", href: "/ai-chat-icon.svg?v=10" },
+      { rel: "shortcut icon", type: "image/svg+xml", href: "/ai-chat-icon.svg?v=10" },
+      { rel: "apple-touch-icon", sizes: "512x512", href: "/ai-chat-icon.svg?v=10" },
     ],
   }),
   shellComponent: RootShell,
@@ -176,7 +176,7 @@ function PwaBoot() {
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js?v=8").catch(() => undefined);
+        navigator.serviceWorker.register("/sw.js?v=10").catch(() => undefined);
       });
     }
 
@@ -208,8 +208,19 @@ function RootShell({ children }: { children: ReactNode }) {
             min-height: 66vh !important;
           }
           .min-h-\[55vh\] h1 {
-            font-size: 2.35rem !important;
-            letter-spacing: -0.04em;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2rem;
+            border: 1px solid rgba(96, 165, 250, 0.35);
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 64, 175, 0.45));
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+            color: #e5f2ff !important;
+            font-size: clamp(3rem, 15vw, 5rem) !important;
+            font-weight: 850 !important;
+            letter-spacing: -0.07em;
+            line-height: 1;
+            padding: 1.15rem 1.65rem 1.25rem;
           }
         `}</style>
       </head>
