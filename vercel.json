@@ -1,7 +1,22 @@
 {
   "installCommand": "npm install",
   "buildCommand": "npm run build",
+  "outputDirectory": "dist/client",
   "env": {
     "NITRO_PRESET": "vercel"
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/public/proxy",
+      "destination": "/api/public/proxy"
+    },
+    {
+      "source": "/api/public/media-proxy",
+      "destination": "/api/public/media-proxy"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
