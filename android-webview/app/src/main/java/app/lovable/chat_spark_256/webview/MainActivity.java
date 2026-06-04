@@ -37,7 +37,8 @@ import java.util.Date;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
-    private static final String APP_URL = "https://chat-spark-256.vercel.app/?apk=1.0.5";
+    private static final String APP_URL = "https://chat-spark-256.vercel.app/?apk=1.0.6";
+    private static final String APP_ORIGIN = "https://chat-spark-256.vercel.app";
     private static final int FILE_CHOOSER_REQUEST = 1001;
     private static final int PERMISSION_REQUEST = 1002;
 
@@ -223,6 +224,26 @@ public class MainActivity extends Activity {
         mainFrameError = false;
         showLoadingOnly();
         webView.loadUrl(APP_URL);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (webView != null && webView.getVisibility() == View.VISIBLE) {
+            String url = webView.getUrl();
+            if (url != null && url.startsWith(APP_ORIGIN)) {
+                Uri uri = Uri.parse(url);
+                String path = uri.getPath();
+                if (path != null && !path.equals("/") && !path.isEmpty()) {
+                    webView.loadUrl(APP_URL);
+                    return;
+                }
+            }
+            if (webView.canGoBack()) {
+                webView.goBack();
+                return;
+            }
+        }
+        super.onBackPressed();
     }
 
     @Override
