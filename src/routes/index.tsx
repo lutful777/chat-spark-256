@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
 import {
   Brain,
+  BrainCircuit,
+  Check,
   ChevronDown,
   Download,
   Eraser,
@@ -23,6 +25,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -74,14 +79,26 @@ const THINKING_CONTEXT = [
   "Tampilkan hanya: Analisis singkat, Solusi, dan Langkah jika relevan.",
 ].join("\n");
 
+const THINKING_DEEP_CONTEXT = [
+  "Think Deeply Mode aktif.",
+  "Analisis pertanyaan ini secara menyeluruh dan mendalam sebelum menjawab.",
+  "Identifikasi asumsi tersembunyi, edge case, risiko, dan kemungkinan yang sering terlewat.",
+  "Pertimbangkan perspektif yang berbeda dan sudut pandang alternatif.",
+  "Periksa ulang setiap langkah logika — jangan terburu-buru menyimpulkan.",
+  "Pastikan solusi yang kamu berikan robust terhadap kondisi yang tidak biasa.",
+  "Jangan tampilkan chain-of-thought internal.",
+  "Tampilkan: Analisis mendalam, Asumsi & Risiko yang perlu diwaspadai, Solusi terbaik, Langkah detail jika relevan.",
+].join("\n");
+
 function stripModePrefix(text: string): string {
-  return text.replace(/^\[(GITHUB|REALTIME|THINKING)\]\s*/i, "").trim();
+  return text.replace(/^\[(GITHUB|REALTIME|THINKING_DEEP|THINKING)\]\s*/i, "").trim();
 }
 
 function ModeIcon({ mode }: { mode: ChatMode }) {
   if (mode === "github") return <Github className="size-4" />;
   if (mode === "realtime") return <Search className="size-4" />;
   if (mode === "thinking") return <Brain className="size-4" />;
+  if (mode === "thinking-deep") return <BrainCircuit className="size-4" />;
   return <Sparkles className="size-4" />;
 }
 
@@ -89,6 +106,7 @@ function modeLabel(mode: ChatMode): string {
   if (mode === "github") return "GitHub";
   if (mode === "realtime") return "Real Time";
   if (mode === "thinking") return "Thinking";
+  if (mode === "thinking-deep") return "Think Deeply";
   return "Plain";
 }
 
@@ -260,7 +278,12 @@ function ChatPage() {
     }
   };
 
-  const runCompletion = async (convId: string, base: ChatMessage[], extraContext = "", thinking = false) => {
+  const runCompletion = async (
+    convId: string,
+    base: ChatMessage[],
+    extraContext = "",
+    thinkingDepth: "none" | "standard" | "deep" = "none",
+  ) => {
     if (!activeProvider) return;
     setConversationProvider(convId, activeProvider.id);
     setLoading(true);
@@ -271,14 +294,19 @@ function ChatPage() {
 
     try {
       const memoryContext = await buildAiMemoryContext(base[base.length - 1]?.content ?? "");
-      const modeContext = thinking ? THINKING_CONTEXT : "";
+      const modeContext =
+        thinkingDepth === "deep"
+          ? THINKING_DEEP_CONTEXT
+          : thinkingDepth === "standard"
+            ? THINKING_CONTEXT
+            : "";
       const combinedContext = [memoryContext.trim(), modeContext.trim(), extraContext.trim()].filter(Boolean).join("\n\n");
       const providerWithContext = combinedContext
         ? { ...activeProvider, systemPrompt: [activeProvider.systemPrompt?.trim(), combinedContext].filter(Boolean).join("\n\n") }
         : activeProvider;
 
       const res = await sendChat({
-        provider: extraContext || thinking ? { ...providerWithContext, stream: false } : providerWithContext,
+        provider: extraContext || thinkingDepth !== "none" ? { ...providerWithContext, stream: false } : providerWithContext,
         messages: base,
         signal: controller.signal,
         onToken: (full) => {
@@ -341,7 +369,10 @@ function ChatPage() {
     if (!activeProvider) return toast.error("Tambahkan provider API terlebih dahulu di Settings.");
     if (!canSend) return toast.error("Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu.");
 
-    const thinking = text.trim().startsWith("[THINKING]");
+    const isThinkingDeep = text.trim().startsWith("[THINKING_DEEP]");
+    const isThinkingStd = !isThinkingDeep && text.trim().startsWith("[THINKING]");
+    const thinkingDepth: "none" | "standard" | "deep" = isThinkingDeep ? "deep" : isThinkingStd ? "standard" : "none";
+
     let realtimeContext = "";
     if (realtime || text.trim().startsWith("[REALTIME]")) {
       setLoading(true);
@@ -354,7 +385,7 @@ function ChatPage() {
         setLoading(false);
       }
     }
-    await runCompletion(convId, withUser, realtimeContext, thinking);
+    await runCompletion(convId, withUser, realtimeContext, thinkingDepth);
   };
 
   const handleRegenerate = async () => {
@@ -363,7 +394,9 @@ function ChatPage() {
     while (base.length && base[base.length - 1].role === "assistant") base = base.slice(0, -1);
     if (!base.length) return;
     setConversationMessages(activeId, base);
-    await runCompletion(activeId, base, "", mode === "thinking");
+    const regenDepth: "none" | "standard" | "deep" =
+      mode === "thinking-deep" ? "deep" : mode === "thinking" ? "standard" : "none";
+    await runCompletion(activeId, base, "", regenDepth);
   };
 
   const handleEdit = (msg: ChatMessage) => {
@@ -449,10 +482,33 @@ function ChatPage() {
               <Button variant="outline" size="sm" className="gap-2 rounded-full bg-card/70"><ModeIcon mode={mode} /> {modeLabel(mode)} <ChevronDown className="size-3" /></Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-2xl">
-              <DropdownMenuItem onClick={() => setMode("normal")}><Sparkles className="mr-2 size-4" /> Plain</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setMode("thinking")}><Brain className="mr-2 size-4" /> Thinking</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setMode("realtime")}><Search className="mr-2 size-4" /> Real Time</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setMode("github")}><Github className="mr-2 size-4" /> GitHub</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setMode("normal")}>
+                <Sparkles className="mr-2 size-4" /> Plain
+                {mode === "normal" && <Check className="ml-auto size-3" />}
+              </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className={(mode === "thinking" || mode === "thinking-deep") ? "text-primary" : ""}>
+                  <Brain className="mr-2 size-4" /> Thinking
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="rounded-2xl">
+                  <DropdownMenuItem onClick={() => setMode("thinking")}>
+                    <Brain className="mr-2 size-4" /> Standard
+                    {mode === "thinking" && <Check className="ml-auto size-3" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setMode("thinking-deep")}>
+                    <BrainCircuit className="mr-2 size-4" /> Think Deeply
+                    {mode === "thinking-deep" && <Check className="ml-auto size-3" />}
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuItem onClick={() => setMode("realtime")}>
+                <Search className="mr-2 size-4" /> Real Time
+                {mode === "realtime" && <Check className="ml-auto size-3" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setMode("github")}>
+                <Github className="mr-2 size-4" /> GitHub
+                {mode === "github" && <Check className="ml-auto size-3" />}
+              </DropdownMenuItem>
               {mode === "github" && <>
                 <DropdownMenuItem onClick={() => inputRef.current?.setText("Tambah tombol ")}>Tambah tombol</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => inputRef.current?.setText("Hapus tombol ")}>Hapus tombol</DropdownMenuItem>
@@ -531,6 +587,7 @@ function StatusPanel({
         <div className="grid gap-2">
           <Button variant={mode === "normal" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("normal")}><Sparkles className="mr-2 size-4" />Plain</Button>
           <Button variant={mode === "thinking" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("thinking")}><Brain className="mr-2 size-4" />Thinking</Button>
+          <Button variant={mode === "thinking-deep" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("thinking-deep")}><BrainCircuit className="mr-2 size-4" />Think Deeply</Button>
           <Button variant={mode === "realtime" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("realtime")}><Search className="mr-2 size-4" />Real Time</Button>
           <Button variant={mode === "github" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("github")}><Github className="mr-2 size-4" />GitHub</Button>
         </div>

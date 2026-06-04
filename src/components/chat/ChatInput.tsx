@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { ChatAttachment } from "@/lib/chat/types";
 
-export type ChatMode = "normal" | "realtime" | "github" | "thinking";
+export type ChatMode = "normal" | "realtime" | "github" | "thinking" | "thinking-deep";
 
 export interface ChatInputHandle {
   setText: (text: string) => void;
@@ -85,6 +85,7 @@ function placeholderForMode(mode: ChatMode): string {
   if (mode === "github") return "Perintah GitHub...";
   if (mode === "realtime") return "Tanya data terbaru...";
   if (mode === "thinking") return "Tanya dengan Thinking Mode...";
+  if (mode === "thinking-deep") return "Tanya lebih dalam dan hati-hati...";
   return "Ketik pesan";
 }
 
@@ -131,7 +132,9 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             ? `[REALTIME]\n${messageText}`
             : mode === "thinking"
               ? `[THINKING]\n${messageText}`
-              : messageText;
+              : mode === "thinking-deep"
+                ? `[THINKING_DEEP]\n${messageText}`
+                : messageText;
 
       setValue("");
       setAttachments([]);
@@ -190,7 +193,13 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
 
           {mode === "thinking" && (
             <div className="flex items-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
-              <Brain className="size-3.5" /> Thinking Mode aktif — AI akan menjawab lebih teliti tanpa menampilkan proses berpikir panjang.
+              <Brain className="size-3.5" /> Thinking Standard aktif — AI akan menjawab lebih teliti tanpa menampilkan proses berpikir panjang.
+            </div>
+          )}
+
+          {mode === "thinking-deep" && (
+            <div className="flex items-center gap-2 rounded-2xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-xs text-violet-400">
+              <Brain className="size-3.5" /> Think Deeply aktif — AI akan menganalisis mendalam, cek asumsi, risiko, dan edge case sebelum menjawab.
             </div>
           )}
 
