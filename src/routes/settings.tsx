@@ -55,6 +55,23 @@ export const Route = createFileRoute("/settings")({
 
 type TestingKey = string | null;
 
+type SafeBackupFile = {
+  type: "ai-chat-safe-backup";
+  version: 1;
+  exportedAt: string;
+  origin: string;
+  data: Record<string, string>;
+};
+
+const SAFE_BACKUP_KEYS = [
+  "aiapichat:providers",
+  "aiapichat:activeProvider",
+  "aiapichat:conversations",
+  "aiapichat:github",
+  "aiapichat:supabase-memory",
+  "aiapichat:outlook",
+] as const;
+
 function normalizePath(path: string): string {
   const p = path.trim();
   if (!p) return "";
@@ -69,6 +86,65 @@ function cloneProvider(provider: ProviderConfig): ProviderConfig {
   return {
     ...provider,
     models: [...(provider.models ?? [])],
+  };
+}
+
+function downloadJsonFile(filename: string, data: unknown): void {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function getDateStamp(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function sanitizeBackupValue(key: string, value: string): string {
+  if (key !== "aiapichat:github") return value;
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    return JSON.stringify({ ...parsed, token: "" });
+  } catch {
+    return value;
+  }
+}
+
+function collectSafeBackupData(): Record<string, string> {
+  const data: Record<string, string> = {};
+  if (typeof localStorage === "undefined") return data;
+  SAFE_BACKUP_KEYS.forEach((key) => {
+    const value = localStorage.getItem(key);
+    if (value !== null) data[key] = sanitizeBackupValue(key, value);
+  });
+  return data;
+}
+
+function parseSafeBackupFile(value: unknown): SafeBackupFile {
+  if (!value || typeof value !== "object") throw new Error("Format backup tidak valid.");
+  const parsed = value as Partial<SafeBackupFile>;
+  if (!parsed.data || typeof parsed.data !== "object" || Array.isArray(parsed.data)) {
+    throw new Error("File ini bukan backup AI Chat.");
+  }
+
+  const allowed = new Set<string>(SAFE_BACKUP_KEYS);
+  const data: Record<string, string> = {};
+  Object.entries(parsed.data).forEach(([key, raw]) => {
+    if (!allowed.has(key)) return;
+    const value = typeof raw === "string" ? raw : JSON.stringify(raw);
+    data[key] = sanitizeBackupValue(key, value);
+  });
+
+  if (Object.keys(data).length === 0) throw new Error("Backup kosong atau tidak berisi data AI Chat.");
+  return {
+    type: "ai-chat-safe-backup",
+    version: 1,
+    exportedAt: typeof parsed.exportedAt === "string" ? parsed.exportedAt : new Date().toISOString(),
+    origin: typeof parsed.origin === "string" ? parsed.origin : "unknown",
+    data,
   };
 }
 
@@ -92,6 +168,7 @@ function SettingsPage() {
   const [showVideoKey, setShowVideoKey] = useState(false);
   const [testing, setTesting] = useState<TestingKey>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const safeBackupFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!ready) return;
@@ -303,14 +380,24 @@ function SettingsPage() {
       imageApiKey: withKeys ? (p.imageApiKey ?? "") : "",
       videoApiKey: withKeys ? (p.videoApiKey ?? "") : "",
     }));
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = withKeys ? "api-chat-settings.json" : "api-chat-providers.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadJsonFile(withKeys ? "api-chat-settings.json" : "api-chat-providers.json", data);
     toast.success(withKeys ? "Settings diekspor." : "Provider diekspor tanpa API key.");
+  };
+
+  const handleExportSafeBackup = () => {
+    if (typeof localStorage === "undefined") return toast.error("Browser storage tidak tersedia.");
+    if (!confirm("Backup aman berisi chat, provider, API key provider, dan konfigurasi lokal. File ini tetap privat. Lanjutkan?")) return;
+
+    const backup: SafeBackupFile = {
+      type: "ai-chat-safe-backup",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      origin: window.location.origin,
+      data: collectSafeBackupData(),
+    };
+
+    downloadJsonFile(`ai-chat-safe-backup-${getDateStamp()}.json`, backup);
+    toast.success("Backup berhasil diekspor.");
   };
 
   const handleImportFile = async (file: File) => {
@@ -329,6 +416,24 @@ function SettingsPage() {
       toast.error(err instanceof Error ? err.message : "Gagal membaca file JSON.");
     } finally {
       if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const handleImportSafeBackupFile = async (file: File) => {
+    try {
+      const parsed = parseSafeBackupFile(JSON.parse(await file.text()));
+      const count = Object.keys(parsed.data).length;
+      if (!confirm(`Import backup akan mengganti data lokal AI Chat (${count} item). Lanjutkan?`)) return;
+
+      Object.entries(parsed.data).forEach(([key, value]) => {
+        localStorage.setItem(key, value);
+      });
+      toast.success("Backup berhasil diimpor. Halaman akan dimuat ulang.");
+      window.setTimeout(() => window.location.reload(), 600);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal import backup.");
+    } finally {
+      if (safeBackupFileRef.current) safeBackupFileRef.current.value = "";
     }
   };
 
@@ -554,12 +659,18 @@ function SettingsPage() {
 
         <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
           <h2 className="mb-1 text-sm font-semibold">Data & Privasi</h2>
-          <p className="mb-4 text-xs text-muted-foreground">Kelola data yang tersimpan di perangkat ini.</p>
+          <p className="mb-3 text-xs text-muted-foreground">Kelola data yang tersimpan di perangkat ini.</p>
+          <p className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
+            Backup aman berisi chat, provider, API key provider, GitHub repo config tanpa token, memory config, Outlook config, dan setting lokal. Login ulang mungkin diperlukan setelah restore.
+          </p>
           <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleImportFile(f); }} />
+          <input ref={safeBackupFileRef} type="file" accept="application/json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleImportSafeBackupFile(f); }} />
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" className="gap-2 rounded-xl" onClick={() => handleExportSettings(true)}><Download className="size-4" /> Export Settings</Button>
             <Button variant="outline" className="gap-2 rounded-xl" onClick={() => fileRef.current?.click()}><Upload className="size-4" /> Import Settings</Button>
             <Button variant="outline" className="gap-2 rounded-xl" onClick={() => handleExportSettings(false)}><Download className="size-4" /> Export tanpa API key</Button>
+            <Button variant="secondary" className="gap-2 rounded-xl" onClick={handleExportSafeBackup}><Download className="size-4" /> Export Backup Aman</Button>
+            <Button variant="secondary" className="gap-2 rounded-xl" onClick={() => safeBackupFileRef.current?.click()}><Upload className="size-4" /> Import Backup Aman</Button>
             <Button variant="outline" className="gap-2 rounded-xl" onClick={() => { clearAllApiKeys(); toast.success("Semua API key dihapus."); }}><KeyRound className="size-4" /> Clear API keys</Button>
             <Button variant="ghost" className="ml-auto gap-2 rounded-xl text-destructive hover:text-destructive" onClick={() => { if (confirm("Hapus semua provider, API key, dan riwayat chat?")) { resetAllData(); setSelectedId(null); toast.success("Semua data dihapus."); } }}><Trash2 className="size-4" /> Delete all data</Button>
           </div>
