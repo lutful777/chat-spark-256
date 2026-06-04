@@ -35,12 +35,12 @@ import {
 export const Route = createFileRoute("/video")({
   head: () => ({
     meta: [
-      { title: "Video — AI Chat Exploit" },
+      { title: "Video — AI Chat" },
       {
         name: "description",
         content: "Ubah foto menjadi video dengan AI memakai API key Anda sendiri.",
       },
-      { property: "og:title", content: "Video — AI Chat Exploit" },
+      { property: "og:title", content: "Video — AI Chat" },
       {
         property: "og:description",
         content: "Foto ke video AI lewat provider Anda, dengan polling status otomatis.",

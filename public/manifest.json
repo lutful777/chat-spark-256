@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Ai Chat",
-  "short_name": "Ai Chat",
-  "description": "Ai Chat — klien chat AI multi-provider dengan mode GitHub, Real Time Search, upload file, dan memory Supabase.",
+  "name": "AI Chat",
+  "short_name": "AI Chat",
+  "description": "AI Chat — klien chat AI multi-provider dengan mode GitHub, Real Time Search, upload file, dan memory Supabase.",
   "start_url": "/?source=pwa&v=10",
   "scope": "/",
   "display": "standalone",
@@ -18,15 +18,15 @@
   },
   "icons": [
     {
-      "src": "/ai-chat-icon.svg?v=10",
+      "src": "/ai-chat-icon.png?v=11",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/ai-chat-icon.svg?v=10",
+      "src": "/ai-chat-icon.png?v=11",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ],
@@ -36,21 +36,21 @@
       "short_name": "Chat",
       "description": "Buka chat baru",
       "url": "/?action=new-chat&v=10",
-      "icons": [{ "src": "/ai-chat-icon.svg?v=10", "sizes": "512x512" }]
+      "icons": [{ "src": "/ai-chat-icon.png?v=11", "sizes": "512x512" }]
     },
     {
       "name": "Image Generator",
       "short_name": "Image",
       "description": "Buka fitur gambar",
       "url": "/image?v=10",
-      "icons": [{ "src": "/ai-chat-icon.svg?v=10", "sizes": "512x512" }]
+      "icons": [{ "src": "/ai-chat-icon.png?v=11", "sizes": "512x512" }]
     },
     {
       "name": "Video Generator",
       "short_name": "Video",
       "description": "Buka fitur video",
       "url": "/video?v=10",
-      "icons": [{ "src": "/ai-chat-icon.svg?v=10", "sizes": "512x512" }]
+      "icons": [{ "src": "/ai-chat-icon.png?v=11", "sizes": "512x512" }]
     }
   ]
 }
