@@ -14,6 +14,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as OutlookRouteImport } from './routes/outlook'
 import { Route as ImageRouteImport } from './routes/image'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicRealtimeSearchRouteImport } from './routes/api/public/realtime-search'
 import { Route as ApiPublicProxyRouteImport } from './routes/api/public/proxy'
 import { Route as ApiPublicMergeVideosRouteImport } from './routes/api/public/merge-videos'
 import { Route as ApiPublicMediaProxyRouteImport } from './routes/api/public/media-proxy'
@@ -42,6 +43,11 @@ const ImageRoute = ImageRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicRealtimeSearchRoute = ApiPublicRealtimeSearchRouteImport.update({
+  id: '/api/public/realtime-search',
+  path: '/api/public/realtime-search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicProxyRoute = ApiPublicProxyRouteImport.update({
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/merge-videos': typeof ApiPublicMergeVideosRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
+  '/api/public/realtime-search': typeof ApiPublicRealtimeSearchRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/merge-videos': typeof ApiPublicMergeVideosRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
+  '/api/public/realtime-search': typeof ApiPublicRealtimeSearchRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/merge-videos': typeof ApiPublicMergeVideosRoute
   '/api/public/proxy': typeof ApiPublicProxyRoute
+  '/api/public/realtime-search': typeof ApiPublicRealtimeSearchRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -111,6 +120,7 @@ export interface FileRouteTypes {
     | '/api/public/media-proxy'
     | '/api/public/merge-videos'
     | '/api/public/proxy'
+    | '/api/public/realtime-search'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/api/public/media-proxy'
     | '/api/public/merge-videos'
     | '/api/public/proxy'
+    | '/api/public/realtime-search'
   id:
     | '__root__'
     | '/'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/api/public/media-proxy'
     | '/api/public/merge-videos'
     | '/api/public/proxy'
+    | '/api/public/realtime-search'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -145,6 +157,7 @@ export interface RootRouteChildren {
   ApiPublicMediaProxyRoute: typeof ApiPublicMediaProxyRoute
   ApiPublicMergeVideosRoute: typeof ApiPublicMergeVideosRoute
   ApiPublicProxyRoute: typeof ApiPublicProxyRoute
+  ApiPublicRealtimeSearchRoute: typeof ApiPublicRealtimeSearchRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -182,6 +195,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/realtime-search': {
+      id: '/api/public/realtime-search'
+      path: '/api/public/realtime-search'
+      fullPath: '/api/public/realtime-search'
+      preLoaderRoute: typeof ApiPublicRealtimeSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/proxy': {
@@ -225,6 +245,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicMediaProxyRoute: ApiPublicMediaProxyRoute,
   ApiPublicMergeVideosRoute: ApiPublicMergeVideosRoute,
   ApiPublicProxyRoute: ApiPublicProxyRoute,
+  ApiPublicRealtimeSearchRoute: ApiPublicRealtimeSearchRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

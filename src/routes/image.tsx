@@ -37,12 +37,12 @@ import {
 export const Route = createFileRoute("/image")({
   head: () => ({
     meta: [
-      { title: "Image — AI Chat Exploit" },
+      { title: "Image — AI Chat" },
       {
         name: "description",
         content: "Generate gambar AI dan edit foto memakai API key Anda sendiri.",
       },
-      { property: "og:title", content: "Image — AI Chat Exploit" },
+      { property: "og:title", content: "Image — AI Chat" },
       {
         property: "og:description",
         content: "Generate dan edit gambar AI lewat provider OpenAI-compatible Anda.",

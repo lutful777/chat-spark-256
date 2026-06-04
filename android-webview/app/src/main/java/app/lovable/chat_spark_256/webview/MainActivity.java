@@ -198,7 +198,7 @@ public class MainActivity extends Activity {
         ));
 
         TextView titleView = new TextView(this);
-        titleView.setText("Ai Chat");
+        titleView.setText("AI Chat");
         titleView.setTextColor(Color.WHITE);
         titleView.setTextSize(30);
         titleView.setGravity(Gravity.CENTER);

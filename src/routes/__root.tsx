@@ -47,7 +47,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Ai Chat
+          AI Chat
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Halaman belum bisa dimuat. Coba buka ulang saat koneksi stabil.
@@ -79,31 +79,31 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=overlays-content" },
-      { title: "Ai Chat" },
+      { title: "AI Chat" },
       {
         name: "description",
         content:
-          "Ai Chat — chat AI multi-provider dengan mode GitHub, Real Time Search, upload file, dan memory Supabase.",
+          "AI Chat — chat AI multi-provider dengan mode GitHub, Real Time Search, upload file, dan memory Supabase.",
       },
-      { name: "author", content: "Ai Chat" },
-      { name: "application-name", content: "Ai Chat" },
-      { property: "og:title", content: "Ai Chat" },
+      { name: "author", content: "AI Chat" },
+      { name: "application-name", content: "AI Chat" },
+      { property: "og:title", content: "AI Chat" },
       {
         property: "og:description",
         content: "Klien chat AI multi-provider dengan konfigurasi API sendiri.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "Ai Chat" },
+      { name: "twitter:title", content: "AI Chat" },
       { name: "twitter:description", content: "Chat AI multi-provider dengan GitHub mode dan Real Time Search." },
-      { property: "og:image", content: "/ai-chat-icon.svg?v=10" },
-      { name: "twitter:image", content: "/ai-chat-icon.svg?v=10" },
+      { property: "og:image", content: "/ai-chat-icon.png?v=11" },
+      { name: "twitter:image", content: "/ai-chat-icon.png?v=11" },
       { name: "theme-color", content: "#0f172a" },
       { name: "color-scheme", content: "dark" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "Ai Chat" },
+      { name: "apple-mobile-web-app-title", content: "AI Chat" },
       { name: "format-detection", content: "telephone=no" },
     ],
     links: [
@@ -112,9 +112,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "manifest", href: "/manifest.json?v=10" },
-      { rel: "icon", type: "image/svg+xml", sizes: "512x512", href: "/ai-chat-icon.svg?v=10" },
-      { rel: "shortcut icon", type: "image/svg+xml", href: "/ai-chat-icon.svg?v=10" },
-      { rel: "apple-touch-icon", sizes: "512x512", href: "/ai-chat-icon.svg?v=10" },
+      { rel: "icon", type: "image/png", sizes: "512x512", href: "/ai-chat-icon.png?v=11" },
+      { rel: "shortcut icon", type: "image/png", href: "/ai-chat-icon.png?v=11" },
+      { rel: "apple-touch-icon", sizes: "512x512", href: "/ai-chat-icon.png?v=11" },
     ],
   }),
   shellComponent: RootShell,
@@ -241,7 +241,7 @@ function RootShell({ children }: { children: ReactNode }) {
             filter: drop-shadow(0 12px 32px rgba(96, 165, 250, 0.38));
           }
           .flex.h-\[100dvh\].w-full.items-center.justify-center.bg-background.text-muted-foreground::after {
-            content: "Ai Chat";
+            content: "AI Chat";
             display: block;
             font-size: clamp(2.2rem, 12vw, 4rem);
             font-weight: 850;

@@ -50,13 +50,13 @@ import { OWNER_EMAIL } from "@/lib/app/roles";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Ai Chat" },
+      { title: "AI Chat" },
       {
         name: "description",
         content:
-          "Ai Chat — chat AI multi-provider dengan mode GitHub, Real Time Search, Thinking, upload file, dan memory Supabase.",
+          "AI Chat — chat AI multi-provider dengan mode GitHub, Real Time Search, Thinking, upload file, dan memory Supabase.",
       },
-      { property: "og:title", content: "Ai Chat" },
+      { property: "og:title", content: "AI Chat" },
       {
         property: "og:description",
         content: "Klien chat AI premium untuk API OpenAI-compatible dengan konfigurasi provider sendiri.",
@@ -470,7 +470,7 @@ function ChatPage() {
         <main className="keyboard-safe-main min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-3 py-6 sm:px-4">
-              {messages.length === 0 ? <div className="flex min-h-[55vh] flex-col items-center justify-center text-center"><div className="mb-5 rounded-[2rem] border border-border/70 bg-card/80 p-5 shadow-2xl shadow-black/20 backdrop-blur"><Sparkles className="size-9 text-primary" /></div><h1 className="text-3xl font-semibold tracking-tight">Ai Chat</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Pilih mode di header, gunakan Thinking untuk jawaban lebih teliti, Real Time untuk data terbaru, atau GitHub untuk update aplikasi.</p><div className="mt-5 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-3"><PremiumCard title="Thinking Mode" desc="Jawaban lebih teliti" /><PremiumCard title="Real Time" desc="Cari data terbaru" /><PremiumCard title="GitHub Mode" desc="Update web app via chat" /></div></div> : messages.map((m) => <ChatMessageBubble key={m.id} message={m} onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined} onEdit={m.role === "user" ? handleEdit : undefined} onDelete={handleDelete} />)}
+              {messages.length === 0 ? <div className="flex min-h-[55vh] flex-col items-center justify-center text-center"><div className="mb-5 rounded-[2rem] border border-border/70 bg-card/80 p-5 shadow-2xl shadow-black/20 backdrop-blur"><Sparkles className="size-9 text-primary" /></div><h1 className="text-3xl font-semibold tracking-tight">AI Chat</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Pilih mode di header, gunakan Thinking untuk jawaban lebih teliti, Real Time untuk data terbaru, atau GitHub untuk update aplikasi.</p><div className="mt-5 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-3"><PremiumCard title="Thinking Mode" desc="Jawaban lebih teliti" /><PremiumCard title="Real Time" desc="Cari data terbaru" /><PremiumCard title="GitHub Mode" desc="Update web app via chat" /></div></div> : messages.map((m) => <ChatMessageBubble key={m.id} message={m} onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined} onEdit={m.role === "user" ? handleEdit : undefined} onDelete={handleDelete} />)}
               {loading && <TypingIndicator />}
               <div ref={scrollEndRef} />
             </div>
@@ -515,7 +515,7 @@ function StatusPanel({
   return (
     <div className="flex h-full flex-col bg-sidebar p-4 text-sidebar-foreground">
       <div className="mb-4 rounded-3xl border border-sidebar-border bg-sidebar-accent/40 p-4">
-        <p className="text-sm font-semibold">Status Ai Chat</p>
+        <p className="text-sm font-semibold">Status AI Chat</p>
         <p className="mt-1 text-xs text-muted-foreground">Usap dari kanan ke kiri untuk membuka menu ini.</p>
       </div>
 
