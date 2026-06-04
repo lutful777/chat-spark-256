@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FocusEvent } from "react";
 import {
   ArrowLeft,
   Download,
@@ -83,6 +83,14 @@ function ImagePage() {
     mode === "generate" ? provider?.imagePath?.trim() : provider?.imageEditPath?.trim();
   const configured =
     !!provider?.apiKey.trim() && !!activeModel && !!activePath;
+  const submitLabel = mode === "generate" ? "Generate Image" : "Edit Foto";
+
+  const handlePromptFocus = (event: FocusEvent<HTMLTextAreaElement>) => {
+    const target = event.currentTarget;
+    window.setTimeout(() => {
+      target.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 180);
+  };
 
   const handleFile = async (file: File) => {
     const validationError = validateImageFile(file);
@@ -171,7 +179,10 @@ function ImagePage() {
           <Loader2 className="size-6 animate-spin" />
         </div>
       ) : (
-        <div className="mx-auto w-full max-w-3xl space-y-4 p-3 md:p-6">
+        <div
+          className="mx-auto w-full max-w-3xl space-y-4 p-3 md:p-6"
+          style={{ paddingBottom: "calc(13rem + var(--keyboard-offset) + env(safe-area-inset-bottom))" }}
+        >
           {/* mode toggle */}
           <div className="inline-flex rounded-2xl border border-border bg-card p-1">
             <button
@@ -273,24 +284,6 @@ function ImagePage() {
                 </div>
               )}
 
-              {/* prompt */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">
-                  {mode === "generate" ? "Prompt gambar" : "Prompt edit"}
-                </label>
-                <Textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  rows={3}
-                  placeholder={
-                    mode === "generate"
-                      ? "contoh: kucing astronot di bulan, gaya digital art"
-                      : "contoh: ubah latar jadi pantai saat senja"
-                  }
-                  className="rounded-xl"
-                />
-              </div>
-
               {error && (
                 <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                   {error}
@@ -303,19 +296,6 @@ function ImagePage() {
                   Settings.
                 </p>
               )}
-
-              <Button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="gap-2 rounded-xl"
-              >
-                {loading ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <ImageIcon className="size-4" />
-                )}
-                {mode === "generate" ? "Generate Image" : "Edit Foto"}
-              </Button>
             </div>
           )}
 
@@ -347,6 +327,44 @@ function ImagePage() {
             </div>
           )}
         </div>
+      )}
+
+      {ready && providers.length > 0 && (
+        <form
+          className="keyboard-safe-input px-3 pb-3 pt-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit();
+          }}
+        >
+          <div className="mx-auto flex w-full max-w-3xl items-end gap-2 rounded-3xl border border-border bg-card/90 p-2 shadow-2xl backdrop-blur">
+            <div className="min-w-0 flex-1 space-y-1">
+              <label className="px-2 text-xs font-medium text-muted-foreground">
+                {mode === "generate" ? "Prompt gambar" : "Prompt edit foto"}
+              </label>
+              <Textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onFocus={handlePromptFocus}
+                rows={2}
+                placeholder={
+                  mode === "generate"
+                    ? "contoh: kucing astronot di bulan, gaya digital art"
+                    : "contoh: ubah latar jadi pantai saat senja"
+                }
+                className="min-h-[3.3rem] resize-none rounded-2xl px-3 py-2 text-base"
+              />
+            </div>
+            <Button type="submit" disabled={loading} className="h-12 shrink-0 gap-2 rounded-2xl px-4">
+              {loading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <ImageIcon className="size-4" />
+              )}
+              <span className="hidden xs:inline sm:inline">{submitLabel}</span>
+            </Button>
+          </div>
+        </form>
       )}
     </div>
   );
