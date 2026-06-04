@@ -1,20 +1,4 @@
 {
-  "framework": "vite",
   "installCommand": "npm install",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist/client",
-  "rewrites": [
-    {
-      "source": "/api/public/proxy",
-      "destination": "/api/public/proxy"
-    },
-    {
-      "source": "/api/public/media-proxy",
-      "destination": "/api/public/media-proxy"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
+  "buildCommand": "npm run build"
 }
