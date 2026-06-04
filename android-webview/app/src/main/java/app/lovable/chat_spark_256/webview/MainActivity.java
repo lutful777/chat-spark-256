@@ -37,7 +37,7 @@ import java.util.Date;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
-    private static final String APP_URL = "https://chat-spark-256-git-main-lutful-s-projects.vercel.app/?apk=1.0.4";
+    private static final String APP_URL = "https://chat-spark-256.vercel.app/?apk=1.0.5";
     private static final int FILE_CHOOSER_REQUEST = 1001;
     private static final int PERMISSION_REQUEST = 1002;
 
