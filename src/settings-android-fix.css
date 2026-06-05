@@ -1,0 +1,52 @@
+/* Loaded after styles.css. This overrides the previous Android WebView hard-fix without touching app logic. */
+.settings-page,
+.min-h-\[100dvh\].bg-background.text-foreground {
+  -webkit-overflow-scrolling: touch !important;
+  isolation: auto !important;
+  contain: none !important;
+  transform: none !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  background: #080b14 !important;
+  background-color: #080b14 !important;
+  background-image: none !important;
+}
+
+.settings-page *,
+.min-h-\[100dvh\].bg-background.text-foreground * {
+  contain: none !important;
+  isolation: auto !important;
+  will-change: auto !important;
+  backface-visibility: visible !important;
+  transform-style: flat !important;
+}
+
+.settings-page header,
+.settings-page .sticky,
+.min-h-\[100dvh\].bg-background.text-foreground header,
+.min-h-\[100dvh\].bg-background.text-foreground .sticky {
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+  transform: none !important;
+}
+
+.settings-page section,
+.settings-page .rounded-2xl,
+.settings-page .rounded-3xl,
+.settings-page .rounded-xl,
+.min-h-\[100dvh\].bg-background.text-foreground section,
+.min-h-\[100dvh\].bg-background.text-foreground .rounded-2xl,
+.min-h-\[100dvh\].bg-background.text-foreground .rounded-3xl,
+.min-h-\[100dvh\].bg-background.text-foreground .rounded-xl {
+  contain: none !important;
+  isolation: auto !important;
+  transform: none !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+}
+
+.settings-page [data-radix-scroll-area-viewport],
+.min-h-\[100dvh\].bg-background.text-foreground [data-radix-scroll-area-viewport] {
+  overflow: visible !important;
+}
