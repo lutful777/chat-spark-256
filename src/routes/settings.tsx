@@ -438,13 +438,19 @@ function SettingsPage() {
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-background/80 px-3 py-3 backdrop-blur">
-        <Button asChild variant="ghost" size="icon" aria-label="Kembali">
-          <Link to="/">
+      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-background px-3 py-3">
+        {mode === "advanced" ? (
+          <Button variant="ghost" size="icon" aria-label="Kembali ke Setting" onClick={() => setMode("beginner")}>
             <ArrowLeft className="size-5" />
-          </Link>
-        </Button>
-        <h1 className="text-base font-semibold">Settings</h1>
+          </Button>
+        ) : (
+          <Button asChild variant="ghost" size="icon" aria-label="Kembali">
+            <Link to="/">
+              <ArrowLeft className="size-5" />
+            </Link>
+          </Button>
+        )}
+        <h1 className="text-base font-semibold">{mode === "advanced" ? "Advanced" : "Setting"}</h1>
       </header>
 
       <div className="mx-auto w-full max-w-5xl space-y-4 p-3 md:p-6">
@@ -460,131 +466,76 @@ function SettingsPage() {
           </Button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-[260px_1fr]">
-          <section className="rounded-2xl border border-border bg-card p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Provider</h2>
-            </div>
-            <ScrollArea className="max-h-64 md:max-h-[50vh]">
-              <div className="flex flex-col gap-1 pr-1">
-                {providers.length === 0 && <p className="px-2 py-4 text-center text-xs text-muted-foreground">Belum ada provider.</p>}
-                {providers.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setSelectedId(p.id)}
-                    className={`flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-                      p.id === selectedId ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
-                    }`}
-                  >
-                    <span className="min-w-0 truncate">{p.name}</span>
-                    {p.id === activeProviderId && <Check className="size-4 shrink-0 text-primary" />}
-                  </button>
-                ))}
-              </div>
-            </ScrollArea>
-            <div className="mt-3 space-y-2">
-              <Button variant="outline" className="w-full justify-start gap-2 rounded-xl" onClick={() => handleAdd()}>
-                <Plus className="size-4" /> Tambah Provider
-              </Button>
-              <select
-                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-xs"
-                defaultValue=""
-                onChange={(e) => {
-                  const preset = PROVIDER_PRESETS.find((x) => x.name === e.target.value);
-                  if (preset) handleAdd(preset);
-                  e.currentTarget.value = "";
-                }}
-              >
-                <option value="">Dari preset…</option>
-                {PROVIDER_PRESETS.map((p) => (
-                  <option key={p.name} value={p.name}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-            {!form ? (
-              <p className="py-12 text-center text-sm text-muted-foreground">Pilih atau tambah provider untuk mengedit.</p>
-            ) : (
-              <div className="space-y-5">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h2 className="text-sm font-semibold">Provider API</h2>
-                  {isActive ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-medium text-primary">
-                      <Check className="size-3.5" /> Provider aktif
-                    </span>
-                  ) : (
-                    <Button variant="secondary" size="sm" className="rounded-xl" onClick={() => setActiveProviderId(form.id)}>
-                      Jadikan aktif
-                    </Button>
-                  )}
-                </div>
-
-                <Field label="Provider Name">
-                  <Input value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="x.ai (Grok)" className="rounded-xl" />
-                </Field>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Provider API / Base URL">
-                    <Input value={form.baseUrl} onChange={(e) => update("baseUrl", e.target.value)} placeholder="https://api.x.ai/v1" inputMode="url" className="rounded-xl" />
-                  </Field>
-                  <Field label="API Path">
-                    <Input value={form.path} onChange={(e) => update("path", e.target.value)} placeholder="/chat/completions" className="rounded-xl" />
-                  </Field>
-                </div>
-                <Field label="API Key" hint="Disimpan hanya di perangkat ini.">
-                  <SecretInput value={form.apiKey} onChange={(v) => update("apiKey", v)} visible={showKey} onToggle={() => setShowKey((v) => !v)} onClear={handleClearKey} placeholder="sk-..." />
-                </Field>
-                <Field label="Model" hint="Klik Test untuk uji koneksi model.">
-                  <div className="space-y-2">
-                    {(form.models ?? []).map((m, i) => (
-                      <div key={i} className="flex gap-2">
-                        <Input value={m} onChange={(e) => updateModel(i, e.target.value)} placeholder="grok-4-latest" className="rounded-xl" />
-                        <Button type="button" variant="secondary" size="icon" className="shrink-0 rounded-xl" onClick={() => handleTestChatModel(i, m)} disabled={testing !== null || !m.trim()}>
-                          {testing === `chat-${i}` ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />}
-                        </Button>
-                        <Button type="button" variant="outline" size="icon" className="shrink-0 rounded-xl" onClick={() => removeModel(i)}>
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button type="button" variant="outline" size="sm" className="gap-2 rounded-xl" onClick={addModel}>
-                      <Plus className="size-4" /> Tambah Model
-                    </Button>
-                  </div>
-                </Field>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <Button onClick={handleSaveChat} className="gap-2 rounded-xl"><Save className="size-4" /> Save</Button>
-                  <Button variant="ghost" onClick={handleDelete} className="ml-auto gap-2 rounded-xl text-destructive hover:text-destructive"><Trash2 className="size-4" /> Hapus Provider</Button>
-                </div>
-
-                {mode === "advanced" && (
-                  <div className="space-y-5 border-t border-border pt-5">
-                    <h3 className="text-sm font-semibold">Advanced Chat</h3>
-                    <Field label="System Prompt">
-                      <Textarea value={form.systemPrompt ?? ""} onChange={(e) => update("systemPrompt", e.target.value)} rows={4} className="rounded-xl" />
-                    </Field>
-                    <div className="grid gap-5 sm:grid-cols-2">
-                      <Field label={`Temperature: ${(form.temperature ?? 0.7).toFixed(2)}`}>
-                        <Slider value={[form.temperature ?? 0.7]} min={0} max={2} step={0.05} onValueChange={([v]) => update("temperature", v)} className="py-2" />
-                      </Field>
-                      <Field label="Max Tokens">
-                        <Input value={Number.isFinite(form.maxTokens) ? form.maxTokens : ""} onChange={(e) => update("maxTokens", parseInt(e.target.value, 10) || 1)} type="number" min={1} max={200000} inputMode="numeric" className="rounded-xl" />
-                      </Field>
-                    </div>
-                    <ToggleRow title="Enable Streaming" desc="Tampilkan jawaban AI token demi token saat tersedia." checked={form.stream ?? true} onChange={(v) => update("stream", v)} />
-                    <ToggleRow title="Panggil langsung dari browser" desc="Default lewat proxy untuk hindari CORS." checked={!!form.directCall} onChange={(v) => update("directCall", v)} />
-                  </div>
-                )}
-              </div>
-            )}
-          </section>
-        </div>
-
         {mode === "beginner" ? (
           <div className="space-y-4">
-            <SerperSearchSettings />
+            <div className="grid gap-4 md:grid-cols-[260px_1fr]">
+              <ProviderList
+                providers={providers}
+                selectedId={selectedId}
+                activeProviderId={activeProviderId}
+                onSelect={setSelectedId}
+                onAdd={handleAdd}
+              />
+
+              <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
+                {!form ? (
+                  <p className="py-12 text-center text-sm text-muted-foreground">Pilih atau tambah provider untuk mengedit.</p>
+                ) : (
+                  <div className="space-y-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h2 className="text-sm font-semibold">Provider API</h2>
+                      {isActive ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-medium text-primary">
+                          <Check className="size-3.5" /> Provider aktif
+                        </span>
+                      ) : (
+                        <Button variant="secondary" size="sm" className="rounded-xl" onClick={() => setActiveProviderId(form.id)}>
+                          Jadikan aktif
+                        </Button>
+                      )}
+                    </div>
+
+                    <Field label="Provider Name">
+                      <Input value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="x.ai (Grok)" className="rounded-xl" />
+                    </Field>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="Provider API / Base URL">
+                        <Input value={form.baseUrl} onChange={(e) => update("baseUrl", e.target.value)} placeholder="https://api.x.ai/v1" inputMode="url" className="rounded-xl" />
+                      </Field>
+                      <Field label="API Path">
+                        <Input value={form.path} onChange={(e) => update("path", e.target.value)} placeholder="/chat/completions" className="rounded-xl" />
+                      </Field>
+                    </div>
+                    <Field label="API Key" hint="Disimpan hanya di perangkat ini.">
+                      <SecretInput value={form.apiKey} onChange={(v) => update("apiKey", v)} visible={showKey} onToggle={() => setShowKey((v) => !v)} onClear={handleClearKey} placeholder="sk-..." />
+                    </Field>
+                    <Field label="Model" hint="Klik Test untuk uji koneksi model.">
+                      <div className="space-y-2">
+                        {(form.models ?? []).map((m, i) => (
+                          <div key={i} className="flex gap-2">
+                            <Input value={m} onChange={(e) => updateModel(i, e.target.value)} placeholder="grok-4-latest" className="rounded-xl" />
+                            <Button type="button" variant="secondary" size="icon" className="shrink-0 rounded-xl" onClick={() => handleTestChatModel(i, m)} disabled={testing !== null || !m.trim()}>
+                              {testing === `chat-${i}` ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />}
+                            </Button>
+                            <Button type="button" variant="outline" size="icon" className="shrink-0 rounded-xl" onClick={() => removeModel(i)}>
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" className="gap-2 rounded-xl" onClick={addModel}>
+                          <Plus className="size-4" /> Tambah Model
+                        </Button>
+                      </div>
+                    </Field>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <Button onClick={handleSaveChat} className="gap-2 rounded-xl"><Save className="size-4" /> Save</Button>
+                      <Button variant="ghost" onClick={handleDelete} className="ml-auto gap-2 rounded-xl text-destructive hover:text-destructive"><Trash2 className="size-4" /> Hapus Provider</Button>
+                    </div>
+                  </div>
+                )}
+              </section>
+            </div>
+
             <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
               <h2 className="mb-3 text-sm font-semibold">Image API</h2>
               <p className="mb-4 text-xs text-muted-foreground">Opsional. Jika Image API Key kosong, memakai Chat API Key.</p>
@@ -601,10 +552,48 @@ function SettingsPage() {
             </section>
             <OutlookConnect />
             <GitHubConnect />
-            <BackupSection fileRef={fileRef} safeBackupFileRef={safeBackupFileRef} onImport={handleImportFile} onImportSafe={handleImportSafeBackupFile} onExportSettings={handleExportSettings} onExportSafe={handleExportSafeBackup} clearAllApiKeys={clearAllApiKeys} resetAllData={resetAllData} />
           </div>
         ) : (
           <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-[260px_1fr]">
+              <ProviderList
+                providers={providers}
+                selectedId={selectedId}
+                activeProviderId={activeProviderId}
+                onSelect={setSelectedId}
+                onAdd={handleAdd}
+              />
+
+              <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
+                {!form ? (
+                  <p className="py-12 text-center text-sm text-muted-foreground">Pilih provider untuk mengatur Advanced Chat.</p>
+                ) : (
+                  <div className="space-y-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h2 className="text-sm font-semibold">Advanced Chat</h2>
+                      <span className="min-w-0 truncate text-xs text-muted-foreground">{form.name}</span>
+                    </div>
+                    <Field label="System Prompt">
+                      <Textarea value={form.systemPrompt ?? ""} onChange={(e) => update("systemPrompt", e.target.value)} rows={4} className="rounded-xl" />
+                    </Field>
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <Field label={`Temperature: ${(form.temperature ?? 0.7).toFixed(2)}`}>
+                        <Slider value={[form.temperature ?? 0.7]} min={0} max={2} step={0.05} onValueChange={([v]) => update("temperature", v)} className="py-2" />
+                      </Field>
+                      <Field label="Max Tokens">
+                        <Input value={Number.isFinite(form.maxTokens) ? form.maxTokens : ""} onChange={(e) => update("maxTokens", parseInt(e.target.value, 10) || 1)} type="number" min={1} max={200000} inputMode="numeric" className="rounded-xl" />
+                      </Field>
+                    </div>
+                    <ToggleRow title="Enable Streaming" desc="Tampilkan jawaban AI token demi token saat tersedia." checked={form.stream ?? true} onChange={(v) => update("stream", v)} />
+                    <ToggleRow title="Direct Call" desc="Panggil langsung dari browser. Default lewat proxy untuk hindari CORS." checked={!!form.directCall} onChange={(v) => update("directCall", v)} />
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <Button onClick={handleSaveChat} className="gap-2 rounded-xl"><Save className="size-4" /> Save</Button>
+                    </div>
+                  </div>
+                )}
+              </section>
+            </div>
+
             <QdrantMemorySettings />
             <SupabaseMemoryKey />
             <SerperSearchSettings />
