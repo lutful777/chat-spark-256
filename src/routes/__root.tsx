@@ -158,8 +158,11 @@ function PwaBoot() {
       const vkHeight = Math.round(virtualKeyboard?.boundingRect?.height ?? 0);
       const visualGap = viewport ? Math.round(Math.max(0, window.innerHeight - visualHeight - visualOffsetTop)) : 0;
       const resizeGap = Math.round(Math.max(0, stableHeight - window.innerHeight));
-      const keyboardOffset = activeIsTextInput() ? Math.max(vkHeight, visualGap, resizeGap) : 0;
-      const keyboardOpen = keyboardOffset > 60;
+      const overlayGap = Math.max(vkHeight, visualGap);
+      const resizedByKeyboard = resizeGap > 60 && overlayGap < 60;
+      const keyboardActive = activeIsTextInput() && (overlayGap > 60 || resizeGap > 60);
+      const keyboardOffset = keyboardActive && !resizedByKeyboard ? overlayGap : 0;
+      const keyboardOpen = keyboardActive;
 
       if (!keyboardOpen) {
         stableHeight = window.innerHeight;
