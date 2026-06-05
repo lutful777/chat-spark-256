@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import {
   ArrowLeft,
   Check,
@@ -21,9 +21,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatStore } from "@/lib/chat/store";
 import { uid } from "@/lib/chat/storage";
@@ -32,17 +29,14 @@ import { MediaError, testImageConnection, testVideoConnection } from "@/lib/chat
 import { PROVIDER_PRESETS, type ProviderConfig } from "@/lib/chat/types";
 import { OutlookConnect } from "@/components/outlook/OutlookConnect";
 import { GitHubConnect } from "@/components/github/GitHubConnect";
-import { SerperSearchSettings } from "@/components/search/SerperSearchSettings";
-import { SupabaseMemoryKey } from "@/components/memory/SupabaseMemoryKey";
-import { QdrantMemorySettings } from "@/components/memory/QdrantMemorySettings";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — API Chat Client" },
+      { title: "Settings — AI Chat" },
       {
         name: "description",
-        content: "Kelola provider API, Real Time Search, memory, Outlook, dan GitHub.",
+        content: "Kelola provider API, media, Outlook, GitHub, backup, dan menu Advanced.",
       },
     ],
   }),
@@ -50,7 +44,6 @@ export const Route = createFileRoute("/settings")({
 });
 
 type TestingKey = string | null;
-type SettingsMode = "beginner" | "advanced";
 
 type SafeBackupFile = {
   type: "ai-chat-safe-backup";
@@ -160,7 +153,6 @@ function SettingsPage() {
     resetAllData,
   } = useChatStore();
 
-  const [mode, setMode] = useState<SettingsMode>("beginner");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<ProviderConfig | null>(null);
   const [showKey, setShowKey] = useState(false);
@@ -430,27 +422,21 @@ function SettingsPage() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-background text-muted-foreground">
+      <div className="settings-page flex min-h-[100dvh] items-center justify-center text-muted-foreground">
         <Loader2 className="size-6 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground">
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-background px-3 py-3">
-        {mode === "advanced" ? (
-          <Button variant="ghost" size="icon" aria-label="Kembali ke Setting" onClick={() => setMode("beginner")}>
+    <div className="settings-page min-h-[100dvh] text-foreground">
+      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border px-3 py-3">
+        <Button asChild variant="ghost" size="icon" aria-label="Kembali">
+          <Link to="/">
             <ArrowLeft className="size-5" />
-          </Button>
-        ) : (
-          <Button asChild variant="ghost" size="icon" aria-label="Kembali">
-            <Link to="/">
-              <ArrowLeft className="size-5" />
-            </Link>
-          </Button>
-        )}
-        <h1 className="text-base font-semibold">{mode === "advanced" ? "Advanced" : "Setting"}</h1>
+          </Link>
+        </Button>
+        <h1 className="text-base font-semibold">Settings</h1>
       </header>
 
       <div className="mx-auto w-full max-w-5xl space-y-4 p-3 md:p-6">
@@ -459,159 +445,99 @@ function SettingsPage() {
           <p>API key disimpan di perangkat/browser kamu. Jangan gunakan perangkat publik.</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-2">
-          <Button variant={mode === "beginner" ? "default" : "ghost"} className="rounded-xl" onClick={() => setMode("beginner")}>Setting</Button>
-          <Button variant={mode === "advanced" ? "default" : "ghost"} className="gap-2 rounded-xl" onClick={() => setMode("advanced")}>
-            <Settings2 className="size-4" /> Advanced
-          </Button>
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-[260px_1fr]">
+            <ProviderList
+              providers={providers}
+              selectedId={selectedId}
+              activeProviderId={activeProviderId}
+              onSelect={setSelectedId}
+              onAdd={handleAdd}
+            />
+
+            <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
+              {!form ? (
+                <p className="py-12 text-center text-sm text-muted-foreground">Pilih atau tambah provider untuk mengedit.</p>
+              ) : (
+                <div className="space-y-5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="text-sm font-semibold">Provider API</h2>
+                    {isActive ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-medium text-primary">
+                        <Check className="size-3.5" /> Provider aktif
+                      </span>
+                    ) : (
+                      <Button variant="secondary" size="sm" className="rounded-xl" onClick={() => setActiveProviderId(form.id)}>
+                        Jadikan aktif
+                      </Button>
+                    )}
+                  </div>
+
+                  <Field label="Provider Name">
+                    <Input value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="x.ai (Grok)" className="rounded-xl" />
+                  </Field>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Provider API / Base URL">
+                      <Input value={form.baseUrl} onChange={(e) => update("baseUrl", e.target.value)} placeholder="https://api.x.ai/v1" inputMode="url" className="rounded-xl" />
+                    </Field>
+                    <Field label="API Path">
+                      <Input value={form.path} onChange={(e) => update("path", e.target.value)} placeholder="/chat/completions" className="rounded-xl" />
+                    </Field>
+                  </div>
+                  <Field label="API Key" hint="Disimpan hanya di perangkat ini.">
+                    <SecretInput value={form.apiKey} onChange={(v) => update("apiKey", v)} visible={showKey} onToggle={() => setShowKey((v) => !v)} onClear={handleClearKey} placeholder="API key" />
+                  </Field>
+                  <Field label="Model" hint="Klik Test untuk uji koneksi model.">
+                    <div className="space-y-2">
+                      {(form.models ?? []).map((m, i) => (
+                        <div key={i} className="flex gap-2">
+                          <Input value={m} onChange={(e) => updateModel(i, e.target.value)} placeholder="grok-4-latest" className="rounded-xl" />
+                          <Button type="button" variant="secondary" size="icon" className="shrink-0 rounded-xl" onClick={() => handleTestChatModel(i, m)} disabled={testing !== null || !m.trim()}>
+                            {testing === `chat-${i}` ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />}
+                          </Button>
+                          <Button type="button" variant="outline" size="icon" className="shrink-0 rounded-xl" onClick={() => removeModel(i)}>
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button type="button" variant="outline" size="sm" className="gap-2 rounded-xl" onClick={addModel}>
+                        <Plus className="size-4" /> Tambah Model
+                      </Button>
+                    </div>
+                  </Field>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button onClick={handleSaveChat} className="gap-2 rounded-xl"><Save className="size-4" /> Save</Button>
+                    <Button variant="ghost" onClick={handleDelete} className="ml-auto gap-2 rounded-xl text-destructive hover:text-destructive"><Trash2 className="size-4" /> Hapus Provider</Button>
+                  </div>
+                </div>
+              )}
+            </section>
+          </div>
+
+          <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
+            <h2 className="mb-3 text-sm font-semibold">Image API</h2>
+            <p className="mb-4 text-xs text-muted-foreground">Opsional. Jika Image API Key kosong, memakai Chat API Key.</p>
+            {form ? (
+              <MediaImageForm form={form} update={update} showKey={showImageKey} setShowKey={setShowImageKey} onSave={handleSaveImage} onTest={handleTestImage} testing={testing} />
+            ) : <p className="text-xs text-muted-foreground">Pilih provider dulu.</p>}
+          </section>
+          <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
+            <h2 className="mb-3 text-sm font-semibold">Video API</h2>
+            <p className="mb-4 text-xs text-muted-foreground">Opsional. Jika Video API Key kosong, memakai Chat API Key.</p>
+            {form ? (
+              <MediaVideoForm form={form} update={update} showKey={showVideoKey} setShowKey={setShowVideoKey} onSave={handleSaveVideo} onTest={handleTestVideo} testing={testing} />
+            ) : <p className="text-xs text-muted-foreground">Pilih provider dulu.</p>}
+          </section>
+          <OutlookConnect />
+          <GitHubConnect />
+          <BackupSection fileRef={fileRef} safeBackupFileRef={safeBackupFileRef} onImport={handleImportFile} onImportSafe={handleImportSafeBackupFile} onExportSettings={handleExportSettings} onExportSafe={handleExportSafeBackup} clearAllApiKeys={clearAllApiKeys} resetAllData={resetAllData} />
         </div>
-
-        {mode === "beginner" ? (
-          <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-[260px_1fr]">
-              <ProviderList
-                providers={providers}
-                selectedId={selectedId}
-                activeProviderId={activeProviderId}
-                onSelect={setSelectedId}
-                onAdd={handleAdd}
-              />
-
-              <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-                {!form ? (
-                  <p className="py-12 text-center text-sm text-muted-foreground">Pilih atau tambah provider untuk mengedit.</p>
-                ) : (
-                  <div className="space-y-5">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h2 className="text-sm font-semibold">Provider API</h2>
-                      {isActive ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-medium text-primary">
-                          <Check className="size-3.5" /> Provider aktif
-                        </span>
-                      ) : (
-                        <Button variant="secondary" size="sm" className="rounded-xl" onClick={() => setActiveProviderId(form.id)}>
-                          Jadikan aktif
-                        </Button>
-                      )}
-                    </div>
-
-                    <Field label="Provider Name">
-                      <Input value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="x.ai (Grok)" className="rounded-xl" />
-                    </Field>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="Provider API / Base URL">
-                        <Input value={form.baseUrl} onChange={(e) => update("baseUrl", e.target.value)} placeholder="https://api.x.ai/v1" inputMode="url" className="rounded-xl" />
-                      </Field>
-                      <Field label="API Path">
-                        <Input value={form.path} onChange={(e) => update("path", e.target.value)} placeholder="/chat/completions" className="rounded-xl" />
-                      </Field>
-                    </div>
-                    <Field label="API Key" hint="Disimpan hanya di perangkat ini.">
-                      <SecretInput value={form.apiKey} onChange={(v) => update("apiKey", v)} visible={showKey} onToggle={() => setShowKey((v) => !v)} onClear={handleClearKey} placeholder="sk-..." />
-                    </Field>
-                    <Field label="Model" hint="Klik Test untuk uji koneksi model.">
-                      <div className="space-y-2">
-                        {(form.models ?? []).map((m, i) => (
-                          <div key={i} className="flex gap-2">
-                            <Input value={m} onChange={(e) => updateModel(i, e.target.value)} placeholder="grok-4-latest" className="rounded-xl" />
-                            <Button type="button" variant="secondary" size="icon" className="shrink-0 rounded-xl" onClick={() => handleTestChatModel(i, m)} disabled={testing !== null || !m.trim()}>
-                              {testing === `chat-${i}` ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />}
-                            </Button>
-                            <Button type="button" variant="outline" size="icon" className="shrink-0 rounded-xl" onClick={() => removeModel(i)}>
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </div>
-                        ))}
-                        <Button type="button" variant="outline" size="sm" className="gap-2 rounded-xl" onClick={addModel}>
-                          <Plus className="size-4" /> Tambah Model
-                        </Button>
-                      </div>
-                    </Field>
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      <Button onClick={handleSaveChat} className="gap-2 rounded-xl"><Save className="size-4" /> Save</Button>
-                      <Button variant="ghost" onClick={handleDelete} className="ml-auto gap-2 rounded-xl text-destructive hover:text-destructive"><Trash2 className="size-4" /> Hapus Provider</Button>
-                    </div>
-                  </div>
-                )}
-              </section>
-            </div>
-
-            <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-              <h2 className="mb-3 text-sm font-semibold">Image API</h2>
-              <p className="mb-4 text-xs text-muted-foreground">Opsional. Jika Image API Key kosong, memakai Chat API Key.</p>
-              {form ? (
-                <MediaImageForm form={form} update={update} showKey={showImageKey} setShowKey={setShowImageKey} onSave={handleSaveImage} onTest={handleTestImage} testing={testing} />
-              ) : <p className="text-xs text-muted-foreground">Pilih provider dulu.</p>}
-            </section>
-            <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-              <h2 className="mb-3 text-sm font-semibold">Video API</h2>
-              <p className="mb-4 text-xs text-muted-foreground">Opsional. Jika Video API Key kosong, memakai Chat API Key.</p>
-              {form ? (
-                <MediaVideoForm form={form} update={update} showKey={showVideoKey} setShowKey={setShowVideoKey} onSave={handleSaveVideo} onTest={handleTestVideo} testing={testing} />
-              ) : <p className="text-xs text-muted-foreground">Pilih provider dulu.</p>}
-            </section>
-            <OutlookConnect />
-            <GitHubConnect />
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-[260px_1fr]">
-              <ProviderList
-                providers={providers}
-                selectedId={selectedId}
-                activeProviderId={activeProviderId}
-                onSelect={setSelectedId}
-                onAdd={handleAdd}
-              />
-
-              <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-                {!form ? (
-                  <p className="py-12 text-center text-sm text-muted-foreground">Pilih provider untuk mengatur Advanced Chat.</p>
-                ) : (
-                  <div className="space-y-5">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h2 className="text-sm font-semibold">Advanced Chat</h2>
-                      <span className="min-w-0 truncate text-xs text-muted-foreground">{form.name}</span>
-                    </div>
-                    <Field label="System Prompt">
-                      <Textarea value={form.systemPrompt ?? ""} onChange={(e) => update("systemPrompt", e.target.value)} rows={4} className="rounded-xl" />
-                    </Field>
-                    <div className="grid gap-5 sm:grid-cols-2">
-                      <Field label={`Temperature: ${(form.temperature ?? 0.7).toFixed(2)}`}>
-                        <Slider value={[form.temperature ?? 0.7]} min={0} max={2} step={0.05} onValueChange={([v]) => update("temperature", v)} className="py-2" />
-                      </Field>
-                      <Field label="Max Tokens">
-                        <Input value={Number.isFinite(form.maxTokens) ? form.maxTokens : ""} onChange={(e) => update("maxTokens", parseInt(e.target.value, 10) || 1)} type="number" min={1} max={200000} inputMode="numeric" className="rounded-xl" />
-                      </Field>
-                    </div>
-                    <ToggleRow title="Enable Streaming" desc="Tampilkan jawaban AI token demi token saat tersedia." checked={form.stream ?? true} onChange={(v) => update("stream", v)} />
-                    <ToggleRow title="Direct Call" desc="Panggil langsung dari browser. Default lewat proxy untuk hindari CORS." checked={!!form.directCall} onChange={(v) => update("directCall", v)} />
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      <Button onClick={handleSaveChat} className="gap-2 rounded-xl"><Save className="size-4" /> Save</Button>
-                    </div>
-                  </div>
-                )}
-              </section>
-            </div>
-
-            <QdrantMemorySettings />
-            <SupabaseMemoryKey />
-            <SerperSearchSettings />
-            <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-              <h2 className="mb-1 text-sm font-semibold">Private AI Memory</h2>
-              <p className="text-xs text-muted-foreground">
-                Local Project Memory aktif otomatis untuk konteks proyek. Supabase dan Qdrant bisa dipakai sebagai memory lanjutan.
-              </p>
-            </section>
-            <BackupSection fileRef={fileRef} safeBackupFileRef={safeBackupFileRef} onImport={handleImportFile} onImportSafe={handleImportSafeBackupFile} onExportSettings={handleExportSettings} onExportSafe={handleExportSafeBackup} clearAllApiKeys={clearAllApiKeys} resetAllData={resetAllData} />
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <div className="space-y-1.5">
       <Label className="text-sm">{label}</Label>
@@ -696,18 +622,6 @@ function SecretInput({ value, onChange, visible, onToggle, onClear, placeholder 
   );
 }
 
-function ToggleRow({ title, desc, checked, onChange }: { title: string; desc: string; checked: boolean; onChange: (value: boolean) => void }) {
-  return (
-    <div className="flex items-center justify-between rounded-xl border border-border px-3 py-3">
-      <div className="pr-3">
-        <p className="text-sm font-medium">{title}</p>
-        <p className="text-xs text-muted-foreground">{desc}</p>
-      </div>
-      <Switch checked={checked} onCheckedChange={onChange} />
-    </div>
-  );
-}
-
 function MediaImageForm({ form, update, showKey, setShowKey, onSave, onTest, testing }: { form: ProviderConfig; update: <K extends keyof ProviderConfig>(key: K, value: ProviderConfig[K]) => void; showKey: boolean; setShowKey: (updater: (value: boolean) => boolean) => void; onSave: () => void; onTest: () => void; testing: TestingKey }) {
   return (
     <div className="space-y-4">
@@ -757,11 +671,14 @@ function MediaVideoForm({ form, update, showKey, setShowKey, onSave, onTest, tes
   );
 }
 
-function BackupSection({ fileRef, safeBackupFileRef, onImport, onImportSafe, onExportSettings, onExportSafe, clearAllApiKeys, resetAllData }: { fileRef: React.RefObject<HTMLInputElement | null>; safeBackupFileRef: React.RefObject<HTMLInputElement | null>; onImport: (file: File) => void | Promise<void>; onImportSafe: (file: File) => void | Promise<void>; onExportSettings: (withKeys: boolean) => void; onExportSafe: () => void; clearAllApiKeys: () => void; resetAllData: () => void }) {
+function BackupSection({ fileRef, safeBackupFileRef, onImport, onImportSafe, onExportSettings, onExportSafe, clearAllApiKeys, resetAllData }: { fileRef: RefObject<HTMLInputElement | null>; safeBackupFileRef: RefObject<HTMLInputElement | null>; onImport: (file: File) => void | Promise<void>; onImportSafe: (file: File) => void | Promise<void>; onExportSettings: (withKeys: boolean) => void; onExportSafe: () => void; clearAllApiKeys: () => void; resetAllData: () => void }) {
   return (
     <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
       <h2 className="mb-1 text-sm font-semibold">Backup Data</h2>
       <p className="mb-3 text-xs text-muted-foreground">Simpan backup sebelum update APK, clear cache, atau pindah perangkat.</p>
+      <Button asChild variant="secondary" className="mb-4 w-full justify-center gap-2 rounded-xl">
+        <Link to="/settings/advanced"><Settings2 className="size-4" /> Advanced</Link>
+      </Button>
       <p className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
         Backup aman berisi chat, provider, API key provider, memory config, Outlook config, dan setting lokal. File ini tetap privat.
       </p>
