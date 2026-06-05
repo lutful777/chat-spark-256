@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VideoRouteImport } from './routes/video'
+import { Route as SettingsAdvancedRouteImport } from './routes/settings.advanced'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as QdrantMemoryRouteImport } from './routes/qdrant-memory'
 import { Route as OutlookRouteImport } from './routes/outlook'
@@ -24,6 +25,11 @@ import { Route as ApiPublicExtractFrameRouteImport } from './routes/api/public/e
 const VideoRoute = VideoRouteImport.update({
   id: '/video',
   path: '/video',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsAdvancedRoute = SettingsAdvancedRouteImport.update({
+  id: '/settings/advanced',
+  path: '/settings/advanced',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -83,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/outlook': typeof OutlookRoute
   '/qdrant-memory': typeof QdrantMemoryRoute
   '/settings': typeof SettingsRoute
+  '/settings/advanced': typeof SettingsAdvancedRoute
   '/video': typeof VideoRoute
   '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/outlook': typeof OutlookRoute
   '/qdrant-memory': typeof QdrantMemoryRoute
   '/settings': typeof SettingsRoute
+  '/settings/advanced': typeof SettingsAdvancedRoute
   '/video': typeof VideoRoute
   '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/outlook': typeof OutlookRoute
   '/qdrant-memory': typeof QdrantMemoryRoute
   '/settings': typeof SettingsRoute
+  '/settings/advanced': typeof SettingsAdvancedRoute
   '/video': typeof VideoRoute
   '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/outlook'
     | '/qdrant-memory'
     | '/settings'
+    | '/settings/advanced'
     | '/video'
     | '/api/public/extract-frame'
     | '/api/public/media-proxy'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/outlook'
     | '/qdrant-memory'
     | '/settings'
+    | '/settings/advanced'
     | '/video'
     | '/api/public/extract-frame'
     | '/api/public/media-proxy'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/outlook'
     | '/qdrant-memory'
     | '/settings'
+    | '/settings/advanced'
     | '/video'
     | '/api/public/extract-frame'
     | '/api/public/media-proxy'
@@ -165,6 +177,7 @@ export interface RootRouteChildren {
   OutlookRoute: typeof OutlookRoute
   QdrantMemoryRoute: typeof QdrantMemoryRoute
   SettingsRoute: typeof SettingsRoute
+  SettingsAdvancedRoute: typeof SettingsAdvancedRoute
   VideoRoute: typeof VideoRoute
   ApiPublicExtractFrameRoute: typeof ApiPublicExtractFrameRoute
   ApiPublicMediaProxyRoute: typeof ApiPublicMediaProxyRoute
@@ -180,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/video'
       fullPath: '/video'
       preLoaderRoute: typeof VideoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/advanced': {
+      id: '/settings/advanced'
+      path: '/settings/advanced'
+      fullPath: '/settings/advanced'
+      preLoaderRoute: typeof SettingsAdvancedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -261,6 +281,7 @@ const rootRouteChildren: RootRouteChildren = {
   OutlookRoute: OutlookRoute,
   QdrantMemoryRoute: QdrantMemoryRoute,
   SettingsRoute: SettingsRoute,
+  SettingsAdvancedRoute: SettingsAdvancedRoute,
   VideoRoute: VideoRoute,
   ApiPublicExtractFrameRoute: ApiPublicExtractFrameRoute,
   ApiPublicMediaProxyRoute: ApiPublicMediaProxyRoute,
@@ -271,13 +292,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
