@@ -97,9 +97,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "AI Chat" },
       { name: "twitter:description", content: "Chat AI multi-provider dengan GitHub mode dan Real Time Search." },
-      { property: "og:image", content: "/ai-chat-icon.png?v=11" },
-      { name: "twitter:image", content: "/ai-chat-icon.png?v=11" },
-      { name: "theme-color", content: "#0f172a" },
+      { property: "og:image", content: "/ai-chat-icon.svg?v=15" },
+      { name: "twitter:image", content: "/ai-chat-icon.svg?v=15" },
+      { name: "theme-color", content: "#02040c" },
       { name: "color-scheme", content: "dark" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
@@ -116,10 +116,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: settingsAndroidFixCss,
       },
-      { rel: "manifest", href: "/manifest.json?v=10" },
-      { rel: "icon", type: "image/png", sizes: "512x512", href: "/ai-chat-icon.png?v=11" },
-      { rel: "shortcut icon", type: "image/png", href: "/ai-chat-icon.png?v=11" },
-      { rel: "apple-touch-icon", sizes: "512x512", href: "/ai-chat-icon.png?v=11" },
+      { rel: "manifest", href: "/manifest.json?v=15" },
+      { rel: "icon", type: "image/svg+xml", href: "/ai-chat-icon.svg?v=15" },
+      { rel: "shortcut icon", type: "image/svg+xml", href: "/ai-chat-icon.svg?v=15" },
+      { rel: "apple-touch-icon", sizes: "512x512", href: "/ai-chat-icon.svg?v=15" },
     ],
   }),
   shellComponent: RootShell,
@@ -140,6 +140,7 @@ function PwaBoot() {
     if (typeof window === "undefined") return;
 
     const root = document.documentElement;
+    root.classList.add("android-stable-render");
     let stableHeight = window.innerHeight;
     const virtualKeyboard = (navigator as Navigator & { virtualKeyboard?: VirtualKeyboardLike }).virtualKeyboard;
     if (virtualKeyboard) virtualKeyboard.overlaysContent = true;
@@ -184,7 +185,7 @@ function PwaBoot() {
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js?v=10").catch(() => undefined);
+        navigator.serviceWorker.register("/sw.js?v=15").catch(() => undefined);
       });
     }
 
