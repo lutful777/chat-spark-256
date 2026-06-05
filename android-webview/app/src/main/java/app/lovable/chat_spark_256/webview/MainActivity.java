@@ -37,7 +37,7 @@ import java.util.Date;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
-    private static final String APP_URL = "https://chat-spark-256.vercel.app/?apk=1.0.6";
+    private static final String APP_URL = "https://chat-spark-256.vercel.app/?apk=1.0.7";
     private static final String APP_ORIGIN = "https://chat-spark-256.vercel.app";
     private static final int FILE_CHOOSER_REQUEST = 1001;
     private static final int PERMISSION_REQUEST = 1002;
@@ -63,6 +63,7 @@ public class MainActivity extends Activity {
         webView = new WebView(this);
         webView.setBackgroundColor(Color.BLACK);
         webView.setVisibility(View.GONE);
+        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         webView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
@@ -79,7 +80,7 @@ public class MainActivity extends Activity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
@@ -92,7 +93,11 @@ public class MainActivity extends Activity {
             settings.setSafeBrowsingEnabled(true);
         }
 
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        if (Build.VERSION.SDK_INT <= 32) {
+            webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        } else {
+            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        }
         WebView.setWebContentsDebuggingEnabled(false);
 
         webView.setWebChromeClient(new WebChromeClient() {
