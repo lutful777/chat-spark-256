@@ -1,5 +1,4 @@
 {
   "installCommand": "npm install",
-  "buildCommand": "npm exec vite -- build --config vite.vercel.config.ts && npx nitro deploy --prebuilt",
-  "outputDirectory": ".vercel/output"
+  "buildCommand": "npm exec vite -- build --config vite.vercel.config.ts"
 }
