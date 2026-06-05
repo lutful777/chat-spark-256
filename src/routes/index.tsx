@@ -46,6 +46,7 @@ import { uid } from "@/lib/chat/storage";
 import { ChatError, sendChat } from "@/lib/chat/api";
 import type { ChatAttachment, ChatMessage } from "@/lib/chat/types";
 import { compactConversationMessages, getConversationSummaryStatus } from "@/lib/chat/summary";
+import { autoSaveProjectMemory, buildProjectMemoryContext } from "@/lib/memory/projectMemory";
 import { runOutlookMailCommand } from "@/lib/outlook/chatCommand";
 import { runGitHubChatCommand } from "@/lib/github/chatCommand";
 import { autoSaveImportantMemory, buildAiMemoryContext, getValidSupabaseAuthSession, loadSupabaseMemoryConfig } from "@/lib/memory/supabaseMemory";
@@ -311,7 +312,9 @@ function ChatPage() {
 
     try {
       const compactBase = compactConversationMessages(base);
-      const memoryContext = await buildAiMemoryContext(base[base.length - 1]?.content ?? "");
+      const lastUserText = base[base.length - 1]?.content ?? "";
+      const projectMemoryContext = buildProjectMemoryContext(lastUserText);
+      const memoryContext = await buildAiMemoryContext(lastUserText);
       const modeContext =
         thinkingDepth === "deep"
           ? THINKING_DEEP_CONTEXT
@@ -319,13 +322,13 @@ function ChatPage() {
             ? THINKING_CONTEXT
             : "";
       const compactNotice = compactBase.length < base.length ? "Conversation Summary aktif: beberapa pesan lama diringkas agar chat panjang tetap ringan dan hemat token." : "";
-      const combinedContext = [memoryContext.trim(), compactNotice, modeContext.trim(), extraContext.trim()].filter(Boolean).join("\n\n");
+      const combinedContext = [projectMemoryContext.trim(), memoryContext.trim(), compactNotice, modeContext.trim(), extraContext.trim()].filter(Boolean).join("\n\n");
       const providerWithContext = combinedContext
         ? { ...activeProvider, systemPrompt: [activeProvider.systemPrompt?.trim(), combinedContext].filter(Boolean).join("\n\n") }
         : activeProvider;
 
       const res = await sendChat({
-        provider: extraContext || thinkingDepth !== "none" || compactBase.length < base.length ? { ...providerWithContext, stream: false } : providerWithContext,
+        provider: extraContext || thinkingDepth !== "none" || compactBase.length < base.length || projectMemoryContext ? { ...providerWithContext, stream: false } : providerWithContext,
         messages: compactBase,
         signal: controller.signal,
         onToken: (full) => {
@@ -335,7 +338,8 @@ function ChatPage() {
       });
       const assistantMsg: ChatMessage = { id: assistantId, role: "assistant", content: res.content, createdAt: Date.now() };
       setConversationMessages(convId, [...base, assistantMsg]);
-      void autoSaveImportantMemory(base[base.length - 1]?.content ?? "", res.content);
+      autoSaveProjectMemory(lastUserText, res.content);
+      void autoSaveImportantMemory(lastUserText, res.content);
     } catch (err) {
       const message = err instanceof ChatError ? err.message : "Terjadi kesalahan tak terduga.";
       if (!(streamed && message === "Permintaan dibatalkan.")) {
@@ -368,12 +372,14 @@ function ChatPage() {
       const githubReply = await runGitHubChatCommand(text, activeProvider);
       if (githubReply) {
         setConversationMessages(convId, [...withUser, { id: uid(), role: "assistant", content: githubReply, createdAt: Date.now() }]);
+        autoSaveProjectMemory(text, githubReply);
         void autoSaveImportantMemory(text, githubReply);
         return;
       }
       const outlookReply = await runOutlookMailCommand(cleanText);
       if (outlookReply) {
         setConversationMessages(convId, [...withUser, { id: uid(), role: "assistant", content: outlookReply, createdAt: Date.now() }]);
+        autoSaveProjectMemory(cleanText, outlookReply);
         return;
       }
     } catch (err) {
