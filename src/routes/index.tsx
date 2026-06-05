@@ -45,6 +45,7 @@ import { useChatStore } from "@/lib/chat/store";
 import { uid } from "@/lib/chat/storage";
 import { ChatError, sendChat } from "@/lib/chat/api";
 import type { ChatAttachment, ChatMessage } from "@/lib/chat/types";
+import { compactConversationMessages, getConversationSummaryStatus } from "@/lib/chat/summary";
 import { runOutlookMailCommand } from "@/lib/outlook/chatCommand";
 import { runGitHubChatCommand } from "@/lib/github/chatCommand";
 import { autoSaveImportantMemory, buildAiMemoryContext, getValidSupabaseAuthSession, loadSupabaseMemoryConfig } from "@/lib/memory/supabaseMemory";
@@ -185,6 +186,7 @@ function ChatPage() {
   );
 
   const messages = activeConversation?.messages ?? [];
+  const summaryStatus = getConversationSummaryStatus(messages);
   const canSend =
     !!activeProvider?.baseUrl.trim() &&
     !!activeProvider?.path.trim() &&
@@ -308,6 +310,7 @@ function ChatPage() {
     let streamed = false;
 
     try {
+      const compactBase = compactConversationMessages(base);
       const memoryContext = await buildAiMemoryContext(base[base.length - 1]?.content ?? "");
       const modeContext =
         thinkingDepth === "deep"
@@ -315,14 +318,15 @@ function ChatPage() {
           : thinkingDepth === "standard"
             ? THINKING_CONTEXT
             : "";
-      const combinedContext = [memoryContext.trim(), modeContext.trim(), extraContext.trim()].filter(Boolean).join("\n\n");
+      const compactNotice = compactBase.length < base.length ? "Conversation Summary aktif: beberapa pesan lama diringkas agar chat panjang tetap ringan dan hemat token." : "";
+      const combinedContext = [memoryContext.trim(), compactNotice, modeContext.trim(), extraContext.trim()].filter(Boolean).join("\n\n");
       const providerWithContext = combinedContext
         ? { ...activeProvider, systemPrompt: [activeProvider.systemPrompt?.trim(), combinedContext].filter(Boolean).join("\n\n") }
         : activeProvider;
 
       const res = await sendChat({
-        provider: extraContext || thinkingDepth !== "none" ? { ...providerWithContext, stream: false } : providerWithContext,
-        messages: base,
+        provider: extraContext || thinkingDepth !== "none" || compactBase.length < base.length ? { ...providerWithContext, stream: false } : providerWithContext,
+        messages: compactBase,
         signal: controller.signal,
         onToken: (full) => {
           streamed = true;
@@ -389,7 +393,7 @@ function ChatPage() {
     const isThinkingStd = !isThinkingDeep && trimmedText.startsWith("[THINKING]");
     const thinkingDepth: "none" | "standard" | "deep" = isThinkingDeep ? "deep" : isThinkingStd ? "standard" : "none";
     const explicitRealtime = realtime || trimmedText.startsWith("[REALTIME]");
-    const autoRealtime = !explicitRealtime && !trimmedText.startsWith("[GITHUB]") && shouldUseAutoRealtime(cleanText);
+    const autoRealtime = !explicitRealtime && !trimmedText.startsWith("[GITHUB]") && mode === "normal" && shouldUseAutoRealtime(cleanText);
 
     let realtimeContext = "";
     if (explicitRealtime || autoRealtime) {
@@ -472,6 +476,8 @@ function ChatPage() {
             memoryOk={memoryOk}
             realtimeOk
             realtimeDesc={realtimeDesc}
+            summaryEnabled={summaryStatus.enabled}
+            summaryDesc={summaryStatus.enabled ? `Aktif · ringkas ${summaryStatus.summarizedMessages} pesan lama` : `${summaryStatus.totalMessages}/30 pesan`}
             providerName={activeProvider?.name ?? "Provider"}
             providerModel={activeProvider?.model ?? "Belum dipilih"}
             repoName={githubOk ? `${githubConfig.owner}/${githubConfig.repo}` : "Belum connect"}
@@ -548,6 +554,7 @@ function ChatPage() {
         <main className="keyboard-safe-main min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-3 py-6 sm:px-4">
+              {summaryStatus.enabled && <div className="rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">Conversation Summary aktif — chat panjang diringkas saat dikirim ke AI agar lebih ringan dan hemat token. Riwayat lengkap tetap tampil di layar.</div>}
               {messages.length === 0 ? <div className="flex min-h-[55vh] flex-col items-center justify-center text-center"><div className="mb-5 rounded-[2rem] border border-border/70 bg-card/80 p-5 shadow-2xl shadow-black/20 backdrop-blur"><Sparkles className="size-9 text-primary" /></div><h1 className="text-3xl font-semibold tracking-tight">AI Chat</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Pilih mode di header, gunakan Thinking untuk jawaban lebih teliti, Real Time untuk data terbaru, atau GitHub untuk update aplikasi.</p><div className="mt-5 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-3"><PremiumCard title="Thinking Mode" desc="Jawaban lebih teliti" /><PremiumCard title="Real Time" desc="Cari data terbaru" /><PremiumCard title="GitHub Mode" desc="Update web app via chat" /></div></div> : messages.map((m) => <ChatMessageBubble key={m.id} message={m} onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined} onEdit={m.role === "user" ? handleEdit : undefined} onDelete={handleDelete} />)}
               {loading && <TypingIndicator />}
               <div ref={scrollEndRef} />
@@ -572,6 +579,8 @@ function StatusPanel({
   memoryOk,
   realtimeOk,
   realtimeDesc,
+  summaryEnabled,
+  summaryDesc,
   providerName,
   providerModel,
   repoName,
@@ -584,6 +593,8 @@ function StatusPanel({
   memoryOk: boolean;
   realtimeOk: boolean;
   realtimeDesc: string;
+  summaryEnabled: boolean;
+  summaryDesc: string;
   providerName: string;
   providerModel: string;
   repoName: string;
@@ -602,6 +613,7 @@ function StatusPanel({
         <StatusRow ok={githubOk} title="GitHub" desc={repoName} />
         <StatusRow ok={memoryOk} title="Memory" desc={memoryOk ? "Supabase aktif" : "Supabase belum aktif"} />
         <StatusRow ok={realtimeOk} title="Realtime" desc={realtimeDesc} />
+        <StatusRow ok={summaryEnabled} title="Summary" desc={summaryDesc} />
       </div>
 
       <div className="mt-5 rounded-3xl border border-sidebar-border bg-sidebar-accent/30 p-3">
