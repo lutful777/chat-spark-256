@@ -60,7 +60,7 @@ html:has(.settings-page) {
   border-color: rgba(255,255,255,.12) !important;
 }
 
-/* Android APK lightweight mode: keep hardware rendering smooth but remove heavy effects. */
+/* Android APK lightweight mode: keep pages smooth and avoid visual artifacts. */
 .android-apk-webview *,
 .android-apk-webview *::before,
 .android-apk-webview *::after {
@@ -73,9 +73,63 @@ html:has(.settings-page) {
   animation-duration: 0s !important;
 }
 
-.android-apk-webview .settings-page *,
-.android-apk-webview .settings-page *::before,
-.android-apk-webview .settings-page *::after {
+.android-apk-webview .settings-page,
+.android-apk-webview .settings-page * {
   transform: none !important;
   will-change: auto !important;
+}
+
+.android-apk-webview .settings-page header {
+  position: static !important;
+  min-height: 48px !important;
+  padding: 8px 10px !important;
+}
+
+.android-apk-webview .settings-page > .mx-auto {
+  max-width: none !important;
+  padding: 10px !important;
+  gap: 10px !important;
+}
+
+.android-apk-webview .settings-page section,
+.android-apk-webview .settings-page .rounded-2xl {
+  border-radius: 12px !important;
+  padding: 12px !important;
+  border-color: rgba(255,255,255,.08) !important;
+}
+
+.android-apk-webview .settings-page .grid {
+  gap: 10px !important;
+}
+
+.android-apk-webview .settings-page .space-y-5,
+.android-apk-webview .settings-page .space-y-4,
+.android-apk-webview .settings-page .space-y-2 {
+  gap: 10px !important;
+}
+
+.android-apk-webview .settings-page input,
+.android-apk-webview .settings-page textarea,
+.android-apk-webview .settings-page select,
+.android-apk-webview .settings-page button {
+  min-height: 40px !important;
+}
+
+.android-apk-webview .settings-page svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.android-apk-webview .settings-page p,
+.android-apk-webview .settings-page label,
+.android-apk-webview .settings-page span,
+.android-apk-webview .settings-page button,
+.android-apk-webview .settings-page input,
+.android-apk-webview .settings-page select {
+  letter-spacing: normal !important;
+}
+
+.android-apk-webview .settings-page section {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 320px;
 }
