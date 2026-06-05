@@ -10,8 +10,8 @@ android {
         applicationId 'app.lovable.chat_spark_256.webview'
         minSdk 23
         targetSdk 35
-        versionCode 3
-        versionName '1.0.2'
+        versionCode 4
+        versionName '1.0.7'
     }
 
     compileOptions {
