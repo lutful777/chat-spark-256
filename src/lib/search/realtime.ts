@@ -41,18 +41,56 @@ export function clearRealtimeSearchConfig() {
   localStorage.removeItem(REALTIME_SEARCH_KEY);
 }
 
+function readErrorMessage(status: number, text: string): string {
+  try {
+    const parsed = JSON.parse(text) as { error?: unknown; message?: unknown };
+    const detail = parsed.error ?? parsed.message;
+    if (typeof detail === "string" && detail.trim()) return detail.trim();
+  } catch {
+    // handled below
+  }
+
+  const short = text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 140);
+  if (status === 404) {
+    return "Endpoint Real Time Search belum aktif di server. Tunggu deploy Vercel selesai atau lakukan redeploy.";
+  }
+  if (status === 401 || status === 403) {
+    return "API key search ditolak. Cek Serper API Key, jangan pakai awalan Bearer.";
+  }
+  if (status === 429) {
+    return "Limit atau quota Real Time Search habis. Coba lagi nanti atau ganti API key.";
+  }
+  if (status >= 500) {
+    return "Server Real Time Search bermasalah. Coba redeploy Vercel atau coba lagi nanti.";
+  }
+  return short ? `Realtime search gagal (${status}): ${short}` : `Realtime search gagal (${status}).`;
+}
+
 export async function searchRealtimeWeb(query: string, signal?: AbortSignal): Promise<RealtimeSearchResult> {
   const q = query.trim();
   if (!q) return { query: "", generatedAt: new Date().toISOString(), sources: [] };
 
   const serperApiKey = loadRealtimeSearchConfig().serperApiKey.trim();
   const headers: HeadersInit = serperApiKey ? { "X-Serper-API-Key": serperApiKey } : {};
-  const res = await fetch(`/api/public/realtime-search?q=${encodeURIComponent(q)}`, { headers, signal });
+
+  let res: Response;
+  try {
+    res = await fetch(`/api/public/realtime-search?q=${encodeURIComponent(q)}`, { headers, signal });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") throw new Error("Realtime search dibatalkan.");
+    throw new Error("Tidak bisa menghubungi Real Time Search. Cek koneksi atau deploy Vercel.");
+  }
+
   const text = await res.text();
-  const data = JSON.parse(text) as Partial<RealtimeSearchResult> & { error?: string };
+  let data: Partial<RealtimeSearchResult> & { error?: string } = {};
+  try {
+    data = JSON.parse(text) as Partial<RealtimeSearchResult> & { error?: string };
+  } catch {
+    throw new Error(readErrorMessage(res.status, text));
+  }
 
   if (!res.ok) {
-    throw new Error(data.error || `Realtime search gagal (${res.status}).`);
+    throw new Error(data.error || readErrorMessage(res.status, text));
   }
 
   return {
