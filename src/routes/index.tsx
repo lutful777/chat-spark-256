@@ -12,7 +12,6 @@ import {
   Github,
   Menu,
   PanelLeftClose,
-  Search,
   Settings,
   Sparkles,
 } from "lucide-react";
@@ -61,7 +60,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "AI Chat — chat AI multi-provider dengan mode GitHub, Real Time Search, Thinking, upload file, dan memory Supabase.",
+          "AI Chat — chat AI multi-provider dengan mode GitHub, auto Real Time Search, Thinking, upload file, dan memory.",
       },
       { property: "og:title", content: "AI Chat" },
       {
@@ -113,7 +112,6 @@ function shouldUseAutoRealtime(text: string): boolean {
 
 function ModeIcon({ mode }: { mode: ChatMode }) {
   if (mode === "github") return <Github className="size-4" />;
-  if (mode === "realtime") return <Search className="size-4" />;
   if (mode === "thinking") return <Brain className="size-4" />;
   if (mode === "thinking-deep") return <BrainCircuit className="size-4" />;
   return <Sparkles className="size-4" />;
@@ -121,7 +119,6 @@ function ModeIcon({ mode }: { mode: ChatMode }) {
 
 function modeLabel(mode: ChatMode): string {
   if (mode === "github") return "GitHub";
-  if (mode === "realtime") return "Real Time";
   if (mode === "thinking") return "Thinking";
   if (mode === "thinking-deep") return "Think Deeply";
   return "Plain";
@@ -131,6 +128,10 @@ function displayModelName(model?: string): string {
   const clean = model?.trim();
   if (!clean) return "Pilih model";
   return clean;
+}
+
+function normalizeMode(next: ChatMode): ChatMode {
+  return next === "realtime" ? "normal" : next;
 }
 
 function isProtectedAppRepo(owner?: string, repo?: string): boolean {
@@ -169,11 +170,13 @@ function ChatPage() {
   const [statusOpen, setStatusOpen] = useState(false);
   const [desktopOpen, setDesktopOpen] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<ChatMode>("normal");
+  const [mode, setModeState] = useState<ChatMode>("normal");
   const abortRef = useRef<AbortController | null>(null);
   const scrollEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<ChatInputHandle>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const setMode = (next: ChatMode) => setModeState(normalizeMode(next));
 
   useEffect(() => {
     if (!ready) return;
@@ -199,7 +202,7 @@ function ChatPage() {
   const realtimeConfig = loadRealtimeSearchConfig();
   const memoryOk = !!(memoryConfig.enabled && memoryConfig.anonKey.trim());
   const githubOk = !!(githubConfig.token.trim() && githubConfig.owner && githubConfig.repo);
-  const realtimeDesc = realtimeConfig.serperApiKey.trim() ? "Serper aktif" : "DuckDuckGo fallback aktif";
+  const realtimeDesc = realtimeConfig.serperApiKey.trim() ? "Auto search · Serper aktif" : "Auto search · fallback aktif";
   const activeModelLabel = displayModelName(activeProvider?.model);
 
   const selectedValue =
@@ -403,13 +406,9 @@ function ChatPage() {
 
     let realtimeContext = "";
     if (explicitRealtime || autoRealtime) {
-      if (autoRealtime && mode !== "realtime") {
-        setMode("realtime");
-        toast.info("Real Time Search otomatis aktif.");
-      }
       setLoading(true);
       try {
-        toast.info("Mencari data real-time...");
+        toast.info(autoRealtime ? "Auto Search mencari data terbaru..." : "Mencari data real-time...");
         realtimeContext = buildRealtimeContext(await searchRealtimeWeb(cleanText));
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Realtime search gagal.");
@@ -535,10 +534,6 @@ function ChatPage() {
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
-              <DropdownMenuItem onClick={() => setMode("realtime")}>
-                <Search className="mr-2 size-4" /> Real Time
-                {mode === "realtime" && <Check className="ml-auto size-3" />}
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setMode("github")}>
                 <Github className="mr-2 size-4" /> GitHub
                 {mode === "github" && <Check className="ml-auto size-3" />}
@@ -561,7 +556,7 @@ function ChatPage() {
           <ScrollArea className="h-full">
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-3 py-6 sm:px-4">
               {summaryStatus.enabled && <div className="rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">Conversation Summary aktif — chat panjang diringkas saat dikirim ke AI agar lebih ringan dan hemat token. Riwayat lengkap tetap tampil di layar.</div>}
-              {messages.length === 0 ? <div className="flex min-h-[55vh] flex-col items-center justify-center text-center"><div className="mb-5 rounded-[2rem] border border-border/70 bg-card/80 p-5 shadow-2xl shadow-black/20 backdrop-blur"><Sparkles className="size-9 text-primary" /></div><h1 className="text-3xl font-semibold tracking-tight">AI Chat</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Pilih mode di header, gunakan Thinking untuk jawaban lebih teliti, Real Time untuk data terbaru, atau GitHub untuk update aplikasi.</p><div className="mt-5 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-3"><PremiumCard title="Thinking Mode" desc="Jawaban lebih teliti" /><PremiumCard title="Real Time" desc="Cari data terbaru" /><PremiumCard title="GitHub Mode" desc="Update web app via chat" /></div></div> : messages.map((m) => <ChatMessageBubble key={m.id} message={m} onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined} onEdit={m.role === "user" ? handleEdit : undefined} onDelete={handleDelete} />)}
+              {messages.length === 0 ? <div className="flex min-h-[55vh] flex-col items-center justify-center text-center"><div className="mb-5 rounded-[2rem] border border-border/70 bg-card/80 p-5 shadow-2xl shadow-black/20 backdrop-blur"><Sparkles className="size-9 text-primary" /></div><h1 className="text-3xl font-semibold tracking-tight">AI Chat</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Pilih mode di header. Plain otomatis mencari data terbaru jika diperlukan, Thinking untuk jawaban teliti, atau GitHub untuk update aplikasi.</p><div className="mt-5 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-3"><PremiumCard title="Plain" desc="Auto Search bila perlu" /><PremiumCard title="Thinking" desc="Jawaban lebih teliti" /><PremiumCard title="GitHub" desc="Update web app via chat" /></div></div> : messages.map((m) => <ChatMessageBubble key={m.id} message={m} onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined} onEdit={m.role === "user" ? handleEdit : undefined} onDelete={handleDelete} />)}
               {loading && <TypingIndicator />}
               <div ref={scrollEndRef} />
             </div>
@@ -618,7 +613,7 @@ function StatusPanel({
         <StatusRow ok={canSend} title="Provider" desc={canSend ? `${providerName} · ${providerModel}` : "Belum lengkap"} />
         <StatusRow ok={githubOk} title="GitHub" desc={repoName} />
         <StatusRow ok={memoryOk} title="Memory" desc={memoryOk ? "Supabase aktif" : "Supabase belum aktif"} />
-        <StatusRow ok={realtimeOk} title="Realtime" desc={realtimeDesc} />
+        <StatusRow ok={realtimeOk} title="Auto Search" desc={realtimeDesc} />
         <StatusRow ok={summaryEnabled} title="Summary" desc={summaryDesc} />
       </div>
 
@@ -628,7 +623,6 @@ function StatusPanel({
           <Button variant={mode === "normal" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("normal")}><Sparkles className="mr-2 size-4" />Plain</Button>
           <Button variant={mode === "thinking" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("thinking")}><Brain className="mr-2 size-4" />Thinking</Button>
           <Button variant={mode === "thinking-deep" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("thinking-deep")}><BrainCircuit className="mr-2 size-4" />Think Deeply</Button>
-          <Button variant={mode === "realtime" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("realtime")}><Search className="mr-2 size-4" />Real Time</Button>
           <Button variant={mode === "github" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("github")}><Github className="mr-2 size-4" />GitHub</Button>
         </div>
       </div>
