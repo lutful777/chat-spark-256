@@ -93,7 +93,7 @@ public class MainActivity extends Activity {
             settings.setSafeBrowsingEnabled(true);
         }
 
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        applyLayerForUrl(APP_URL);
         WebView.setWebContentsDebuggingEnabled(false);
 
         webView.setWebChromeClient(new WebChromeClient() {
@@ -135,6 +135,7 @@ public class MainActivity extends Activity {
                 Uri uri = request.getUrl();
                 if (uri != null && ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))) {
                     showLoadingOnly();
+                    applyLayerForUrl(uri.toString());
                     view.loadUrl(uri.toString());
                     return true;
                 }
@@ -145,6 +146,7 @@ public class MainActivity extends Activity {
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 if (!"about:blank".equals(url)) {
                     mainFrameError = false;
+                    applyLayerForUrl(url);
                     showLoadingOnly();
                 }
                 super.onPageStarted(view, url, favicon);
@@ -153,6 +155,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 if (!mainFrameError && !"about:blank".equals(url)) {
+                    applyLayerForUrl(url);
                     view.evaluateJavascript(
                             "document.documentElement.classList.add('android-apk-webview');" +
                                     "document.body.classList.add('android-apk-webview-body');" +
@@ -189,8 +192,26 @@ public class MainActivity extends Activity {
             loadApp();
         } else {
             webView.restoreState(savedInstanceState);
+            applyLayerForUrl(webView.getUrl());
             loadingView.setVisibility(View.GONE);
             webView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private boolean isSettingsUrl(String url) {
+        if (url == null || !url.startsWith(APP_ORIGIN)) {
+            return false;
+        }
+        String path = Uri.parse(url).getPath();
+        return path != null && path.startsWith("/settings");
+    }
+
+    private void applyLayerForUrl(String url) {
+        if (webView == null) return;
+        if (isSettingsUrl(url)) {
+            webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        } else {
+            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         }
     }
 
@@ -225,12 +246,14 @@ public class MainActivity extends Activity {
     private void loadApp() {
         mainFrameError = false;
         showLoadingOnly();
+        applyLayerForUrl(APP_URL);
         webView.loadUrl(APP_URL);
     }
 
     private void reloadApp() {
         mainFrameError = false;
         showLoadingOnly();
+        applyLayerForUrl(APP_URL);
         webView.loadUrl(APP_URL);
     }
 
@@ -242,10 +265,13 @@ public class MainActivity extends Activity {
                 Uri uri = Uri.parse(url);
                 String path = uri.getPath();
                 if ("/settings/advanced".equals(path)) {
-                    webView.loadUrl(APP_ORIGIN + "/settings?apk=1.0.9");
+                    String settingsUrl = APP_ORIGIN + "/settings?apk=1.0.9";
+                    applyLayerForUrl(settingsUrl);
+                    webView.loadUrl(settingsUrl);
                     return;
                 }
                 if (path != null && !path.equals("/") && !path.isEmpty()) {
+                    applyLayerForUrl(APP_URL);
                     webView.loadUrl(APP_URL);
                     return;
                 }
