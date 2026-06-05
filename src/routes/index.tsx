@@ -1,20 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
-import {
-  Brain,
-  BrainCircuit,
-  Check,
-  ChevronDown,
-  Download,
-  Eraser,
-  FileJson,
-  FileText,
-  Github,
-  Menu,
-  PanelLeftClose,
-  Settings,
-  Sparkles,
-} from "lucide-react";
+import { Brain, BrainCircuit, Check, ChevronDown, Download, Eraser, File as FileJson, FileText, Github, Menu, PanelLeftClose, Settings, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -470,7 +456,7 @@ function ChatPage() {
 
   return (
     <div className="keyboard-safe-app flex h-[100dvh] w-full overflow-hidden bg-background text-foreground" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-      {desktopOpen && <aside className="hidden w-72 shrink-0 border-r border-border/70 bg-sidebar/95 md:block">{sidebar}</aside>}
+      {desktopOpen && <aside className="hidden w-72 shrink-0 border-r border-border/70 bg-sidebar md:block">{sidebar}</aside>}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}><SheetContent side="left" className="w-72 p-0">{sidebar}</SheetContent></Sheet>
       <Sheet open={statusOpen} onOpenChange={setStatusOpen}>
         <SheetContent side="right" className="w-80 p-0">
@@ -493,7 +479,7 @@ function ChatPage() {
       </Sheet>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-2 border-b border-border/70 bg-background/90 px-3 py-2.5 backdrop-blur-xl">
+        <header className="flex items-center gap-2 border-b border-border/70 bg-background px-3 py-2.5">
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileOpen(true)} aria-label="Buka menu"><Menu className="size-5" /></Button>
           <Button variant="ghost" size="icon" className="hidden md:inline-flex" onClick={() => setDesktopOpen((v) => !v)} aria-label="Toggle sidebar"><PanelLeftClose className="size-5" /></Button>
           <div className="min-w-0 flex-1">

@@ -59,3 +59,11 @@ html:has(.settings-page) {
   background-image: none !important;
   border-color: rgba(255,255,255,.12) !important;
 }
+
+/* Kill all GPU compositing triggers globally to prevent Android WebView TV-noise glitch */
+*,
+*::before,
+*::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
