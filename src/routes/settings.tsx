@@ -621,6 +621,75 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
+function ProviderList({
+  providers,
+  selectedId,
+  activeProviderId,
+  onSelect,
+  onAdd,
+}: {
+  providers: ProviderConfig[];
+  selectedId: string | null;
+  activeProviderId: string | null;
+  onSelect: (id: string) => void;
+  onAdd: (preset?: Omit<ProviderConfig, "id">) => void;
+}) {
+  return (
+    <section className="rounded-2xl border border-border bg-card p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-sm font-semibold">Provider</h2>
+      </div>
+      <ScrollArea className="max-h-64 md:max-h-[50vh]">
+        <div className="flex flex-col gap-1 pr-1">
+          {providers.length === 0 && <p className="px-2 py-4 text-center text-xs text-muted-foreground">Belum ada provider.</p>}
+          {providers.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onSelect(p.id)}
+              className={`flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
+                p.id === selectedId ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
+              }`}
+            >
+              <span className="min-w-0 truncate">{p.name}</span>
+              {p.id === activeProviderId && <Check className="size-4 shrink-0 text-primary" />}
+            </button>
+          ))}
+        </div>
+      </ScrollArea>
+      <div className="mt-3 space-y-2">
+        <Button variant="outline" className="w-full justify-start gap-2 rounded-xl" onClick={() => onAdd()}>
+          <Plus className="size-4" /> Tambah Provider
+        </Button>
+        <select
+          className="h-10 w-full rounded-xl border border-input bg-background px-3 text-xs"
+          defaultValue=""
+          onChange={(e) => {
+            const preset = PROVIDER_PRESETS.find((x) => x.name === e.target.value);
+            if (preset) onAdd(preset);
+            e.currentTarget.value = "";
+          }}
+        >
+          <option value="">Dari preset…</option>
+          {PROVIDER_PRESETS.map((p) => (
+            <option key={p.name} value={p.name}>{p.name}</option>
+          ))}
+        </select>
+      </div>
+    </section>
+  );
+}
+
+function FieldOriginal({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-sm">{label}</Label>
+      {children}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
 function SecretInput({ value, onChange, visible, onToggle, onClear, placeholder }: { value: string; onChange: (value: string) => void; visible: boolean; onToggle: () => void; onClear: () => void; placeholder: string }) {
   return (
     <div className="flex gap-2">
