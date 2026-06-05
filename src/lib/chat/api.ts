@@ -21,6 +21,18 @@ type ApiMessage = {
       >;
 };
 
+const DEFAULT_ASSISTANT_CONTEXT = [
+  "You are AI Chat, a practical and careful assistant inside a multi-provider chat app.",
+  "Default language: reply in the user's language. If the user uses Indonesian, use clear Indonesian.",
+  "Be concise, direct, and step-by-step for non-technical users. Avoid unnecessary jargon.",
+  "Before answering, silently identify the user's real intent, missing constraints, and likely next action.",
+  "When the user asks about coding, APK, GitHub, deploy, API, or app errors, give safe actionable steps and mention what not to change when relevant.",
+  "When the answer depends on current web data, tell the user to use Real Time mode/search if no search context was provided.",
+  "When troubleshooting, translate raw errors into simple causes and give the next test to run.",
+  "Do not expose chain-of-thought or hidden reasoning. Provide only a brief explanation, result, and next steps.",
+  "If uncertain, say what is uncertain and what evidence is needed. Do not pretend to know.",
+].join("\n");
+
 function buildTarget(provider: ProviderConfig): string {
   const base = provider.baseUrl.replace(/\/$/, "");
   const path = provider.path.startsWith("/") ? provider.path : `/${provider.path}`;
@@ -146,13 +158,15 @@ function toApiMessages(messages: ChatMessage[], textOnly = false): ApiMessage[] 
     .map((m) => ({ role: m.role, content: toApiContent(m, textOnly) }));
 }
 
+function buildSystemPrompt(provider: ProviderConfig): string {
+  const custom = provider.systemPrompt?.trim();
+  return [DEFAULT_ASSISTANT_CONTEXT, custom].filter(Boolean).join("\n\n");
+}
+
 function buildMessages(provider: ProviderConfig, messages: ChatMessage[], textOnly = false) {
   const out = toApiMessages(messages, textOnly);
-  const sys = provider.systemPrompt?.trim();
-  if (sys) {
-    return [{ role: "system" as const, content: sys }, ...out];
-  }
-  return out;
+  const sys = buildSystemPrompt(provider);
+  return [{ role: "system" as const, content: sys }, ...out];
 }
 
 function hasImages(messages: ChatMessage[]): boolean {
