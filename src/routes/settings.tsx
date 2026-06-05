@@ -454,9 +454,7 @@ function SettingsPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-2">
-          <Button variant={mode === "beginner" ? "default" : "ghost"} className="rounded-xl" onClick={() => setMode("beginner")}>
-            Mode Pemula
-          </Button>
+          <Button variant={mode === "beginner" ? "default" : "ghost"} className="rounded-xl" onClick={() => setMode("beginner")}>Setting</Button>
           <Button variant={mode === "advanced" ? "default" : "ghost"} className="gap-2 rounded-xl" onClick={() => setMode("advanced")}>
             <Settings2 className="size-4" /> Advanced
           </Button>
