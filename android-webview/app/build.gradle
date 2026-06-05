@@ -7,11 +7,11 @@ android {
     compileSdk 35
 
     defaultConfig {
-        applicationId 'app.lovable.chat_spark_256.webview'
+        applicationId 'app.lovable.chat_spark_256.webview.stable'
         minSdk 23
         targetSdk 35
-        versionCode 4
-        versionName '1.0.7'
+        versionCode 5
+        versionName '1.0.8'
     }
 
     compileOptions {
