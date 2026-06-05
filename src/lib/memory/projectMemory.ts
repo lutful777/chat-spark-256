@@ -30,6 +30,13 @@ const DEFAULT_PROJECT_MEMORY: ProjectMemoryItem[] = [
       "User memakai x.ai API dan ingin hemat pemakaian API. Thinking dan Think Deeply jangan otomatis. Real Time Search boleh otomatis hanya untuk pertanyaan data terbaru saat mode Plain/normal.",
     updatedAt: 0,
   },
+  {
+    title: "Qdrant Memory status and error note",
+    category: "troubleshooting",
+    content:
+      "Qdrant cluster user sudah dibuat di region Australia/Sydney. Halaman Qdrant Memory ada di /qdrant-memory. Error awal: tidak bisa menghubungi Qdrant karena request langsung dari browser terkena CORS. Solusi sudah ditambahkan lewat Vercel proxy /api/public/qdrant-memory, lalu frontend Qdrant diarahkan memakai proxy. Settings juga diberi tombol Buka Qdrant Memory sebelum Real Time Search. Jika masih error, tunggu Vercel deploy selesai, buka ulang APK/browser, cek endpoint Qdrant, dan pastikan API key Qdrant murni tanpa awalan Bearer. Jangan simpan atau tampilkan API key ke chat/GitHub.",
+    updatedAt: 0,
+  },
 ];
 
 function isBrowser(): boolean {
@@ -105,7 +112,7 @@ function categoryFor(text: string): string {
   const lower = text.toLowerCase();
   if (["jangan", "lebih suka", "singkat", "copas", "prompt", "hemat"].some((word) => lower.includes(word))) return "user_preference";
   if (["github", "repo", "commit", "push", "vercel", "deploy", "apk", "webview"].some((word) => lower.includes(word))) return "project_workflow";
-  if (["realtime", "real time", "serper", "thinking", "summary", "memory", "mode"].some((word) => lower.includes(word))) return "app_feature";
+  if (["realtime", "real time", "serper", "thinking", "summary", "memory", "mode", "qdrant"].some((word) => lower.includes(word))) return "app_feature";
   if (["error", "bug", "gagal", "tidak bisa", "crash"].some((word) => lower.includes(word))) return "troubleshooting";
   return "project_note";
 }
@@ -122,6 +129,7 @@ function isWorthRemembering(text: string): boolean {
     "x.ai",
     "xai",
     "serper",
+    "qdrant",
     "realtime",
     "real time",
     "thinking",
