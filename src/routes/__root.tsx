@@ -97,8 +97,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "AI Chat" },
       { name: "twitter:description", content: "Chat AI multi-provider dengan GitHub mode dan Real Time Search." },
-      { property: "og:image", content: "/ai-chat-icon.png?v=16" },
-      { name: "twitter:image", content: "/ai-chat-icon.png?v=16" },
+      { property: "og:image", content: "/ai-chat-icon.png?v=11" },
+      { name: "twitter:image", content: "/ai-chat-icon.png?v=11" },
       { name: "theme-color", content: "#0f172a" },
       { name: "color-scheme", content: "dark" },
       { name: "mobile-web-app-capable", content: "yes" },
@@ -116,10 +116,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: settingsAndroidFixCss,
       },
-      { rel: "manifest", href: "/manifest.json?v=16" },
-      { rel: "icon", type: "image/png", sizes: "512x512", href: "/ai-chat-icon.png?v=16" },
-      { rel: "shortcut icon", type: "image/png", href: "/ai-chat-icon.png?v=16" },
-      { rel: "apple-touch-icon", sizes: "512x512", href: "/ai-chat-icon.png?v=16" },
+      { rel: "manifest", href: "/manifest.json?v=10" },
+      { rel: "icon", type: "image/png", sizes: "512x512", href: "/ai-chat-icon.png?v=11" },
+      { rel: "shortcut icon", type: "image/png", href: "/ai-chat-icon.png?v=11" },
+      { rel: "apple-touch-icon", sizes: "512x512", href: "/ai-chat-icon.png?v=11" },
     ],
   }),
   shellComponent: RootShell,
@@ -181,7 +181,7 @@ function PwaBoot() {
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js?v=16").catch(() => undefined);
+        navigator.serviceWorker.register("/sw.js?v=10").catch(() => undefined);
       });
     }
 
@@ -218,6 +218,7 @@ function RootShell({ children }: { children: ReactNode }) {
             height: clamp(2.5rem, 12vw, 3.4rem) !important;
           }
           .min-h-\[55vh\] {
+            min-height: 66vh !important;
           }
           .min-h-\[55vh\] h1 {
             display: inline-flex !important;
@@ -225,8 +226,8 @@ function RootShell({ children }: { children: ReactNode }) {
             justify-content: center;
             border-radius: 2rem;
             border: 1px solid rgba(96, 165, 250, 0.35);
-            background: #0f1e3a;
-            box-shadow: none;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 64, 175, 0.45));
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
             color: #e5f2ff !important;
             font-size: clamp(3rem, 15vw, 5rem) !important;
             font-weight: 850 !important;
@@ -242,7 +243,7 @@ function RootShell({ children }: { children: ReactNode }) {
           .flex.h-\[100dvh\].w-full.items-center.justify-center.bg-background.text-muted-foreground > svg {
             width: 3rem !important;
             height: 3rem !important;
-            filter: none;
+            filter: drop-shadow(0 12px 32px rgba(96, 165, 250, 0.38));
           }
           .flex.h-\[100dvh\].w-full.items-center.justify-center.bg-background.text-muted-foreground::after {
             content: "AI Chat";
@@ -251,7 +252,7 @@ function RootShell({ children }: { children: ReactNode }) {
             font-weight: 850;
             letter-spacing: -0.06em;
             color: #e5f2ff;
-            text-shadow: none;
+            text-shadow: 0 24px 80px rgba(37, 99, 235, 0.32);
           }
         `}</style>
       </head>
