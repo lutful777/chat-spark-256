@@ -53,6 +53,21 @@ function createBackupText(): string {
   return JSON.stringify(payload, null, 2);
 }
 
+function downloadFile(filename: string, text: string): void {
+  const blob = new Blob([text], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 300);
+}
+
 function parseBackup(text: string): BackupPayload {
   const parsed = JSON.parse(text) as Partial<BackupPayload>;
   if (!parsed || parsed.type !== "localStorage-backup" || typeof parsed.data !== "object" || parsed.data == null) {
@@ -86,24 +101,12 @@ export function DataBackupPanel({ compact = false }: { compact?: boolean }) {
 
     if (window.AndroidBackup?.saveBackup) {
       window.AndroidBackup.saveBackup(filename, text);
-      try {
-        await navigator.clipboard?.writeText(text);
-      } catch {
-        /* native file export is enough */
-      }
+      try { await navigator.clipboard?.writeText(text); } catch { /* ignore */ }
       toast.success("File backup dibuat di folder Download.");
       return;
     }
 
-    const blob = new Blob([text], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadFile(filename, text);
 
     try {
       await navigator.clipboard?.writeText(text);
