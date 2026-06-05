@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import settingsAndroidFixCss from "../settings-android-fix.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { ChatStoreProvider } from "@/lib/chat/store";
@@ -110,6 +111,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         href: appCss,
+      },
+      {
+        rel: "stylesheet",
+        href: settingsAndroidFixCss,
       },
       { rel: "manifest", href: "/manifest.json?v=10" },
       { rel: "icon", type: "image/png", sizes: "512x512", href: "/ai-chat-icon.png?v=11" },
@@ -261,13 +266,10 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
-
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={new QueryClient()}>
       <ChatStoreProvider>
         <PwaBoot />
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
       </ChatStoreProvider>
     </QueryClientProvider>
