@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Clipboard, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 
@@ -93,6 +93,25 @@ function applyBackup(text: string): void {
 
 export function DataBackupPanel({ compact = false }: { compact?: boolean }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [importTextOpen, setImportTextOpen] = useState(false);
+  const [importTextValue, setImportTextValue] = useState("");
+
+  const closeImportTextDialog = () => {
+    setImportTextOpen(false);
+    setImportTextValue("");
+  };
+
+  const submitImportText = () => {
+    if (!isBrowser()) return;
+    const text = importTextValue.trim();
+    if (!text) return;
+    try {
+      applyBackup(text);
+      closeImportTextDialog();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal impor data.");
+    }
+  };
 
   const handleExport = async () => {
     if (!isBrowser()) return;
@@ -129,13 +148,8 @@ export function DataBackupPanel({ compact = false }: { compact?: boolean }) {
 
   const handleImportText = () => {
     if (!isBrowser()) return;
-    const text = prompt("Tempel/ paste isi backup JSON di sini:");
-    if (!text) return;
-    try {
-      applyBackup(text);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Gagal impor data.");
-    }
+    setImportTextValue("");
+    setImportTextOpen(true);
   };
 
   const handleImportFile = async (file: File) => {
@@ -150,35 +164,68 @@ export function DataBackupPanel({ compact = false }: { compact?: boolean }) {
   };
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-      <h2 className="mb-1 text-sm font-semibold">Backup Data</h2>
-      <p className="mb-3 text-xs text-muted-foreground">
-        Export untuk memindahkan API key, provider, history, dan pengaturan dari APK lama. File/copy backup berisi data sensitif, jangan dibagikan.
-      </p>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="application/json,.json"
-        className="hidden"
-        onChange={(event) => {
-          const file = event.currentTarget.files?.[0];
-          if (file) void handleImportFile(file);
-        }}
-      />
-      <div className={compact ? "grid gap-2 sm:grid-cols-2" : "flex flex-wrap gap-2"}>
-        <Button type="button" variant="secondary" className="gap-2 rounded-xl" onClick={() => void handleExport()}>
-          <Download className="size-4" /> Export Data
-        </Button>
-        <Button type="button" variant="outline" className="gap-2 rounded-xl" onClick={() => void handleCopy()}>
-          <Clipboard className="size-4" /> Copy Data
-        </Button>
-        <Button type="button" variant="outline" className="gap-2 rounded-xl" onClick={() => inputRef.current?.click()}>
-          <Upload className="size-4" /> Import File
-        </Button>
-        <Button type="button" variant="outline" className="gap-2 rounded-xl" onClick={handleImportText}>
-          <Upload className="size-4" /> Import Text
-        </Button>
-      </div>
-    </section>
+    <>
+      <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
+        <h2 className="mb-1 text-sm font-semibold">Backup Data</h2>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Export untuk memindahkan API key, provider, history, dan pengaturan dari APK lama. File/copy backup berisi data sensitif, jangan dibagikan.
+        </p>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.currentTarget.files?.[0];
+            if (file) void handleImportFile(file);
+          }}
+        />
+        <div className={compact ? "grid gap-2 sm:grid-cols-2" : "flex flex-wrap gap-2"}>
+          <Button type="button" variant="secondary" className="gap-2 rounded-xl" onClick={() => void handleExport()}>
+            <Download className="size-4" /> Export Data
+          </Button>
+          <Button type="button" variant="outline" className="gap-2 rounded-xl" onClick={() => void handleCopy()}>
+            <Clipboard className="size-4" /> Copy Data
+          </Button>
+          <Button type="button" variant="outline" className="gap-2 rounded-xl" onClick={() => inputRef.current?.click()}>
+            <Upload className="size-4" /> Import File
+          </Button>
+          <Button type="button" variant="outline" className="gap-2 rounded-xl" onClick={handleImportText}>
+            <Upload className="size-4" /> Import Text
+          </Button>
+        </div>
+      </section>
+
+      {importTextOpen ? (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-5"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="import-text-title"
+        >
+          <div className="w-full max-w-[600px] rounded-sm border border-white/10 bg-[#3f4243] p-5 shadow-2xl">
+            <label id="import-text-title" className="mb-4 block text-base font-medium text-white sm:text-lg">
+              Tempel/ paste isi backup JSON di sini:
+            </label>
+            <textarea
+              value={importTextValue}
+              onChange={(event) => setImportTextValue(event.currentTarget.value)}
+              autoFocus
+              spellCheck={false}
+              className="h-12 max-h-12 min-h-12 w-full resize-none overflow-auto border-0 border-b-2 border-[#8bd0cf] bg-transparent px-0 py-2 text-sm text-white outline-none [scrollbar-width:thin]"
+              aria-label="Isi backup JSON"
+            />
+            <div className="mt-5 flex justify-end gap-8 text-sm font-semibold uppercase tracking-wide text-[#9ad7d6]">
+              <button type="button" className="px-1 py-2" onClick={closeImportTextDialog}>
+                Cancel
+              </button>
+              <button type="button" className="px-1 py-2" onClick={submitImportText}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
