@@ -19,10 +19,10 @@ export const Route = createFileRoute("/qdrant-memory")({
 
 function QdrantMemoryPage() {
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground">
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-background/80 px-3 py-3 backdrop-blur">
-        <Button asChild variant="ghost" size="icon" aria-label="Kembali">
-          <Link to="/settings">
+    <div className="settings-page min-h-[100dvh] text-foreground">
+      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border px-3 py-3">
+        <Button asChild variant="ghost" size="icon" aria-label="Kembali ke Advanced">
+          <Link to="/settings/advanced">
             <ArrowLeft className="size-5" />
           </Link>
         </Button>
