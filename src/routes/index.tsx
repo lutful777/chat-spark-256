@@ -94,6 +94,21 @@ function stripModePrefix(text: string): string {
   return text.replace(/^\[(GITHUB|REALTIME|THINKING_DEEP|THINKING)\]\s*/i, "").trim();
 }
 
+function shouldUseAutoRealtime(text: string): boolean {
+  const q = text.toLowerCase();
+  if (!q.trim()) return false;
+
+  const realtimePatterns = [
+    /\b(real\s*time|realtime|terbaru|hari\s*ini|sekarang|saat\s*ini|baru\s*rilis|rilis\s*terbaru|breaking|live)\b/i,
+    /\b(kurs|nilai\s*tukar|usd|idr|dolar|dollar|rupiah|euro|yen|ringgit|ruble|rubel)\b/i,
+    /\b(harga|price|saham|ihsg|crypto|kripto|bitcoin|btc|eth|emas|minyak)\b/i,
+    /\b(cuaca|gempa|banjir|jadwal|skor|score|hasil\s+pertandingan|klasemen)\b/i,
+    /\b(berita|news|trend|tren|viral|streaming|nonton\s+dimana|tayang\s+dimana)\b/i,
+  ];
+
+  return realtimePatterns.some((pattern) => pattern.test(q));
+}
+
 function ModeIcon({ mode }: { mode: ChatMode }) {
   if (mode === "github") return <Github className="size-4" />;
   if (mode === "realtime") return <Search className="size-4" />;
@@ -369,12 +384,19 @@ function ChatPage() {
     if (!activeProvider) return toast.error("Tambahkan provider API terlebih dahulu di Settings.");
     if (!canSend) return toast.error("Lengkapi Base URL, API Path, API Key, dan Model terlebih dahulu.");
 
-    const isThinkingDeep = text.trim().startsWith("[THINKING_DEEP]");
-    const isThinkingStd = !isThinkingDeep && text.trim().startsWith("[THINKING]");
+    const trimmedText = text.trim();
+    const isThinkingDeep = trimmedText.startsWith("[THINKING_DEEP]");
+    const isThinkingStd = !isThinkingDeep && trimmedText.startsWith("[THINKING]");
     const thinkingDepth: "none" | "standard" | "deep" = isThinkingDeep ? "deep" : isThinkingStd ? "standard" : "none";
+    const explicitRealtime = realtime || trimmedText.startsWith("[REALTIME]");
+    const autoRealtime = !explicitRealtime && !trimmedText.startsWith("[GITHUB]") && shouldUseAutoRealtime(cleanText);
 
     let realtimeContext = "";
-    if (realtime || text.trim().startsWith("[REALTIME]")) {
+    if (explicitRealtime || autoRealtime) {
+      if (autoRealtime && mode !== "realtime") {
+        setMode("realtime");
+        toast.info("Real Time Search otomatis aktif.");
+      }
       setLoading(true);
       try {
         toast.info("Mencari data real-time...");
