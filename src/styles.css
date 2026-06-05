@@ -91,16 +91,30 @@
   html, body {
     width: 100%;
     min-height: 100%;
-    overflow: hidden;
-    overscroll-behavior: none;
     background: #080b14;
     color: var(--foreground);
   }
   body {
-    position: fixed;
-    inset: 0;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: auto;
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     letter-spacing: -0.01em;
+  }
+  body:has(.keyboard-safe-app) {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  body:has(.settings-page) {
+    position: static !important;
+    inset: auto !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: auto !important;
   }
   button, input, textarea, select { font: inherit; }
   button { touch-action: manipulation; }
@@ -128,74 +142,29 @@ button.rounded-full, button.rounded-2xl, button.rounded-xl, [role="combobox"], [
 button.rounded-full:active, button.rounded-2xl:active, button.rounded-xl:active, [role="combobox"]:active, [role="menuitem"]:active { transform: scale(.98); }
 button[class*="bg-primary"], button[data-state="open"] { box-shadow: 0 12px 30px rgba(96,165,250,.18); }
 
-/* Android WebView rendering hard fix for Settings/Advanced */
-.settings-page,
-.min-h-\[100dvh\].bg-background.text-foreground {
-  height: var(--app-stable-height);
-  max-height: var(--app-stable-height);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: auto !important;
-  position: relative;
-  isolation: isolate;
-  contain: paint;
+/* Settings/Advanced must use normal browser scrolling on Android. */
+.settings-page {
+  min-height: 100dvh;
+  height: auto;
+  max-height: none;
+  overflow: visible;
   background: #080b14 !important;
   background-color: #080b14 !important;
   background-image: none !important;
-  background-attachment: scroll !important;
-  transform: none !important;
-  filter: none !important;
-  mix-blend-mode: normal !important;
+  color: var(--foreground);
 }
-.settings-page::before,
-.settings-page::after,
-.min-h-\[100dvh\].bg-background.text-foreground::before,
-.min-h-\[100dvh\].bg-background.text-foreground::after {
-  display: none !important;
-  content: none !important;
-}
-.settings-page > .mx-auto,
-.min-h-\[100dvh\].bg-background.text-foreground > .mx-auto {
+.settings-page > .mx-auto {
   padding-bottom: calc(6rem + env(safe-area-inset-bottom));
-  background: transparent !important;
-  background-image: none !important;
-}
-.settings-page *,
-.min-h-\[100dvh\].bg-background.text-foreground * {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  background-image: none !important;
-  filter: none !important;
-  mix-blend-mode: normal !important;
-  will-change: auto !important;
-}
-.settings-page .rounded-2xl,
-.settings-page .rounded-3xl,
-.settings-page .rounded-xl,
-.settings-page section,
-.settings-page header,
-.min-h-\[100dvh\].bg-background.text-foreground .rounded-2xl,
-.min-h-\[100dvh\].bg-background.text-foreground .rounded-3xl,
-.min-h-\[100dvh\].bg-background.text-foreground .rounded-xl,
-.min-h-\[100dvh\].bg-background.text-foreground section,
-.min-h-\[100dvh\].bg-background.text-foreground header {
-  box-shadow: none !important;
-  transform: none !important;
-}
-.settings-page header,
-.min-h-\[100dvh\].bg-background.text-foreground header {
   background: #080b14 !important;
   background-color: #080b14 !important;
   background-image: none !important;
 }
-.settings-page .bg-card,
-.settings-page .bg-card\/70,
-.settings-page .bg-card\/80,
-.settings-page section,
-.min-h-\[100dvh\].bg-background.text-foreground .bg-card,
-.min-h-\[100dvh\].bg-background.text-foreground .bg-card\/70,
-.min-h-\[100dvh\].bg-background.text-foreground .bg-card\/80,
-.min-h-\[100dvh\].bg-background.text-foreground section {
+.settings-page header {
+  background: #080b14 !important;
+  background-color: #080b14 !important;
+  background-image: none !important;
+}
+.settings-page section {
   background: #101626 !important;
   background-color: #101626 !important;
   background-image: none !important;
@@ -203,21 +172,11 @@ button[class*="bg-primary"], button[data-state="open"] { box-shadow: 0 12px 30px
 .settings-page input,
 .settings-page textarea,
 .settings-page select,
-.settings-page [role="combobox"],
-.min-h-\[100dvh\].bg-background.text-foreground input,
-.min-h-\[100dvh\].bg-background.text-foreground textarea,
-.min-h-\[100dvh\].bg-background.text-foreground select,
-.min-h-\[100dvh\].bg-background.text-foreground [role="combobox"] {
+.settings-page [role="combobox"] {
   background: #090e1a !important;
   background-color: #090e1a !important;
   background-image: none !important;
   border-color: rgba(255,255,255,.12) !important;
-  box-shadow: none !important;
-}
-.settings-page button,
-.min-h-\[100dvh\].bg-background.text-foreground button {
-  box-shadow: none !important;
-  transform: none !important;
 }
 
 [id*="lovable" i], [class*="lovable" i], [data-lovable], a[href*="lovable.dev" i], iframe[src*="lovable" i] { display: none !important; visibility: hidden !important; pointer-events: none !important; }
