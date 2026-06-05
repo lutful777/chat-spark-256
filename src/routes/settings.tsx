@@ -757,7 +757,7 @@ function MediaVideoForm({ form, update, showKey, setShowKey, onSave, onTest, tes
   );
 }
 
-function BackupSection({ fileRef, safeBackupFileRef, onImport, onImportSafe, onExportSettings, onExportSafe, clearAllApiKeys, resetAllData }: { fileRef: React.RefObject<HTMLInputElement>; safeBackupFileRef: React.RefObject<HTMLInputElement>; onImport: (file: File) => void | Promise<void>; onImportSafe: (file: File) => void | Promise<void>; onExportSettings: (withKeys: boolean) => void; onExportSafe: () => void; clearAllApiKeys: () => void; resetAllData: () => void }) {
+function BackupSection({ fileRef, safeBackupFileRef, onImport, onImportSafe, onExportSettings, onExportSafe, clearAllApiKeys, resetAllData }: { fileRef: React.RefObject<HTMLInputElement | null>; safeBackupFileRef: React.RefObject<HTMLInputElement | null>; onImport: (file: File) => void | Promise<void>; onImportSafe: (file: File) => void | Promise<void>; onExportSettings: (withKeys: boolean) => void; onExportSafe: () => void; clearAllApiKeys: () => void; resetAllData: () => void }) {
   return (
     <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
       <h2 className="mb-1 text-sm font-semibold">Backup Data</h2>
