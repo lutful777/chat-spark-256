@@ -1,6 +1,29 @@
-/* Loaded after styles.css. Android Chrome/WebView solid-paint fix for Settings. */
+/* Loaded after styles.css. Settings uses normal browser scroll on Android.
+   The fixed keyboard-safe layout is only for the Chat page. */
 html,
 body {
+  background: #080b14 !important;
+  background-color: #080b14 !important;
+}
+
+body:has(.settings-page) {
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  min-height: 100dvh !important;
+  height: auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior-y: auto !important;
+  background: #080b14 !important;
+  background-color: #080b14 !important;
+}
+
+html:has(.settings-page) {
+  min-height: 100dvh !important;
+  height: auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   background: #080b14 !important;
   background-color: #080b14 !important;
 }
@@ -9,57 +32,44 @@ body {
 .min-h-\[100dvh\].bg-background.text-foreground {
   position: relative !important;
   z-index: 0 !important;
-  isolation: isolate !important;
+  isolation: auto !important;
   contain: none !important;
   min-height: 100dvh !important;
-  height: var(--app-stable-height, 100dvh) !important;
-  max-height: var(--app-stable-height, 100dvh) !important;
-  overflow-y: auto !important;
-  overscroll-behavior: contain !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  overscroll-behavior: auto !important;
   -webkit-overflow-scrolling: touch !important;
   color: #f5f7ff !important;
   background: #080b14 !important;
   background-color: #080b14 !important;
-  background-image: linear-gradient(#080b14, #080b14) !important;
+  background-image: none !important;
   background-attachment: scroll !important;
-  box-shadow: inset 0 0 0 9999px #080b14 !important;
+  box-shadow: none !important;
   transform: none !important;
   filter: none !important;
   mix-blend-mode: normal !important;
 }
 
 .settings-page::before,
-.min-h-\[100dvh\].bg-background.text-foreground::before {
-  content: "" !important;
-  display: block !important;
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: -1 !important;
-  pointer-events: none !important;
-  background: #080b14 !important;
-  background-color: #080b14 !important;
-  background-image: linear-gradient(#080b14, #080b14) !important;
-  transform: none !important;
-  filter: none !important;
-  opacity: 1 !important;
-}
-
 .settings-page::after,
+.min-h-\[100dvh\].bg-background.text-foreground::before,
 .min-h-\[100dvh\].bg-background.text-foreground::after {
   display: none !important;
   content: none !important;
 }
 
-.settings-page > *,
-.min-h-\[100dvh\].bg-background.text-foreground > * {
-  position: relative !important;
-  z-index: 1 !important;
+.settings-page > .mx-auto,
+.min-h-\[100dvh\].bg-background.text-foreground > .mx-auto {
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom)) !important;
+  background: #080b14 !important;
+  background-color: #080b14 !important;
+  background-image: none !important;
 }
 
 .settings-page *,
 .min-h-\[100dvh\].bg-background.text-foreground * {
   contain: none !important;
-  isolation: auto !important;
   will-change: auto !important;
   backface-visibility: visible !important;
   transform-style: flat !important;
@@ -75,25 +85,32 @@ body {
 .min-h-\[100dvh\].bg-background.text-foreground .sticky {
   position: static !important;
   top: auto !important;
-  z-index: 1 !important;
+  z-index: auto !important;
   transform: none !important;
   background: #080b14 !important;
   background-color: #080b14 !important;
+  background-image: none !important;
 }
 
 .settings-page section,
-.settings-page .rounded-2xl,
-.settings-page .rounded-3xl,
-.settings-page .rounded-xl,
-.min-h-\[100dvh\].bg-background.text-foreground section,
-.min-h-\[100dvh\].bg-background.text-foreground .rounded-2xl,
-.min-h-\[100dvh\].bg-background.text-foreground .rounded-3xl,
-.min-h-\[100dvh\].bg-background.text-foreground .rounded-xl {
-  contain: none !important;
-  isolation: auto !important;
-  transform: none !important;
-  filter: none !important;
-  mix-blend-mode: normal !important;
+.min-h-\[100dvh\].bg-background.text-foreground section {
+  background: #101626 !important;
+  background-color: #101626 !important;
+  background-image: none !important;
+}
+
+.settings-page input,
+.settings-page textarea,
+.settings-page select,
+.settings-page [role="combobox"],
+.min-h-\[100dvh\].bg-background.text-foreground input,
+.min-h-\[100dvh\].bg-background.text-foreground textarea,
+.min-h-\[100dvh\].bg-background.text-foreground select,
+.min-h-\[100dvh\].bg-background.text-foreground [role="combobox"] {
+  background: #090e1a !important;
+  background-color: #090e1a !important;
+  background-image: none !important;
+  border-color: rgba(255,255,255,.12) !important;
 }
 
 .settings-page [data-radix-scroll-area-viewport],
