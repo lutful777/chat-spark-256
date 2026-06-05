@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="AI Chat icon">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="44%" r="64%">
+      <stop offset="0" stop-color="#081b3a"/>
+      <stop offset="0.54" stop-color="#040a1a"/>
+      <stop offset="1" stop-color="#000000"/>
+    </radialGradient>
+    <linearGradient id="neon" x1="210" y1="540" x2="812" y2="486" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff75ff"/>
+      <stop offset="0.5" stop-color="#bda7ff"/>
+      <stop offset="1" stop-color="#33f4ff"/>
+    </linearGradient>
+    <linearGradient id="neon2" x1="280" y1="540" x2="730" y2="540" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff8aff"/>
+      <stop offset="0.55" stop-color="#b8c8ff"/>
+      <stop offset="1" stop-color="#55f7ff"/>
+    </linearGradient>
+    <filter id="glow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.42  0 0 0 0 0.58  0 0 0 0 1  0 0 0 .92 0" result="blueGlow"/>
+      <feMerge>
+        <feMergeNode in="blueGlow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <ellipse cx="540" cy="520" rx="335" ry="245" fill="#093879" opacity="0.25" filter="url(#softGlow)"/>
+
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <path d="M332 672 L232 714 Q196 729 209 690 L242 586 Q197 530 205 455 Q218 335 344 280 Q420 247 547 250 Q715 254 797 342 Q871 421 862 532 Q849 681 706 744 Q599 792 446 754 L332 672Z" stroke="url(#neon)" stroke-width="30"/>
+    <rect x="366" y="434" width="314" height="152" rx="66" stroke="url(#neon2)" stroke-width="26"/>
+
+    <path d="M523 434 V350" stroke="#c6d9ff" stroke-width="24"/>
+    <path d="M523 586 V657" stroke="#9ef7ff" stroke-width="24"/>
+    <path d="M366 510 H312 L270 468" stroke="#ff8bff" stroke-width="24"/>
+    <path d="M680 510 H734 L778 468" stroke="#69f7ff" stroke-width="24"/>
+
+    <circle cx="523" cy="326" r="28" stroke="#c8d9ff" stroke-width="22" fill="#061126"/>
+    <circle cx="247" cy="446" r="28" stroke="#ff82ff" stroke-width="22" fill="#061126"/>
+    <circle cx="800" cy="446" r="28" stroke="#6ef7ff" stroke-width="22" fill="#061126"/>
+    <circle cx="523" cy="682" r="28" stroke="#a9f8ff" stroke-width="22" fill="#061126"/>
+  </g>
+
+  <g filter="url(#glow)">
+    <circle cx="455" cy="510" r="22" fill="#f3ddff"/>
+    <circle cx="592" cy="510" r="22" fill="#b9fbff"/>
+  </g>
+</svg>
