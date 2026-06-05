@@ -37,7 +37,7 @@ import java.util.Date;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
-    private static final String APP_URL = "https://chat-spark-256.vercel.app/?apk=1.0.7";
+    private static final String APP_URL = "https://chat-spark-256.vercel.app/?apk=1.0.9";
     private static final String APP_ORIGIN = "https://chat-spark-256.vercel.app";
     private static final int FILE_CHOOSER_REQUEST = 1001;
     private static final int PERMISSION_REQUEST = 1002;
@@ -80,7 +80,7 @@ public class MainActivity extends Activity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
-        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
@@ -93,11 +93,7 @@ public class MainActivity extends Activity {
             settings.setSafeBrowsingEnabled(true);
         }
 
-        if (Build.VERSION.SDK_INT <= 32) {
-            webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-        } else {
-            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        }
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         WebView.setWebContentsDebuggingEnabled(false);
 
         webView.setWebChromeClient(new WebChromeClient() {
@@ -157,6 +153,13 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 if (!mainFrameError && !"about:blank".equals(url)) {
+                    view.evaluateJavascript(
+                            "document.documentElement.classList.add('android-apk-webview');" +
+                                    "document.body.classList.add('android-apk-webview-body');" +
+                                    "document.documentElement.style.backgroundColor='#080b14';" +
+                                    "document.body.style.backgroundColor='#080b14';",
+                            null
+                    );
                     loadingView.setVisibility(View.GONE);
                     webView.setVisibility(View.VISIBLE);
                 }
@@ -238,6 +241,10 @@ public class MainActivity extends Activity {
             if (url != null && url.startsWith(APP_ORIGIN)) {
                 Uri uri = Uri.parse(url);
                 String path = uri.getPath();
+                if ("/settings/advanced".equals(path)) {
+                    webView.loadUrl(APP_ORIGIN + "/settings?apk=1.0.9");
+                    return;
+                }
                 if (path != null && !path.equals("/") && !path.isEmpty()) {
                     webView.loadUrl(APP_URL);
                     return;
