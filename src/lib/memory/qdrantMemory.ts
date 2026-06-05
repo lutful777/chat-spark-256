@@ -82,16 +82,21 @@ async function qdrantFetch<T>(path: string, init: RequestInit = {}, config = loa
   const current = requireConfig(config);
   let res: Response;
   try {
-    res = await fetch(`${current.endpoint}${path}`, {
-      ...init,
+    res = await fetch("/api/public/qdrant-memory", {
+      method: "POST",
       headers: {
-        "api-key": current.apiKey,
         "Content-Type": "application/json",
-        ...(init.headers ?? {}),
+        "X-Qdrant-API-Key": current.apiKey,
       },
+      body: JSON.stringify({
+        endpoint: current.endpoint,
+        path,
+        method: init.method ?? "GET",
+        body: init.body ? JSON.parse(String(init.body)) : undefined,
+      }),
     });
   } catch {
-    throw new Error("Tidak bisa menghubungi Qdrant. Cek Endpoint, koneksi internet, atau kemungkinan CORS browser.");
+    throw new Error("Tidak bisa menghubungi proxy Qdrant. Cek deploy Vercel atau koneksi internet.");
   }
 
   const text = await res.text();
@@ -103,9 +108,9 @@ async function qdrantFetch<T>(path: string, init: RequestInit = {}, config = loa
   }
 
   if (!res.ok) {
-    const detail = typeof data === "object" && data && "status" in data ? String((data as { status?: unknown }).status) : text.slice(0, 160);
+    const detail = typeof data === "object" && data && "error" in data ? String((data as { error?: unknown }).error) : text.slice(0, 160);
+    if (res.status === 404) throw new Error("Endpoint proxy Qdrant belum aktif. Tunggu deploy Vercel selesai lalu coba lagi.");
     if (res.status === 401 || res.status === 403) throw new Error("Qdrant API Key ditolak. Buat API key baru atau cek akses cluster.");
-    if (res.status === 404) throw new Error("Endpoint/collection Qdrant tidak ditemukan. Cek URL endpoint cluster.");
     throw new Error(detail || `Qdrant error ${res.status}.`);
   }
 
