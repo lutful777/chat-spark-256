@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VideoRouteImport } from './routes/video'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as QdrantMemoryRouteImport } from './routes/qdrant-memory'
 import { Route as OutlookRouteImport } from './routes/outlook'
 import { Route as ImageRouteImport } from './routes/image'
 import { Route as IndexRouteImport } from './routes/index'
@@ -28,6 +29,11 @@ const VideoRoute = VideoRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QdrantMemoryRoute = QdrantMemoryRouteImport.update({
+  id: '/qdrant-memory',
+  path: '/qdrant-memory',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OutlookRoute = OutlookRouteImport.update({
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/image': typeof ImageRoute
   '/outlook': typeof OutlookRoute
+  '/qdrant-memory': typeof QdrantMemoryRoute
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
   '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/image': typeof ImageRoute
   '/outlook': typeof OutlookRoute
+  '/qdrant-memory': typeof QdrantMemoryRoute
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
   '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/image': typeof ImageRoute
   '/outlook': typeof OutlookRoute
+  '/qdrant-memory': typeof QdrantMemoryRoute
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
   '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/image'
     | '/outlook'
+    | '/qdrant-memory'
     | '/settings'
     | '/video'
     | '/api/public/extract-frame'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/image'
     | '/outlook'
+    | '/qdrant-memory'
     | '/settings'
     | '/video'
     | '/api/public/extract-frame'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/'
     | '/image'
     | '/outlook'
+    | '/qdrant-memory'
     | '/settings'
     | '/video'
     | '/api/public/extract-frame'
@@ -151,6 +163,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ImageRoute: typeof ImageRoute
   OutlookRoute: typeof OutlookRoute
+  QdrantMemoryRoute: typeof QdrantMemoryRoute
   SettingsRoute: typeof SettingsRoute
   VideoRoute: typeof VideoRoute
   ApiPublicExtractFrameRoute: typeof ApiPublicExtractFrameRoute
@@ -174,6 +187,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qdrant-memory': {
+      id: '/qdrant-memory'
+      path: '/qdrant-memory'
+      fullPath: '/qdrant-memory'
+      preLoaderRoute: typeof QdrantMemoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/outlook': {
@@ -239,6 +259,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ImageRoute: ImageRoute,
   OutlookRoute: OutlookRoute,
+  QdrantMemoryRoute: QdrantMemoryRoute,
   SettingsRoute: SettingsRoute,
   VideoRoute: VideoRoute,
   ApiPublicExtractFrameRoute: ApiPublicExtractFrameRoute,
