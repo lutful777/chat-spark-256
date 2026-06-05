@@ -188,7 +188,7 @@ async function listFolderPage(
   let nextUrl: string | undefined = url;
 
   while (nextUrl) {
-    const data = await graphGet<{ value?: unknown[]; "@odata.nextLink"?: string }>(token, nextUrl);
+    const data: { value?: unknown[]; "@odata.nextLink"?: string } = await graphGet(token, nextUrl);
     const page = (data.value ?? []) as GraphMailFolder[];
 
     for (const folder of page) {
@@ -283,7 +283,7 @@ async function listMessagesWithAttachments(
   });
 
   while (url && messages.length < maxMessages) {
-    const data = await graphGet<{ value?: unknown[]; "@odata.nextLink"?: string }>(token, url);
+    const data: { value?: unknown[]; "@odata.nextLink"?: string } = await graphGet(token, url);
     messages.push(
       ...(((data.value ?? []) as GraphMessage[]).slice(0, maxMessages - messages.length)),
     );
