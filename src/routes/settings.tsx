@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DataBackupPanel } from "@/components/settings/DataBackupPanel";
 import { useChatStore } from "@/lib/chat/store";
 import { uid } from "@/lib/chat/storage";
 import { ChatError, testConnection } from "@/lib/chat/api";
@@ -208,6 +209,8 @@ function SettingsPage() {
           <p>API key disimpan di perangkat/browser kamu. Jangan gunakan perangkat publik.</p>
         </div>
 
+        <DataBackupPanel />
+
         <div className="grid gap-4 md:grid-cols-[260px_1fr]">
           <ProviderList providers={providers} selectedId={selectedId} activeProviderId={activeProviderId} onSelect={setSelectedId} onAdd={handleAdd} />
           <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
@@ -254,7 +257,7 @@ function SettingsPage() {
         </section>
 
         <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-          <h2 className="mb-1 text-sm font-semibold">Backup Data</h2>
+          <h2 className="mb-1 text-sm font-semibold">Advanced</h2>
           <p className="mb-3 text-xs text-muted-foreground">Advanced dipisah agar halaman Settings lebih stabil di Android WebView.</p>
           <Button type="button" variant="secondary" className="w-full justify-center gap-2 rounded-xl" onClick={() => window.location.assign("/settings/advanced")}><Settings2 className="size-4" /> Advanced</Button>
         </section>
@@ -271,6 +274,7 @@ function AdvancedSettingsPage() {
         <h1 className="text-base font-semibold">Advanced</h1>
       </header>
       <div className="mx-auto w-full max-w-5xl space-y-4 p-3 md:p-6">
+        <DataBackupPanel compact />
         <section className="rounded-2xl border border-border bg-card p-4 md:p-6"><h2 className="mb-2 text-sm font-semibold">Advanced Chat</h2><p className="text-xs text-muted-foreground">System Prompt, Temperature, Max Tokens, Enable Streaming, dan Direct Call.</p></section>
         <OutlookConnect />
         <GitHubConnect />
