@@ -7,6 +7,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { clearRealtimeSearchConfig, loadRealtimeSearchConfig, saveRealtimeSearchConfig } from "@/lib/search/realtime";
 
+function parseTestError(status: number, text: string): string {
+  try {
+    const parsed = JSON.parse(text) as { error?: unknown; message?: unknown };
+    const detail = parsed.error ?? parsed.message;
+    if (typeof detail === "string" && detail.trim()) return detail.trim();
+  } catch {
+    // handled below
+  }
+
+  const clean = text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 140);
+  if (status === 404) return "Endpoint Real Time Search belum aktif. Tunggu deploy Vercel selesai atau redeploy commit terbaru.";
+  if (status === 401 || status === 403) return "Serper API Key ditolak. Cek key dan jangan pakai awalan Bearer.";
+  if (status === 429) return "Quota/limit Serper habis. Coba lagi nanti atau ganti API key.";
+  if (status >= 500) return "Server Real Time Search bermasalah. Coba redeploy Vercel atau coba lagi nanti.";
+  return clean ? `Test Serper gagal (${status}): ${clean}` : `Test Serper gagal (${status}).`;
+}
+
 export function SerperSearchSettings() {
   const [apiKey, setApiKey] = useState("");
   const [visible, setVisible] = useState(false);
@@ -36,8 +53,14 @@ export function SerperSearchSettings() {
       const res = await fetch(`/api/public/realtime-search?q=${encodeURIComponent("berita teknologi terbaru")}`, {
         headers: { "X-Serper-API-Key": key },
       });
-      const data = (await res.json()) as { provider?: string; sources?: unknown[]; error?: string };
-      if (!res.ok) throw new Error(data.error || "Test Serper gagal.");
+      const text = await res.text();
+      let data: { provider?: string; sources?: unknown[]; error?: string } = {};
+      try {
+        data = JSON.parse(text) as { provider?: string; sources?: unknown[]; error?: string };
+      } catch {
+        throw new Error(parseTestError(res.status, text));
+      }
+      if (!res.ok) throw new Error(data.error || parseTestError(res.status, text));
       if (data.provider !== "serper" || !Array.isArray(data.sources) || data.sources.length === 0) {
         throw new Error("Serper belum mengembalikan hasil. Cek API key atau quota.");
       }
