@@ -11,13 +11,13 @@
         android:allowBackup="true"
         android:hardwareAccelerated="true"
         android:icon="@drawable/ic_launcher"
-        android:label="AI Chat"
+        android:label="AI Chat Stable"
         android:roundIcon="@drawable/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="app.lovable.chat_spark_256.webview.fileprovider"
+            android:authorities="app.lovable.chat_spark_256.webview.stable.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
