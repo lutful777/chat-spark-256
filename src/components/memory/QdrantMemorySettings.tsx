@@ -17,6 +17,14 @@ import {
 const DEFAULT_COLLECTION = "ai_chat_memory";
 const DEFAULT_VECTOR_SIZE = 1536;
 
+function withDefaults(config: QdrantMemoryConfig): QdrantMemoryConfig {
+  return {
+    ...config,
+    collection: DEFAULT_COLLECTION,
+    vectorSize: DEFAULT_VECTOR_SIZE,
+  };
+}
+
 export function QdrantMemorySettings() {
   const [config, setConfig] = useState<QdrantMemoryConfig>({
     endpoint: "",
@@ -30,17 +38,19 @@ export function QdrantMemorySettings() {
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    setConfig(loadQdrantMemoryConfig());
+    setConfig(withDefaults(loadQdrantMemoryConfig()));
   }, []);
 
   const update = <K extends keyof QdrantMemoryConfig>(key: K, value: QdrantMemoryConfig[K]) => {
-    setConfig((prev) => ({ ...prev, [key]: value }));
+    setConfig((prev) => withDefaults({ ...prev, [key]: value }));
   };
 
   const save = () => {
-    if (!config.endpoint.trim()) return toast.error("Isi Qdrant Endpoint terlebih dahulu.");
-    if (!config.apiKey.trim()) return toast.error("Isi Qdrant API Key terlebih dahulu.");
-    saveQdrantMemoryConfig(config);
+    const next = withDefaults(config);
+    if (!next.endpoint.trim()) return toast.error("Isi Qdrant Endpoint terlebih dahulu.");
+    if (!next.apiKey.trim()) return toast.error("Isi Qdrant API Key terlebih dahulu.");
+    saveQdrantMemoryConfig(next);
+    setConfig(next);
     toast.success("Qdrant Memory disimpan di perangkat ini.");
   };
 
@@ -51,10 +61,12 @@ export function QdrantMemorySettings() {
   };
 
   const test = async () => {
+    const next = withDefaults(config);
     setTesting(true);
     try {
-      const collections = await import("@/lib/memory/qdrantMemory").then((m) => m.testQdrantConnection(config));
-      saveQdrantMemoryConfig(config);
+      const collections = await import("@/lib/memory/qdrantMemory").then((m) => m.testQdrantConnection(next));
+      saveQdrantMemoryConfig(next);
+      setConfig(next);
       toast.success(`Qdrant terhubung. Collection terdeteksi: ${collections.length}.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Test Qdrant gagal.");
@@ -64,14 +76,16 @@ export function QdrantMemorySettings() {
   };
 
   const createCollection = async () => {
+    const next = withDefaults(config);
     setCreating(true);
     try {
-      await ensureQdrantCollection(config);
-      saveQdrantMemoryConfig({ ...config, enabled: true });
-      setConfig((prev) => ({ ...prev, enabled: true }));
-      toast.success(`Collection "${config.collection || DEFAULT_COLLECTION}" siap dipakai.`);
+      await ensureQdrantCollection(next);
+      const readyConfig = { ...next, enabled: true };
+      saveQdrantMemoryConfig(readyConfig);
+      setConfig(readyConfig);
+      toast.success("Qdrant Memory siap dipakai.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Gagal membuat collection Qdrant.");
+      toast.error(err instanceof Error ? err.message : "Gagal menyiapkan Qdrant Memory.");
     } finally {
       setCreating(false);
     }
@@ -91,7 +105,7 @@ export function QdrantMemorySettings() {
         <div className="flex items-center justify-between rounded-xl border border-border px-3 py-3">
           <div className="pr-3">
             <p className="text-sm font-medium">Aktifkan Qdrant Memory</p>
-            <p className="text-xs text-muted-foreground">Aktif setelah endpoint, API key, dan collection berhasil disiapkan.</p>
+            <p className="text-xs text-muted-foreground">Aktif setelah endpoint dan API key berhasil dites.</p>
           </div>
           <Switch checked={config.enabled} onCheckedChange={(value) => update("enabled", value)} />
         </div>
@@ -135,29 +149,9 @@ export function QdrantMemorySettings() {
           <p className="text-xs text-muted-foreground">Jangan isi “Bearer”. Masukkan API key murni saja.</p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Collection Name</Label>
-            <Input
-              value={config.collection}
-              onChange={(e) => update("collection", e.target.value)}
-              placeholder={DEFAULT_COLLECTION}
-              className="rounded-xl"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Vector Size</Label>
-            <Input
-              value={config.vectorSize}
-              onChange={(e) => update("vectorSize", parseInt(e.target.value, 10) || DEFAULT_VECTOR_SIZE)}
-              type="number"
-              min={1}
-              inputMode="numeric"
-              className="rounded-xl"
-            />
-            <p className="text-xs text-muted-foreground">Default 1536, cocok untuk embedding umum seperti text-embedding-3-small.</p>
-          </div>
-        </div>
+        <p className="rounded-xl border border-border bg-background/50 px-3 py-2 text-xs text-muted-foreground">
+          Pengaturan teknis otomatis: collection <span className="font-medium text-foreground">ai_chat_memory</span>, vector size <span className="font-medium text-foreground">1536</span>.
+        </p>
 
         <div className="flex flex-wrap gap-2">
           <Button onClick={save} className="gap-2 rounded-xl">
@@ -167,7 +161,7 @@ export function QdrantMemorySettings() {
             {testing ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />} Test Qdrant
           </Button>
           <Button variant="outline" onClick={createCollection} disabled={testing || creating} className="gap-2 rounded-xl">
-            {creating ? <Loader2 className="size-4 animate-spin" /> : <Database className="size-4" />} Create Collection
+            {creating ? <Loader2 className="size-4 animate-spin" /> : <Database className="size-4" />} Siapkan Memory
           </Button>
         </div>
       </div>
