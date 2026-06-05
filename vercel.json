@@ -1,5 +1,5 @@
 {
   "installCommand": "npm install",
   "buildCommand": "npm exec vite -- build --config vite.vercel.config.ts",
-  "outputDirectory": ".vercel/output"
+  "outputDirectory": "dist"
 }
