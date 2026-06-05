@@ -279,6 +279,37 @@ button[data-state="open"] {
   border-color: oklch(1 0 0 / 11%) !important;
 }
 
+/* Stable Settings rendering for Android WebView: remove glass/noise/glitch artifacts. */
+.min-h-\[100dvh\].bg-background.text-foreground {
+  background: oklch(0.145 0.028 270) !important;
+  transform: none !important;
+}
+
+.min-h-\[100dvh\].bg-background.text-foreground .bg-card,
+.min-h-\[100dvh\].bg-background.text-foreground .bg-card\/70,
+.min-h-\[100dvh\].bg-background.text-foreground .bg-card\/80,
+.min-h-\[100dvh\].bg-background.text-foreground section,
+.min-h-\[100dvh\].bg-background.text-foreground [role="combobox"],
+.min-h-\[100dvh\].bg-background.text-foreground input,
+.min-h-\[100dvh\].bg-background.text-foreground textarea,
+.min-h-\[100dvh\].bg-background.text-foreground select {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-image: none !important;
+}
+
+.min-h-\[100dvh\].bg-background.text-foreground .bg-card,
+.min-h-\[100dvh\].bg-background.text-foreground section {
+  background-color: oklch(0.19 0.032 270) !important;
+}
+
+.min-h-\[100dvh\].bg-background.text-foreground [role="combobox"],
+.min-h-\[100dvh\].bg-background.text-foreground input,
+.min-h-\[100dvh\].bg-background.text-foreground textarea,
+.min-h-\[100dvh\].bg-background.text-foreground select {
+  background-color: oklch(0.155 0.028 270) !important;
+}
+
 /* Hide the Lovable editor badge if it is injected inside the app DOM. */
 [id*="lovable" i],
 [class*="lovable" i],
