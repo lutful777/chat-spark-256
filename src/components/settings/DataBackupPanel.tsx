@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Download, Upload } from "lucide-react";
+import { Clipboard, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,18 @@ function readAllLocalStorage(): Record<string, string> {
   return data;
 }
 
+function createBackupText(): string {
+  const payload: BackupPayload = {
+    app: "AI Chat",
+    type: "localStorage-backup",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    origin: window.location.origin,
+    data: readAllLocalStorage(),
+  };
+  return JSON.stringify(payload, null, 2);
+}
+
 function parseBackup(text: string): BackupPayload {
   const parsed = JSON.parse(text) as Partial<BackupPayload>;
   if (!parsed || parsed.type !== "localStorage-backup" || typeof parsed.data !== "object" || parsed.data == null) {
@@ -41,21 +53,29 @@ function parseBackup(text: string): BackupPayload {
   return parsed as BackupPayload;
 }
 
+function applyBackup(text: string): void {
+  const backup = parseBackup(text);
+  const count = Object.keys(backup.data).length;
+  if (!count) throw new Error("Backup kosong.");
+  const ok = confirm(`Impor ${count} data ke aplikasi ini? Data lokal sekarang akan diganti.`);
+  if (!ok) return;
+
+  localStorage.clear();
+  for (const [key, value] of Object.entries(backup.data)) {
+    if (typeof value === "string") localStorage.setItem(key, value);
+  }
+  toast.success("Data berhasil diimpor. Aplikasi akan dimuat ulang.");
+  window.setTimeout(() => window.location.reload(), 700);
+}
+
 export function DataBackupPanel({ compact = false }: { compact?: boolean }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!isBrowser()) return;
-    const payload: BackupPayload = {
-      app: "AI Chat",
-      type: "localStorage-backup",
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      origin: window.location.origin,
-      data: readAllLocalStorage(),
-    };
+    const text = createBackupText();
 
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const blob = new Blob([text], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -64,24 +84,41 @@ export function DataBackupPanel({ compact = false }: { compact?: boolean }) {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    toast.success("Data diexport. Simpan file backup dengan aman.");
+
+    try {
+      await navigator.clipboard?.writeText(text);
+      toast.success("Data diexport dan juga disalin. Simpan file/catatan backup dengan aman.");
+    } catch {
+      toast.success("Data diexport. Simpan file backup dengan aman.");
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!isBrowser()) return;
+    const text = createBackupText();
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Data backup disalin ke clipboard.");
+    } catch {
+      toast.error("Tidak bisa copy otomatis. Pakai Export Data sebagai file backup.");
+    }
+  };
+
+  const handleImportText = () => {
+    if (!isBrowser()) return;
+    const text = prompt("Tempel/ paste isi backup JSON di sini:");
+    if (!text) return;
+    try {
+      applyBackup(text);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal impor data.");
+    }
   };
 
   const handleImportFile = async (file: File) => {
     try {
       const text = await file.text();
-      const backup = parseBackup(text);
-      const count = Object.keys(backup.data).length;
-      if (!count) throw new Error("Backup kosong.");
-      const ok = confirm(`Impor ${count} data ke aplikasi ini? Data lokal sekarang akan diganti.`);
-      if (!ok) return;
-
-      localStorage.clear();
-      for (const [key, value] of Object.entries(backup.data)) {
-        if (typeof value === "string") localStorage.setItem(key, value);
-      }
-      toast.success("Data berhasil diimpor. Aplikasi akan dimuat ulang.");
-      window.setTimeout(() => window.location.reload(), 700);
+      applyBackup(text);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Gagal impor data.");
     } finally {
@@ -93,7 +130,7 @@ export function DataBackupPanel({ compact = false }: { compact?: boolean }) {
     <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
       <h2 className="mb-1 text-sm font-semibold">Backup Data</h2>
       <p className="mb-3 text-xs text-muted-foreground">
-        Export untuk memindahkan API key, provider, history, dan pengaturan dari APK lama. File backup berisi data sensitif, jangan dibagikan.
+        Export untuk memindahkan API key, provider, history, dan pengaturan dari APK lama. File/copy backup berisi data sensitif, jangan dibagikan.
       </p>
       <input
         ref={inputRef}
@@ -106,11 +143,17 @@ export function DataBackupPanel({ compact = false }: { compact?: boolean }) {
         }}
       />
       <div className={compact ? "grid gap-2 sm:grid-cols-2" : "flex flex-wrap gap-2"}>
-        <Button type="button" variant="secondary" className="gap-2 rounded-xl" onClick={handleExport}>
+        <Button type="button" variant="secondary" className="gap-2 rounded-xl" onClick={() => void handleExport()}>
           <Download className="size-4" /> Export Data
         </Button>
+        <Button type="button" variant="outline" className="gap-2 rounded-xl" onClick={() => void handleCopy()}>
+          <Clipboard className="size-4" /> Copy Data
+        </Button>
         <Button type="button" variant="outline" className="gap-2 rounded-xl" onClick={() => inputRef.current?.click()}>
-          <Upload className="size-4" /> Import Data
+          <Upload className="size-4" /> Import File
+        </Button>
+        <Button type="button" variant="outline" className="gap-2 rounded-xl" onClick={handleImportText}>
+          <Upload className="size-4" /> Import Text
         </Button>
       </div>
     </section>
