@@ -71,7 +71,7 @@ export function ConversationSidebar({
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex items-center gap-2 px-4 py-4">
-        <div className="flex size-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
+        <div className="flex size-9 items-center justify-center rounded-xl bg-sidebar-accent text-primary">
           <Sparkles className="size-5" />
         </div>
         <div className="min-w-0">

@@ -10,12 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VideoRouteImport } from './routes/video'
-import { Route as SettingsAdvancedRouteImport } from './routes/settings.advanced'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as QdrantMemoryRouteImport } from './routes/qdrant-memory'
 import { Route as OutlookRouteImport } from './routes/outlook'
 import { Route as ImageRouteImport } from './routes/image'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsAdvancedRouteImport } from './routes/settings.advanced'
 import { Route as ApiPublicRealtimeSearchRouteImport } from './routes/api/public/realtime-search'
 import { Route as ApiPublicProxyRouteImport } from './routes/api/public/proxy'
 import { Route as ApiPublicMergeVideosRouteImport } from './routes/api/public/merge-videos'
@@ -25,11 +25,6 @@ import { Route as ApiPublicExtractFrameRouteImport } from './routes/api/public/e
 const VideoRoute = VideoRouteImport.update({
   id: '/video',
   path: '/video',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsAdvancedRoute = SettingsAdvancedRouteImport.update({
-  id: '/settings/advanced',
-  path: '/settings/advanced',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -56,6 +51,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsAdvancedRoute = SettingsAdvancedRouteImport.update({
+  id: '/advanced',
+  path: '/advanced',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const ApiPublicRealtimeSearchRoute = ApiPublicRealtimeSearchRouteImport.update({
   id: '/api/public/realtime-search',
@@ -88,9 +88,9 @@ export interface FileRoutesByFullPath {
   '/image': typeof ImageRoute
   '/outlook': typeof OutlookRoute
   '/qdrant-memory': typeof QdrantMemoryRoute
-  '/settings': typeof SettingsRoute
-  '/settings/advanced': typeof SettingsAdvancedRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/video': typeof VideoRoute
+  '/settings/advanced': typeof SettingsAdvancedRoute
   '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/merge-videos': typeof ApiPublicMergeVideosRoute
@@ -102,9 +102,9 @@ export interface FileRoutesByTo {
   '/image': typeof ImageRoute
   '/outlook': typeof OutlookRoute
   '/qdrant-memory': typeof QdrantMemoryRoute
-  '/settings': typeof SettingsRoute
-  '/settings/advanced': typeof SettingsAdvancedRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/video': typeof VideoRoute
+  '/settings/advanced': typeof SettingsAdvancedRoute
   '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/merge-videos': typeof ApiPublicMergeVideosRoute
@@ -117,9 +117,9 @@ export interface FileRoutesById {
   '/image': typeof ImageRoute
   '/outlook': typeof OutlookRoute
   '/qdrant-memory': typeof QdrantMemoryRoute
-  '/settings': typeof SettingsRoute
-  '/settings/advanced': typeof SettingsAdvancedRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/video': typeof VideoRoute
+  '/settings/advanced': typeof SettingsAdvancedRoute
   '/api/public/extract-frame': typeof ApiPublicExtractFrameRoute
   '/api/public/media-proxy': typeof ApiPublicMediaProxyRoute
   '/api/public/merge-videos': typeof ApiPublicMergeVideosRoute
@@ -134,8 +134,8 @@ export interface FileRouteTypes {
     | '/outlook'
     | '/qdrant-memory'
     | '/settings'
-    | '/settings/advanced'
     | '/video'
+    | '/settings/advanced'
     | '/api/public/extract-frame'
     | '/api/public/media-proxy'
     | '/api/public/merge-videos'
@@ -148,8 +148,8 @@ export interface FileRouteTypes {
     | '/outlook'
     | '/qdrant-memory'
     | '/settings'
-    | '/settings/advanced'
     | '/video'
+    | '/settings/advanced'
     | '/api/public/extract-frame'
     | '/api/public/media-proxy'
     | '/api/public/merge-videos'
@@ -162,8 +162,8 @@ export interface FileRouteTypes {
     | '/outlook'
     | '/qdrant-memory'
     | '/settings'
-    | '/settings/advanced'
     | '/video'
+    | '/settings/advanced'
     | '/api/public/extract-frame'
     | '/api/public/media-proxy'
     | '/api/public/merge-videos'
@@ -176,8 +176,7 @@ export interface RootRouteChildren {
   ImageRoute: typeof ImageRoute
   OutlookRoute: typeof OutlookRoute
   QdrantMemoryRoute: typeof QdrantMemoryRoute
-  SettingsRoute: typeof SettingsRoute
-  SettingsAdvancedRoute: typeof SettingsAdvancedRoute
+  SettingsRoute: typeof SettingsRouteWithChildren
   VideoRoute: typeof VideoRoute
   ApiPublicExtractFrameRoute: typeof ApiPublicExtractFrameRoute
   ApiPublicMediaProxyRoute: typeof ApiPublicMediaProxyRoute
@@ -193,13 +192,6 @@ declare module '@tanstack/react-router' {
       path: '/video'
       fullPath: '/video'
       preLoaderRoute: typeof VideoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings/advanced': {
-      id: '/settings/advanced'
-      path: '/settings/advanced'
-      fullPath: '/settings/advanced'
-      preLoaderRoute: typeof SettingsAdvancedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -236,6 +228,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/settings/advanced': {
+      id: '/settings/advanced'
+      path: '/advanced'
+      fullPath: '/settings/advanced'
+      preLoaderRoute: typeof SettingsAdvancedRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/api/public/realtime-search': {
       id: '/api/public/realtime-search'
@@ -275,13 +274,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SettingsRouteChildren {
+  SettingsAdvancedRoute: typeof SettingsAdvancedRoute
+}
+
+const SettingsRouteChildren: SettingsRouteChildren = {
+  SettingsAdvancedRoute: SettingsAdvancedRoute,
+}
+
+const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
+  SettingsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ImageRoute: ImageRoute,
   OutlookRoute: OutlookRoute,
   QdrantMemoryRoute: QdrantMemoryRoute,
-  SettingsRoute: SettingsRoute,
-  SettingsAdvancedRoute: SettingsAdvancedRoute,
+  SettingsRoute: SettingsRouteWithChildren,
   VideoRoute: VideoRoute,
   ApiPublicExtractFrameRoute: ApiPublicExtractFrameRoute,
   ApiPublicMediaProxyRoute: ApiPublicMediaProxyRoute,
@@ -292,3 +302,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

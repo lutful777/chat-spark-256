@@ -197,13 +197,13 @@ function SettingsPage() {
 
   return (
     <div className="settings-page min-h-[100dvh] text-foreground">
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border px-3 py-3">
+      <header className="flex items-center gap-2 border-b border-border bg-background px-3 py-3">
         <Button asChild variant="ghost" size="icon" aria-label="Kembali"><Link to="/"><ArrowLeft className="size-5" /></Link></Button>
         <h1 className="text-base font-semibold">Settings</h1>
       </header>
 
       <div className="mx-auto w-full max-w-5xl space-y-4 p-3 md:p-6">
-        <div className="flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-foreground">
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-950 p-3 text-sm text-foreground">
           <ShieldAlert className="mt-0.5 size-5 shrink-0 text-amber-500" />
           <p>API key disimpan di perangkat/browser kamu. Jangan gunakan perangkat publik.</p>
         </div>
@@ -266,7 +266,7 @@ function SettingsPage() {
 function AdvancedSettingsPage() {
   return (
     <div className="settings-page min-h-[100dvh] text-foreground">
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border px-3 py-3">
+      <header className="flex items-center gap-2 border-b border-border bg-background px-3 py-3">
         <Button asChild variant="ghost" size="icon" aria-label="Kembali ke Settings"><Link to="/settings"><ArrowLeft className="size-5" /></Link></Button>
         <h1 className="text-base font-semibold">Advanced</h1>
       </header>

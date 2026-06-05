@@ -76,7 +76,7 @@ function AttachmentPreview({ attachment }: { attachment: ChatAttachment }) {
   const isImage = attachment.dataUrl && attachment.type.startsWith("image/");
 
   return (
-    <div className="max-w-full overflow-hidden rounded-xl border border-border/60 bg-background/40 text-xs">
+    <div className="max-w-full overflow-hidden rounded-xl border border-border/60 bg-background text-xs">
       {isImage ? (
         <img
           src={attachment.dataUrl}
@@ -127,11 +127,11 @@ function CodeBlock({ children }: { children?: React.ReactNode }) {
   const code = textFromNode(children).replace(/\n$/, "");
 
   return (
-    <div className="my-2 overflow-hidden rounded-xl border border-border bg-secondary/80">
+    <div className="my-2 overflow-hidden rounded-xl border border-border bg-secondary">
       <pre className="m-0 max-w-full overflow-x-auto whitespace-pre-wrap break-words p-3 pb-2 text-xs">
         <code className="bg-transparent p-0">{children}</code>
       </pre>
-      <div className="flex justify-end border-t border-border/70 bg-background/40 px-2 py-1.5">
+      <div className="flex justify-end border-t border-border/70 bg-background px-2 py-1.5">
         <CopyScriptButton text={code} compact />
       </div>
     </div>
@@ -182,7 +182,7 @@ export function ChatMessageBubble({
         <div
           className={cn(
             "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full",
-            message.error ? "bg-destructive/15 text-destructive" : "bg-primary/15 text-primary",
+            message.error ? "bg-destructive text-destructive-foreground" : "bg-primary/15 text-primary",
           )}
         >
           {message.error ? <AlertTriangle className="size-4" /> : <Bot className="size-4" />}
@@ -196,7 +196,7 @@ export function ChatMessageBubble({
             isUser
               ? "rounded-br-md bg-primary text-primary-foreground"
               : message.error
-                ? "rounded-bl-md border border-destructive/40 bg-destructive/10 text-destructive-foreground"
+                ? "rounded-bl-md border border-destructive/40 bg-destructive/15 text-destructive-foreground"
                 : "rounded-bl-md border border-border bg-card text-card-foreground",
           )}
         >
