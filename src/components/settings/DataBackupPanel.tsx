@@ -93,8 +93,15 @@ function applyBackup(text: string): void {
 
 export function DataBackupPanel({ compact = false }: { compact?: boolean }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
   const [importTextOpen, setImportTextOpen] = useState(false);
   const [importTextValue, setImportTextValue] = useState("");
+
+  const focusImportBox = () => {
+    window.setTimeout(() => {
+      textAreaRef.current?.focus({ preventScroll: true });
+    }, 80);
+  };
 
   const closeImportTextDialog = () => {
     setImportTextOpen(false);
@@ -110,6 +117,24 @@ export function DataBackupPanel({ compact = false }: { compact?: boolean }) {
       closeImportTextDialog();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Gagal impor data.");
+    }
+  };
+
+  const pasteFromClipboard = async () => {
+    if (!isBrowser()) return;
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        toast.error("Clipboard kosong.");
+        focusImportBox();
+        return;
+      }
+      setImportTextValue(text);
+      toast.success("Teks backup berhasil ditempel.");
+      focusImportBox();
+    } catch {
+      toast.error("Tidak bisa paste otomatis. Tap kolom lalu tahan sebentar untuk Paste.");
+      focusImportBox();
     }
   };
 
@@ -150,6 +175,7 @@ export function DataBackupPanel({ compact = false }: { compact?: boolean }) {
     if (!isBrowser()) return;
     setImportTextValue("");
     setImportTextOpen(true);
+    focusImportBox();
   };
 
   const handleImportFile = async (file: File) => {
@@ -203,25 +229,40 @@ export function DataBackupPanel({ compact = false }: { compact?: boolean }) {
           aria-modal="true"
           aria-labelledby="import-text-title"
         >
-          <div className="w-full max-w-[600px] rounded-sm border border-white/10 bg-[#3f4243] p-5 shadow-2xl">
+          <div className="w-full max-w-[600px] rounded-2xl border border-white/10 bg-[#3f4243] p-5 shadow-2xl">
             <label id="import-text-title" className="mb-4 block text-base font-medium text-white sm:text-lg">
               Tempel/ paste isi backup JSON di sini:
             </label>
             <textarea
+              ref={textAreaRef}
               value={importTextValue}
               onChange={(event) => setImportTextValue(event.currentTarget.value)}
+              onClick={focusImportBox}
               autoFocus
+              autoCapitalize="none"
+              autoCorrect="off"
               spellCheck={false}
-              className="h-12 max-h-12 min-h-12 w-full resize-none overflow-auto border-0 border-b-2 border-[#8bd0cf] bg-transparent px-0 py-2 text-sm text-white outline-none [scrollbar-width:thin]"
+              inputMode="text"
+              className="h-16 max-h-16 min-h-16 w-full resize-none overflow-auto rounded-none border-0 border-b-2 border-[#8bd0cf] bg-[#080b14] px-2 py-2 text-sm text-white outline-none [scrollbar-width:thin] [-webkit-user-select:text] [user-select:text]"
+              style={{ WebkitUserSelect: "text", userSelect: "text", caretColor: "#8bd0cf" }}
               aria-label="Isi backup JSON"
             />
-            <div className="mt-5 flex justify-end gap-8 text-sm font-semibold uppercase tracking-wide text-[#9ad7d6]">
-              <button type="button" className="px-1 py-2" onClick={closeImportTextDialog}>
-                Cancel
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                className="rounded-lg border border-[#9ad7d6]/30 px-3 py-2 text-sm font-semibold text-[#9ad7d6]"
+                onClick={() => void pasteFromClipboard()}
+              >
+                Paste
               </button>
-              <button type="button" className="px-1 py-2" onClick={submitImportText}>
-                OK
-              </button>
+              <div className="flex justify-end gap-8 text-sm font-semibold uppercase tracking-wide text-[#9ad7d6]">
+                <button type="button" className="px-1 py-2" onClick={closeImportTextDialog}>
+                  Cancel
+                </button>
+                <button type="button" className="px-1 py-2" onClick={submitImportText}>
+                  OK
+                </button>
+              </div>
             </div>
           </div>
         </div>
