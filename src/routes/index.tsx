@@ -498,7 +498,7 @@ function ChatPage() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2 rounded-full bg-card"><ModeIcon mode={mode} /> {modeLabel(mode)} <ChevronDown className="size-3" /></Button>
+              <Button variant="outline" size="sm" className="gap-2 rounded-full bg-card/70"><ModeIcon mode={mode} /> {modeLabel(mode)} <ChevronDown className="size-3" /></Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-2xl">
               <DropdownMenuItem onClick={() => setMode("normal")}>
@@ -541,8 +541,8 @@ function ChatPage() {
         <main className="keyboard-safe-main min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-3 py-6 sm:px-4">
-              {summaryStatus.enabled && <div className="rounded-2xl border border-primary/20 bg-card px-3 py-2 text-xs text-primary">Conversation Summary aktif — chat panjang diringkas saat dikirim ke AI agar lebih ringan dan hemat token. Riwayat lengkap tetap tampil di layar.</div>}
-              {messages.length === 0 ? <div className="flex min-h-[55vh] flex-col items-center justify-center text-center"><div className="mb-5 rounded-[2rem] border border-border/70 bg-card p-5 shadow-2xl shadow-black/20"><Sparkles className="size-9 text-primary" /></div><h1 className="text-3xl font-semibold tracking-tight">AI Chat</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Pilih mode di header. Plain otomatis mencari data terbaru jika diperlukan, Thinking untuk jawaban teliti, atau GitHub untuk update aplikasi.</p><div className="mt-5 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-3"><PremiumCard title="Plain" desc="Auto Search bila perlu" /><PremiumCard title="Thinking" desc="Jawaban lebih teliti" /><PremiumCard title="GitHub" desc="Update web app via chat" /></div></div> : messages.map((m) => <ChatMessageBubble key={m.id} message={m} onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined} onEdit={m.role === "user" ? () => handleEdit(m) : undefined} onDelete={() => handleDelete(m)} />)}
+              {summaryStatus.enabled && <div className="rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">Conversation Summary aktif — chat panjang diringkas saat dikirim ke AI agar lebih ringan dan hemat token. Riwayat lengkap tetap tampil di layar.</div>}
+              {messages.length === 0 ? <div className="flex min-h-[55vh] flex-col items-center justify-center text-center"><div className="mb-5 rounded-[2rem] border border-border/70 bg-card/80 p-5 shadow-2xl shadow-black/20 backdrop-blur"><Sparkles className="size-9 text-primary" /></div><h1 className="text-3xl font-semibold tracking-tight">AI Chat</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Pilih mode di header. Plain otomatis mencari data terbaru jika diperlukan, Thinking untuk jawaban teliti, atau GitHub untuk update aplikasi.</p><div className="mt-5 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-3"><PremiumCard title="Plain" desc="Auto Search bila perlu" /><PremiumCard title="Thinking" desc="Jawaban lebih teliti" /><PremiumCard title="GitHub" desc="Update web app via chat" /></div></div> : messages.map((m) => <ChatMessageBubble key={m.id} message={m} onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined} onEdit={m.role === "user" ? () => handleEdit(m) : undefined} onDelete={() => handleDelete(m)} />)}
               {loading && <TypingIndicator />}
               <div ref={scrollEndRef} />
             </div>
@@ -556,7 +556,7 @@ function ChatPage() {
 }
 
 function PremiumCard({ title, desc }: { title: string; desc: string }) {
-  return <div className="rounded-2xl border border-border/70 bg-card p-4 text-left shadow-xl shadow-black/10"><p className="text-sm font-semibold">{title}</p><p className="mt-1 text-xs text-muted-foreground">{desc}</p></div>;
+  return <div className="rounded-2xl border border-border/70 bg-card/70 p-4 text-left shadow-xl shadow-black/10 backdrop-blur"><p className="text-sm font-semibold">{title}</p><p className="mt-1 text-xs text-muted-foreground">{desc}</p></div>;
 }
 
 function StatusPanel({
@@ -590,7 +590,7 @@ function StatusPanel({
 }) {
   return (
     <div className="flex h-full flex-col bg-sidebar p-4 text-sidebar-foreground">
-      <div className="mb-4 rounded-3xl border border-sidebar-border bg-sidebar-accent p-4">
+      <div className="mb-4 rounded-3xl border border-sidebar-border bg-sidebar-accent/40 p-4">
         <p className="text-sm font-semibold">Status AI Chat</p>
         <p className="mt-1 text-xs text-muted-foreground">Usap dari kanan ke kiri untuk membuka menu ini.</p>
       </div>
@@ -603,7 +603,7 @@ function StatusPanel({
         <StatusRow ok={summaryEnabled} title="Summary" desc={summaryDesc} />
       </div>
 
-      <div className="mt-5 rounded-3xl border border-sidebar-border bg-sidebar-accent p-3">
+      <div className="mt-5 rounded-3xl border border-sidebar-border bg-sidebar-accent/30 p-3">
         <p className="mb-2 text-xs font-semibold text-muted-foreground">Mode</p>
         <div className="grid gap-2">
           <Button variant={mode === "normal" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("normal")}><Sparkles className="mr-2 size-4" />Plain</Button>
@@ -613,7 +613,7 @@ function StatusPanel({
         </div>
       </div>
 
-      <div className="mt-5 rounded-3xl border border-sidebar-border bg-sidebar-accent p-3">
+      <div className="mt-5 rounded-3xl border border-sidebar-border bg-sidebar-accent/30 p-3">
         <p className="mb-2 text-xs font-semibold text-muted-foreground">Command GitHub</p>
         <div className="grid gap-2">
           <Button variant="secondary" className="justify-start rounded-2xl" onClick={() => onCommand("Tambah tombol ")}>Tambah tombol</Button>
@@ -629,7 +629,7 @@ function StatusPanel({
 
 function StatusRow({ ok, title, desc }: { ok: boolean; title: string; desc: string }) {
   return (
-    <div className="rounded-2xl border border-sidebar-border bg-sidebar-accent p-3">
+    <div className="rounded-2xl border border-sidebar-border bg-sidebar-accent/30 p-3">
       <div className="flex items-center gap-2">
         <span className={ok ? "size-2 rounded-full bg-emerald-400" : "size-2 rounded-full bg-muted-foreground/50"} />
         <p className="text-sm font-medium">{title}</p>

@@ -226,7 +226,7 @@ function RootShell({ children }: { children: ReactNode }) {
             justify-content: center;
             border-radius: 2rem;
             border: 1px solid rgba(96, 165, 250, 0.35);
-            background: #0f1e3a;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 64, 175, 0.45));
             box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
             color: #e5f2ff !important;
             font-size: clamp(3rem, 15vw, 5rem) !important;

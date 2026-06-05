@@ -182,23 +182,23 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
     return (
       <form
         onSubmit={handleSubmit}
-        className="keyboard-safe-input border-t border-border bg-background px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        className="keyboard-safe-input border-t border-border bg-background/85 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl supports-[backdrop-filter]:bg-background/70"
       >
         <div className="mx-auto w-full max-w-3xl space-y-2">
           {mode === "github" && (
-            <div className="rounded-2xl border border-primary/20 bg-card px-3 py-2 text-xs text-primary">
+            <div className="rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
               GitHub Mode aktif — perubahan kode akan disiapkan preview dulu, lalu klik/ketik Push untuk commit.
             </div>
           )}
 
           {mode === "thinking" && (
-            <div className="flex items-center gap-2 rounded-2xl border border-primary/20 bg-card px-3 py-2 text-xs text-primary">
+            <div className="flex items-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
               <Brain className="size-3.5" /> Thinking Standard aktif — AI akan menjawab lebih teliti tanpa menampilkan proses berpikir panjang.
             </div>
           )}
 
           {mode === "thinking-deep" && (
-            <div className="flex items-center gap-2 rounded-2xl border border-violet-500/30 bg-card px-3 py-2 text-xs text-violet-400">
+            <div className="flex items-center gap-2 rounded-2xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-xs text-violet-400">
               <Brain className="size-3.5" /> Think Deeply aktif — AI akan menganalisis mendalam, cek asumsi, risiko, dan edge case sebelum menjawab.
             </div>
           )}
@@ -222,7 +222,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             </div>
           )}
 
-          <div className="flex items-end gap-2 rounded-3xl border border-border/80 bg-card p-2 shadow-2xl shadow-black/20">
+          <div className="flex items-end gap-2 rounded-3xl border border-border/80 bg-card/80 p-2 shadow-2xl shadow-black/20 backdrop-blur">
             <input
               ref={fileRef}
               type="file"
