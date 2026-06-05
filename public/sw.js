@@ -1,5 +1,5 @@
-const CACHE_NAME = "ai-chat-pwa-v13";
-const APP_SHELL = ["/", "/manifest.json?v=13", "/offline.html", "/ai-chat-icon.png?v=13"];
+const CACHE_NAME = "ai-chat-pwa-v14";
+const APP_SHELL = ["/", "/manifest.json?v=14", "/offline.html", "/ai-chat-icon.png?v=14"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
