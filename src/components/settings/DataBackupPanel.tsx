@@ -4,6 +4,14 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 
+declare global {
+  interface Window {
+    AndroidBackup?: {
+      saveBackup: (fileName: string, content: string) => void;
+    };
+  }
+}
+
 interface BackupPayload {
   app: "AI Chat";
   type: "localStorage-backup";
@@ -74,12 +82,24 @@ export function DataBackupPanel({ compact = false }: { compact?: boolean }) {
   const handleExport = async () => {
     if (!isBrowser()) return;
     const text = createBackupText();
+    const filename = makeFilename();
+
+    if (window.AndroidBackup?.saveBackup) {
+      window.AndroidBackup.saveBackup(filename, text);
+      try {
+        await navigator.clipboard?.writeText(text);
+      } catch {
+        /* native file export is enough */
+      }
+      toast.success("File backup dibuat di folder Download.");
+      return;
+    }
 
     const blob = new Blob([text], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = makeFilename();
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     a.remove();
