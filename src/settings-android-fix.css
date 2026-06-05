@@ -1,17 +1,17 @@
-/* Loaded after styles.css. Settings uses normal browser scroll on Android.
-   The fixed keyboard-safe layout is only for the Chat page. */
+/* Loaded after styles.css. Keep this small: Settings uses normal browser scrolling.
+   The fixed keyboard-safe layout remains only on the Chat page. */
 html,
 body {
   background: #080b14 !important;
   background-color: #080b14 !important;
 }
 
-body:has(.settings-page) {
+body:has(.settings-page),
+html:has(.settings-page) {
   position: static !important;
   inset: auto !important;
-  width: 100% !important;
-  min-height: 100dvh !important;
   height: auto !important;
+  min-height: 100dvh !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   overscroll-behavior-y: auto !important;
@@ -19,81 +19,32 @@ body:has(.settings-page) {
   background-color: #080b14 !important;
 }
 
-html:has(.settings-page) {
-  min-height: 100dvh !important;
-  height: auto !important;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-  background: #080b14 !important;
-  background-color: #080b14 !important;
-}
-
-.settings-page,
-.min-h-\[100dvh\].bg-background.text-foreground {
-  position: relative !important;
-  z-index: 0 !important;
-  isolation: auto !important;
-  contain: none !important;
+.settings-page {
   min-height: 100dvh !important;
   height: auto !important;
   max-height: none !important;
   overflow: visible !important;
-  overscroll-behavior: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  color: #f5f7ff !important;
-  background: #080b14 !important;
-  background-color: #080b14 !important;
-  background-image: none !important;
-  background-attachment: scroll !important;
-  box-shadow: none !important;
-  transform: none !important;
-  filter: none !important;
-  mix-blend-mode: normal !important;
-}
-
-.settings-page::before,
-.settings-page::after,
-.min-h-\[100dvh\].bg-background.text-foreground::before,
-.min-h-\[100dvh\].bg-background.text-foreground::after {
-  display: none !important;
-  content: none !important;
-}
-
-.settings-page > .mx-auto,
-.min-h-\[100dvh\].bg-background.text-foreground > .mx-auto {
-  padding-bottom: calc(6rem + env(safe-area-inset-bottom)) !important;
-  background: #080b14 !important;
-  background-color: #080b14 !important;
-  background-image: none !important;
-}
-
-.settings-page *,
-.min-h-\[100dvh\].bg-background.text-foreground * {
   contain: none !important;
-  will-change: auto !important;
-  backface-visibility: visible !important;
-  transform-style: flat !important;
-  filter: none !important;
-  mix-blend-mode: normal !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-.settings-page header,
-.settings-page .sticky,
-.min-h-\[100dvh\].bg-background.text-foreground header,
-.min-h-\[100dvh\].bg-background.text-foreground .sticky {
-  position: static !important;
-  top: auto !important;
-  z-index: auto !important;
-  transform: none !important;
+  isolation: auto !important;
   background: #080b14 !important;
   background-color: #080b14 !important;
   background-image: none !important;
 }
 
-.settings-page section,
-.min-h-\[100dvh\].bg-background.text-foreground section {
+.settings-page > .mx-auto {
+  background: #080b14 !important;
+  background-color: #080b14 !important;
+  background-image: none !important;
+}
+
+.settings-page header {
+  position: static !important;
+  background: #080b14 !important;
+  background-color: #080b14 !important;
+  background-image: none !important;
+}
+
+.settings-page section {
   background: #101626 !important;
   background-color: #101626 !important;
   background-image: none !important;
@@ -102,18 +53,9 @@ html:has(.settings-page) {
 .settings-page input,
 .settings-page textarea,
 .settings-page select,
-.settings-page [role="combobox"],
-.min-h-\[100dvh\].bg-background.text-foreground input,
-.min-h-\[100dvh\].bg-background.text-foreground textarea,
-.min-h-\[100dvh\].bg-background.text-foreground select,
-.min-h-\[100dvh\].bg-background.text-foreground [role="combobox"] {
+.settings-page [role="combobox"] {
   background: #090e1a !important;
   background-color: #090e1a !important;
   background-image: none !important;
   border-color: rgba(255,255,255,.12) !important;
-}
-
-.settings-page [data-radix-scroll-area-viewport],
-.min-h-\[100dvh\].bg-background.text-foreground [data-radix-scroll-area-viewport] {
-  overflow: visible !important;
 }
