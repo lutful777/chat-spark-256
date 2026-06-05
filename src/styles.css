@@ -142,6 +142,30 @@ button.rounded-full, button.rounded-2xl, button.rounded-xl, [role="combobox"], [
 button.rounded-full:active, button.rounded-2xl:active, button.rounded-xl:active, [role="combobox"]:active, [role="menuitem"]:active { transform: scale(.98); }
 button[class*="bg-primary"], button[data-state="open"] { box-shadow: 0 12px 30px rgba(96,165,250,.18); }
 
+.android-stable-render *,
+.android-apk-webview *,
+.android-apk-webview-body * {
+  animation: none !important;
+  transition-duration: 0.01ms !important;
+  background-attachment: scroll !important;
+  will-change: auto !important;
+}
+.android-stable-render .keyboard-safe-app,
+.android-stable-render .settings-page,
+.android-stable-render [role="dialog"] {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+.android-stable-render textarea,
+.android-stable-render input,
+.android-stable-render select {
+  caret-color: #8bd0cf;
+}
+.android-stable-render [style*="linear-gradient"],
+.android-stable-render [style*="radial-gradient"] {
+  background-image: none !important;
+}
+
 /* Settings/Advanced must use normal browser scrolling on Android. */
 .settings-page {
   min-height: 100dvh;
