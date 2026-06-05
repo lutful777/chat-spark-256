@@ -24,6 +24,23 @@ function isAllowedPath(path: string): boolean {
   return path === "/collections" || /^\/collections\/[a-zA-Z0-9_-]+$/.test(path);
 }
 
+function qdrantDetailMessage(data: unknown): string {
+  if (!data) return "";
+  if (typeof data === "string") return data.slice(0, 240);
+  if (typeof data !== "object") return String(data).slice(0, 240);
+
+  const obj = data as Record<string, unknown>;
+  const status = obj.status;
+  const result = obj.result;
+  const error = obj.error;
+  const message = obj.message;
+
+  const candidate = error ?? message ?? status ?? result;
+  if (typeof candidate === "string") return candidate.slice(0, 240);
+  if (candidate && typeof candidate === "object") return JSON.stringify(candidate).slice(0, 240);
+  return JSON.stringify(obj).slice(0, 240);
+}
+
 export default async function handler(req: any, res: any) {
   if (req.method === "OPTIONS") {
     Object.entries(corsHeaders).forEach(([key, value]) => res.setHeader(key, value));
@@ -75,13 +92,16 @@ export default async function handler(req: any, res: any) {
     }
 
     if (!qdrantRes.ok) {
+      const detail = qdrantDetailMessage(data);
       return sendJson(res, qdrantRes.status, {
         error:
           qdrantRes.status === 401 || qdrantRes.status === 403
             ? "Qdrant API Key ditolak. Cek API key atau buat key baru."
             : qdrantRes.status === 404
               ? "Endpoint atau collection Qdrant tidak ditemukan. Cek endpoint cluster."
-              : "Qdrant error.",
+              : detail
+                ? `Qdrant error: ${detail}`
+                : `Qdrant error ${qdrantRes.status}.`,
         detail: data,
       });
     }
