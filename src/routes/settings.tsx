@@ -672,12 +672,16 @@ function MediaVideoForm({ form, update, showKey, setShowKey, onSave, onTest, tes
 }
 
 function BackupSection({ fileRef, safeBackupFileRef, onImport, onImportSafe, onExportSettings, onExportSafe, clearAllApiKeys, resetAllData }: { fileRef: RefObject<HTMLInputElement | null>; safeBackupFileRef: RefObject<HTMLInputElement | null>; onImport: (file: File) => void | Promise<void>; onImportSafe: (file: File) => void | Promise<void>; onExportSettings: (withKeys: boolean) => void; onExportSafe: () => void; clearAllApiKeys: () => void; resetAllData: () => void }) {
+  const goAdvanced = () => {
+    window.location.assign("/settings/advanced");
+  };
+
   return (
     <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
       <h2 className="mb-1 text-sm font-semibold">Backup Data</h2>
       <p className="mb-3 text-xs text-muted-foreground">Simpan backup sebelum update APK, clear cache, atau pindah perangkat.</p>
-      <Button asChild variant="secondary" className="mb-4 w-full justify-center gap-2 rounded-xl">
-        <Link to="/settings/advanced"><Settings2 className="size-4" /> Advanced</Link>
+      <Button type="button" variant="secondary" className="mb-4 w-full justify-center gap-2 rounded-xl" onClick={goAdvanced}>
+        <Settings2 className="size-4" /> Advanced
       </Button>
       <p className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
         Backup aman berisi chat, provider, API key provider, memory config, Outlook config, dan setting lokal. File ini tetap privat.
