@@ -680,16 +680,6 @@ function ProviderList({
   );
 }
 
-function FieldOriginal({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-sm">{label}</Label>
-      {children}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-    </div>
-  );
-}
-
 function SecretInput({ value, onChange, visible, onToggle, onClear, placeholder }: { value: string; onChange: (value: string) => void; visible: boolean; onToggle: () => void; onClear: () => void; placeholder: string }) {
   return (
     <div className="flex gap-2">
