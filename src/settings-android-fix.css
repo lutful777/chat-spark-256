@@ -128,8 +128,3 @@ html:has(.settings-page) {
 .android-apk-webview .settings-page select {
   letter-spacing: normal !important;
 }
-
-.android-apk-webview .settings-page section {
-  content-visibility: auto;
-  contain-intrinsic-size: 1px 320px;
-}
