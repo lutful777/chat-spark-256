@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, Check, Eye, EyeOff, Loader2, Plus, Plug, Save, Settings2, ShieldAlert, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -198,8 +198,8 @@ function SettingsPage() {
 
   return (
     <div className="settings-page min-h-[100dvh] text-foreground">
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border px-3 py-3">
-        <Button asChild variant="ghost" size="icon" aria-label="Kembali"><Link to="/"><ArrowLeft className="size-5" /></Link></Button>
+      <header className="relative z-10 flex items-center gap-2 border-b border-border px-3 py-3">
+        <Button type="button" variant="ghost" size="icon" aria-label="Kembali" onClick={() => window.location.assign("/")}><ArrowLeft className="size-5" /></Button>
         <h1 className="text-base font-semibold">Settings</h1>
       </header>
 
@@ -269,8 +269,8 @@ function SettingsPage() {
 function AdvancedSettingsPage() {
   return (
     <div className="settings-page min-h-[100dvh] text-foreground">
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border px-3 py-3">
-        <Button asChild variant="ghost" size="icon" aria-label="Kembali ke Settings"><Link to="/settings"><ArrowLeft className="size-5" /></Link></Button>
+      <header className="relative z-10 flex items-center gap-2 border-b border-border px-3 py-3">
+        <Button type="button" variant="ghost" size="icon" aria-label="Kembali ke Settings" onClick={() => window.location.assign("/settings")}><ArrowLeft className="size-5" /></Button>
         <h1 className="text-base font-semibold">Advanced</h1>
       </header>
       <div className="mx-auto w-full max-w-5xl space-y-4 p-3 md:p-6">

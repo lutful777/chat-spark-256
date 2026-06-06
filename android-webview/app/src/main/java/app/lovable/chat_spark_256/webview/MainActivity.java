@@ -198,21 +198,14 @@ public class MainActivity extends Activity {
         }
     }
 
-    private boolean isSettingsUrl(String url) {
-        if (url == null || !url.startsWith(APP_ORIGIN)) {
-            return false;
-        }
-        String path = Uri.parse(url).getPath();
-        return path != null && path.startsWith("/settings");
-    }
-
     private void applyLayerForUrl(String url) {
         if (webView == null) return;
-        if (isSettingsUrl(url)) {
-            webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-        } else {
-            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        }
+        // Always use hardware-accelerated rendering. The software layer used to
+        // be applied to /settings pages, but software rendering of tall pages
+        // produces gray banding/tearing artifacts on scroll. Hardware scrolling
+        // is smooth and the layer-promoting CSS that caused the original
+        // ghosting has been removed from the web app.
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
     }
 
     private View createAiChatView() {
