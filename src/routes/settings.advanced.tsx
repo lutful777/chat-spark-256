@@ -13,20 +13,16 @@ export const Route = createFileRoute("/settings/advanced")({
 function AdvancedSettingsPage() {
   return (
     <div className="settings-page min-h-[100dvh] text-foreground">
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border px-3 py-3">
-        <Button asChild variant="ghost" size="icon" aria-label="Kembali">
-          <Link to="/settings">
-            <ArrowLeft className="size-5" />
-          </Link>
+      <header className="relative z-10 flex items-center gap-2 border-b border-border px-3 py-3">
+        <Button type="button" variant="ghost" size="icon" aria-label="Kembali" onClick={() => window.location.assign("/settings")}>
+          <ArrowLeft className="size-5" />
         </Button>
         <h1 className="text-base font-semibold">Advanced</h1>
       </header>
 
       <div className="mx-auto w-full max-w-5xl space-y-4 p-3 md:p-6">
         <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-2">
-          <Button asChild variant="ghost" className="rounded-xl">
-            <Link to="/settings">Setting</Link>
-          </Button>
+          <Button type="button" variant="ghost" className="rounded-xl" onClick={() => window.location.assign("/settings")}>Setting</Button>
           <Button className="rounded-xl">Advanced</Button>
         </div>
 
