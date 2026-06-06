@@ -141,7 +141,6 @@ function PwaBoot() {
 
     const root = document.documentElement;
     root.classList.add("android-stable-render");
-    let stableHeight = window.innerHeight;
     const virtualKeyboard = (navigator as Navigator & { virtualKeyboard?: VirtualKeyboardLike }).virtualKeyboard;
     if (virtualKeyboard) virtualKeyboard.overlaysContent = true;
 
@@ -153,24 +152,16 @@ function PwaBoot() {
     };
 
     const updateViewportVars = () => {
+      // The visual viewport already shrinks for both keyboard modes:
+      // - overlay keyboards (virtualKeyboard.overlaysContent) shrink visualViewport.height
+      // - resize keyboards shrink window.innerHeight (and visualViewport.height with it)
+      // Driving the chat shell height from it keeps the input above the keyboard.
       const viewport = window.visualViewport;
-      const visualHeight = viewport?.height ?? window.innerHeight;
-      const visualOffsetTop = viewport?.offsetTop ?? 0;
-      const vkHeight = Math.round(virtualKeyboard?.boundingRect?.height ?? 0);
-      const visualGap = viewport ? Math.round(Math.max(0, window.innerHeight - visualHeight - visualOffsetTop)) : 0;
-      const resizeGap = Math.round(Math.max(0, stableHeight - window.innerHeight));
-      const overlayGap = Math.max(vkHeight, visualGap);
-      const resizedByKeyboard = resizeGap > 60 && overlayGap < 60;
-      const keyboardActive = activeIsTextInput() && (overlayGap > 60 || resizeGap > 60);
-      const keyboardOffset = keyboardActive && !resizedByKeyboard ? overlayGap : 0;
-      const keyboardOpen = keyboardActive;
+      const visualHeight = Math.round(viewport?.height ?? window.innerHeight);
+      const keyboardOpen = activeIsTextInput() && window.innerHeight - visualHeight > 80;
 
-      if (!keyboardOpen) {
-        stableHeight = window.innerHeight;
-      }
-
-      root.style.setProperty("--app-stable-height", `${Math.max(stableHeight, 480)}px`);
-      root.style.setProperty("--keyboard-offset", `${keyboardOffset}px`);
+      root.style.setProperty("--app-stable-height", `${Math.max(visualHeight, 320)}px`);
+      root.style.setProperty("--keyboard-offset", "0px");
       root.classList.toggle("keyboard-open", keyboardOpen);
     };
 
