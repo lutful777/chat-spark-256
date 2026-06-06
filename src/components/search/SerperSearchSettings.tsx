@@ -208,22 +208,22 @@ export function SerperSearchSettings() {
           <Button onClick={save} className="gap-2 rounded-xl">
             <Save className="size-4" /> Save
           </Button>
-          <Button 
-            variant="secondary" 
-            onClick={testSerper} 
-            disabled={testing !== null} 
+          <Button
+            variant="secondary"
+            onClick={testSerper}
+            disabled={testing !== null && testing !== "serper"}
             className="gap-2 rounded-xl"
           >
-            {testing === "serper" ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />} 
+            {testing === "serper" ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />}
             Test Serper
           </Button>
-          <Button 
-            variant="secondary" 
-            onClick={testFirecrawl} 
-            disabled={testing !== null} 
+          <Button
+            variant="secondary"
+            onClick={testFirecrawl}
+            disabled={testing !== null && testing !== "firecrawl"}
             className="gap-2 rounded-xl"
           >
-            {testing === "firecrawl" ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />} 
+            {testing === "firecrawl" ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />}
             Test Firecrawl
           </Button>
           <Button 

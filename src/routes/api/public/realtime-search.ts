@@ -69,35 +69,31 @@ async function searchSerper(query: string, signal: AbortSignal, keyOverride = ""
 async function searchFirecrawl(query: string, signal: AbortSignal, keyOverride = ""): Promise<SearchSource[]> {
   const key = (keyOverride || process.env.FIRECRAWL_API_KEY || "").trim();
   if (!key) return [];
-  
-  try {
-    const res = await fetch("https://api.firecrawl.dev/v1/search", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${key}`,
-      },
-      body: JSON.stringify({ query, limit: 8 }),
-      signal,
-    });
-    
-    if (!res.ok) return [];
-    
-    const data = (await res.json()) as {
-      success?: boolean;
-      data?: Array<{ title?: string; url?: string; description?: string; content?: string }>;
-    };
-    
-    if (!data.success || !Array.isArray(data.data)) return [];
-    
-    return data.data.map((item) => ({
-      title: stripHtml(item.title || "Firecrawl result").slice(0, 140),
-      url: stripHtml(item.url || ""),
-      snippet: stripHtml(item.description || item.content || ""),
-    })).filter((s) => s.url && s.snippet);
-  } catch {
-    return [];
-  }
+
+  const res = await fetch("https://api.firecrawl.dev/v1/search", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${key}`,
+    },
+    body: JSON.stringify({ query, limit: 8 }),
+    signal,
+  });
+
+  if (!res.ok) return [];
+
+  const data = (await res.json()) as {
+    success?: boolean;
+    data?: Array<{ title?: string; url?: string; description?: string; content?: string }>;
+  };
+
+  if (!data.success || !Array.isArray(data.data)) return [];
+
+  return data.data.map((item) => ({
+    title: stripHtml(item.title || "Firecrawl result").slice(0, 140),
+    url: stripHtml(item.url || ""),
+    snippet: stripHtml(item.description || item.content || ""),
+  })).filter((s) => s.url && s.snippet);
 }
 
 async function searchBrave(query: string, signal: AbortSignal): Promise<SearchSource[]> {
