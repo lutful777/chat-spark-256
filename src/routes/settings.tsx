@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, Check, Eye, EyeOff, Loader2, Plus, Plug, Save, Settings2, ShieldAlert, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -45,6 +45,7 @@ function cloneProvider(provider: ProviderConfig): ProviderConfig {
 }
 
 function SettingsPage() {
+  const navigate = useNavigate();
   const { ready, providers, activeProviderId, setActiveProviderId, upsertProvider, removeProvider } = useChatStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<ProviderConfig | null>(null);
@@ -192,14 +193,10 @@ function SettingsPage() {
     return <div className="settings-page flex min-h-[100dvh] items-center justify-center text-muted-foreground"><Loader2 className="size-6 animate-spin" /></div>;
   }
 
-  if (typeof window !== "undefined" && window.location.pathname.startsWith("/settings/advanced")) {
-    return <AdvancedSettingsPage />;
-  }
-
   return (
     <div className="settings-page min-h-[100dvh] text-foreground">
       <header className="relative z-10 flex items-center gap-2 border-b border-border px-3 py-3">
-        <Button type="button" variant="ghost" size="icon" aria-label="Kembali" onClick={() => window.location.assign("/")}><ArrowLeft className="size-5" /></Button>
+        <Button type="button" variant="ghost" size="icon" aria-label="Kembali" onClick={() => navigate({ to: "/" })}><ArrowLeft className="size-5" /></Button>
         <h1 className="text-base font-semibold">Settings</h1>
       </header>
 
@@ -259,29 +256,8 @@ function SettingsPage() {
         <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
           <h2 className="mb-1 text-sm font-semibold">Advanced</h2>
           <p className="mb-3 text-xs text-muted-foreground">Advanced dipisah agar halaman Settings lebih stabil di Android WebView.</p>
-          <Button type="button" variant="secondary" className="w-full justify-center gap-2 rounded-xl" onClick={() => window.location.assign("/settings/advanced")}><Settings2 className="size-4" /> Advanced</Button>
+          <Button type="button" variant="secondary" className="w-full justify-center gap-2 rounded-xl" onClick={() => navigate({ to: "/settings/advanced" })}><Settings2 className="size-4" /> Advanced</Button>
         </section>
-      </div>
-    </div>
-  );
-}
-
-function AdvancedSettingsPage() {
-  return (
-    <div className="settings-page min-h-[100dvh] text-foreground">
-      <header className="relative z-10 flex items-center gap-2 border-b border-border px-3 py-3">
-        <Button type="button" variant="ghost" size="icon" aria-label="Kembali ke Settings" onClick={() => window.location.assign("/settings")}><ArrowLeft className="size-5" /></Button>
-        <h1 className="text-base font-semibold">Advanced</h1>
-      </header>
-      <div className="mx-auto w-full max-w-5xl space-y-4 p-3 md:p-6">
-        <DataBackupPanel compact />
-        <section className="rounded-2xl border border-border bg-card p-4 md:p-6"><h2 className="mb-2 text-sm font-semibold">Advanced Chat</h2><p className="text-xs text-muted-foreground">System Prompt, Temperature, Max Tokens, Enable Streaming, dan Direct Call.</p></section>
-        <OutlookConnect />
-        <GitHubConnect />
-        <QdrantMemorySettings />
-        <SupabaseMemoryKey />
-        <SerperSearchSettings />
-        <section className="rounded-2xl border border-border bg-card p-4 md:p-6"><h2 className="mb-1 text-sm font-semibold">Private AI Memory</h2><p className="text-xs text-muted-foreground">Local Project Memory aktif otomatis. Supabase dan Qdrant bisa dipakai sebagai memory lanjutan.</p></section>
       </div>
     </div>
   );
