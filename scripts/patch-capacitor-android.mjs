@@ -2,13 +2,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 
 const manifestPath = 'android/app/src/main/AndroidManifest.xml';
 const gradlePath = 'android/app/build.gradle';
-
-function replaceOnce(content, searchValue, replaceValue) {
-  if (!content.includes(searchValue)) {
-    return content;
-  }
-  return content.replace(searchValue, replaceValue);
-}
+const filePathsPath = 'android/app/src/main/res/xml/file_paths.xml';
 
 function ensureManifest() {
   if (!existsSync(manifestPath)) {
@@ -17,6 +11,7 @@ function ensureManifest() {
 
   let manifest = readFileSync(manifestPath, 'utf8');
 
+  // Idempotent permission injection
   const permissions = [
     '<uses-permission android:name="android.permission.INTERNET" />',
     '<uses-permission android:name="android.permission.CAMERA" />',
@@ -26,23 +21,32 @@ function ensureManifest() {
     '<uses-feature android:name="android.hardware.camera" android:required="false" />',
   ];
 
-  for (const permission of permissions) {
-    if (!manifest.includes(permission)) {
-      manifest = manifest.replace('<application', `    ${permission}\n    <application`);
+  for (const perm of permissions) {
+    if (!manifest.includes(perm)) {
+      manifest = manifest.replace('<application', `    ${perm}\n    <application`);
     }
   }
 
-  manifest = replaceOnce(
-    manifest,
-    'android:label="@string/app_name"',
-    'android:label="AI Chat"'
-  );
+  // Fix app label
+  if (manifest.includes('android:label="@string/app_name"')) {
+    manifest = manifest.replace('android:label="@string/app_name"', 'android:label="AI Chat"');
+  }
 
-  manifest = replaceOnce(
-    manifest,
-    'android:name=".MainActivity"',
-    'android:name=".MainActivity"\n            android:screenOrientation="portrait"'
-  );
+  // Portrait orientation — only inject if not already present
+  if (!manifest.includes('android:screenOrientation')) {
+    manifest = manifest.replace(
+      'android:name=".MainActivity"',
+      'android:name=".MainActivity"\n            android:screenOrientation="portrait"'
+    );
+  }
+
+  // Keyboard resize mode — prevent viewport shrink on soft keyboard open
+  if (!manifest.includes('android:windowSoftInputMode')) {
+    manifest = manifest.replace(
+      'android:name=".MainActivity"',
+      'android:name=".MainActivity"\n            android:windowSoftInputMode="adjustResize"'
+    );
+  }
 
   writeFileSync(manifestPath, manifest);
 }
@@ -61,6 +65,21 @@ function ensureGradle() {
   writeFileSync(gradlePath, gradle);
 }
 
+function ensureFilePaths() {
+  if (!existsSync(filePathsPath)) return;
+
+  const content = `<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-path name="my_images" path="." />
+    <external-files-path name="my_external_files" path="." />
+    <cache-path name="my_cache_images" path="." />
+    <files-path name="my_files" path="." />
+</paths>`;
+
+  writeFileSync(filePathsPath, content);
+}
+
 ensureManifest();
 ensureGradle();
+ensureFilePaths();
 console.log('Capacitor Android project patched for AI Chat.');
