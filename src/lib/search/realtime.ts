@@ -12,19 +12,23 @@ export interface RealtimeSearchResult {
 
 export interface RealtimeSearchConfig {
   serperApiKey: string;
+  firecrawlApiKey: string;
 }
 
 const REALTIME_SEARCH_KEY = "ai-chat-realtime-search";
 
 export function loadRealtimeSearchConfig(): RealtimeSearchConfig {
-  if (typeof window === "undefined") return { serperApiKey: "" };
+  if (typeof window === "undefined") return { serperApiKey: "", firecrawlApiKey: "" };
   try {
     const raw = localStorage.getItem(REALTIME_SEARCH_KEY);
-    if (!raw) return { serperApiKey: "" };
+    if (!raw) return { serperApiKey: "", firecrawlApiKey: "" };
     const parsed = JSON.parse(raw) as Partial<RealtimeSearchConfig>;
-    return { serperApiKey: String(parsed.serperApiKey ?? "") };
+    return { 
+      serperApiKey: String(parsed.serperApiKey ?? ""), 
+      firecrawlApiKey: String(parsed.firecrawlApiKey ?? "") 
+    };
   } catch {
-    return { serperApiKey: "" };
+    return { serperApiKey: "", firecrawlApiKey: "" };
   }
 }
 
@@ -32,7 +36,10 @@ export function saveRealtimeSearchConfig(config: RealtimeSearchConfig) {
   if (typeof window === "undefined") return;
   localStorage.setItem(
     REALTIME_SEARCH_KEY,
-    JSON.stringify({ serperApiKey: config.serperApiKey.trim() }),
+    JSON.stringify({ 
+      serperApiKey: config.serperApiKey.trim(),
+      firecrawlApiKey: config.firecrawlApiKey.trim()
+    }),
   );
 }
 
@@ -55,7 +62,7 @@ function readErrorMessage(status: number, text: string): string {
     return "Endpoint Real Time Search belum aktif di server. Tunggu deploy Vercel selesai atau lakukan redeploy.";
   }
   if (status === 401 || status === 403) {
-    return "API key search ditolak. Cek Serper API Key, jangan pakai awalan Bearer.";
+    return "API key search ditolak. Cek Serper API Key atau Firecrawl API Key, jangan pakai awalan Bearer.";
   }
   if (status === 429) {
     return "Limit atau quota Real Time Search habis. Coba lagi nanti atau ganti API key.";
@@ -70,8 +77,10 @@ export async function searchRealtimeWeb(query: string, signal?: AbortSignal): Pr
   const q = query.trim();
   if (!q) return { query: "", generatedAt: new Date().toISOString(), sources: [] };
 
-  const serperApiKey = loadRealtimeSearchConfig().serperApiKey.trim();
-  const headers: HeadersInit = serperApiKey ? { "X-Serper-API-Key": serperApiKey } : {};
+  const config = loadRealtimeSearchConfig();
+  const headers: HeadersInit = {};
+  if (config.serperApiKey) headers["X-Serper-API-Key"] = config.serperApiKey;
+  if (config.firecrawlApiKey) headers["X-Firecrawl-API-Key"] = config.firecrawlApiKey;
 
   let res: Response;
   try {

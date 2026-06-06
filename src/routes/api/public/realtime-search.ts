@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, X-Serper-API-Key",
+  "Access-Control-Allow-Headers": "Content-Type, X-Serper-API-Key, X-Firecrawl-API-Key",
   "Access-Control-Max-Age": "86400",
 };
 
@@ -64,6 +64,40 @@ async function searchSerper(query: string, signal: AbortSignal, keyOverride = ""
     })),
   );
   return sources;
+}
+
+async function searchFirecrawl(query: string, signal: AbortSignal, keyOverride = ""): Promise<SearchSource[]> {
+  const key = (keyOverride || process.env.FIRECRAWL_API_KEY || "").trim();
+  if (!key) return [];
+  
+  try {
+    const res = await fetch("https://api.firecrawl.dev/v1/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${key}`,
+      },
+      body: JSON.stringify({ query, limit: 8 }),
+      signal,
+    });
+    
+    if (!res.ok) return [];
+    
+    const data = (await res.json()) as {
+      success?: boolean;
+      data?: Array<{ title?: string; url?: string; description?: string; content?: string }>;
+    };
+    
+    if (!data.success || !Array.isArray(data.data)) return [];
+    
+    return data.data.map((item) => ({
+      title: stripHtml(item.title || "Firecrawl result").slice(0, 140),
+      url: stripHtml(item.url || ""),
+      snippet: stripHtml(item.description || item.content || ""),
+    })).filter((s) => s.url && s.snippet);
+  } catch {
+    return [];
+  }
 }
 
 async function searchBrave(query: string, signal: AbortSignal): Promise<SearchSource[]> {
@@ -187,10 +221,30 @@ export const Route = createFileRoute("/api/public/realtime-search")({
 
         try {
           const userSerperKey = request.headers.get("X-Serper-API-Key") ?? "";
-          const serper = await searchSerper(query, controller.signal, userSerperKey).catch(() => []);
-          let sources = uniqueSources(serper);
-          let provider = serper.length ? "serper" : "duckduckgo";
+          const userFirecrawlKey = request.headers.get("X-Firecrawl-API-Key") ?? "";
+          
+          let sources: SearchSource[] = [];
+          let provider = "duckduckgo";
 
+          // Try Firecrawl first if key provided
+          if (userFirecrawlKey) {
+            const firecrawl = await searchFirecrawl(query, controller.signal, userFirecrawlKey).catch(() => []);
+            sources = uniqueSources(firecrawl);
+            if (sources.length > 0) {
+              provider = "firecrawl";
+              return json({ query, provider, generatedAt: new Date().toISOString(), sources });
+            }
+          }
+
+          // Try Serper
+          const serper = await searchSerper(query, controller.signal, userSerperKey).catch(() => []);
+          sources = uniqueSources(serper);
+          if (sources.length > 0) {
+            provider = "serper";
+            return json({ query, provider, generatedAt: new Date().toISOString(), sources });
+          }
+
+          // Try Brave and Tavily in parallel
           if (sources.length === 0) {
             const [brave, tavily] = await Promise.all([
               searchBrave(query, controller.signal).catch(() => []),
@@ -200,6 +254,7 @@ export const Route = createFileRoute("/api/public/realtime-search")({
             provider = brave.length || tavily.length ? "brave/tavily" : "duckduckgo";
           }
 
+          // Fallback to DuckDuckGo
           if (sources.length === 0) {
             const ddg = await searchDuckDuckGo(query, controller.signal);
             sources = uniqueSources(ddg);
