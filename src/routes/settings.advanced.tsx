@@ -9,7 +9,7 @@ import { QdrantMemorySettings } from "@/components/memory/QdrantMemorySettings";
 import { SupabaseMemoryKey } from "@/components/memory/SupabaseMemoryKey";
 import { SerperSearchSettings } from "@/components/search/SerperSearchSettings";
 
-export const Route = createFileRoute("/settings/advanced")({
+export const Route = createFileRoute("/settings.advanced")({
   component: AdvancedSettingsPage,
 });
 
@@ -26,11 +26,6 @@ function AdvancedSettingsPage() {
       </header>
 
       <div className="mx-auto w-full max-w-5xl space-y-4 p-3 md:p-6">
-        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-2">
-          <Button type="button" variant="ghost" className="rounded-xl" onClick={() => navigate({ to: "/settings" })}>Settings</Button>
-          <Button className="rounded-xl" disabled>Advanced</Button>
-        </div>
-
         <DataBackupPanel compact />
 
         <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
