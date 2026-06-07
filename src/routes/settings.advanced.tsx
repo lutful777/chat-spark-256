@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { AppRouteNav } from "@/components/layout/AppRouteNav";
 import { DataBackupPanel } from "@/components/settings/DataBackupPanel";
 import { OutlookConnect } from "@/components/outlook/OutlookConnect";
 import { GitHubConnect } from "@/components/github/GitHubConnect";
@@ -33,7 +32,6 @@ function AdvancedSettingsPage() {
       </header>
 
       <div className="mx-auto w-full max-w-5xl space-y-4 p-3 md:p-6">
-        <AppRouteNav />
         <DataBackupPanel compact />
 
         <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
