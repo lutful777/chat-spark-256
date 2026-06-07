@@ -267,7 +267,7 @@ function SettingsPageContent() {
         <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
           <h2 className="mb-1 text-sm font-semibold">Advanced</h2>
           <p className="mb-3 text-xs text-muted-foreground">Advanced dipisah agar halaman Settings lebih stabil di Android WebView.</p>
-          <Button type="button" variant="secondary" className="w-full justify-center gap-2 rounded-xl" onClick={() => navigate({ to: "/settings/advanced" })}><Settings2 className="size-4" /> Advanced</Button>
+          <Button type="button" variant="secondary" className="w-full justify-center gap-2 rounded-xl" onClick={() => navigate({ to: "/qdrant-memory" })}><Settings2 className="size-4" /> Qdrant Memory / Advanced</Button>
         </section>
       </div>
     </div>
