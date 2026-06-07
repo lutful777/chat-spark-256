@@ -127,9 +127,9 @@ function CodeBlock({ children }: { children?: React.ReactNode }) {
   const code = textFromNode(children).replace(/\n$/, "");
 
   return (
-    <div className="my-2 max-w-full overflow-hidden rounded-xl border border-border bg-secondary/80">
-      <pre className="m-0 max-w-full overflow-x-auto whitespace-pre-wrap break-words p-3 pb-2 text-xs [overflow-wrap:anywhere]">
-        <code className="bg-transparent p-0 [overflow-wrap:anywhere]">{children}</code>
+    <div className="my-2 overflow-hidden rounded-xl border border-border bg-secondary/80">
+      <pre className="m-0 max-w-full overflow-x-auto whitespace-pre-wrap break-words p-3 pb-2 text-xs">
+        <code className="bg-transparent p-0">{children}</code>
       </pre>
       <div className="flex justify-end border-t border-border/70 bg-background/40 px-2 py-1.5">
         <CopyScriptButton text={code} compact />
@@ -177,7 +177,7 @@ export function ChatMessageBubble({
   };
 
   return (
-    <div className={cn("group flex w-full min-w-0 max-w-full gap-2.5 overflow-hidden", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("group flex w-full min-w-0 gap-2.5 overflow-hidden", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
         <div
           className={cn(
@@ -189,10 +189,10 @@ export function ChatMessageBubble({
         </div>
       )}
 
-      <div className={cn("flex min-w-0 max-w-[calc(100vw-4.5rem)] flex-col gap-1 overflow-hidden sm:max-w-[82%]", isUser ? "items-end" : "items-start")}>
+      <div className={cn("flex min-w-0 max-w-[calc(100vw-4.5rem)] flex-col gap-1 sm:max-w-[82%]", isUser ? "items-end" : "items-start")}>
         <div
           className={cn(
-            "min-w-0 max-w-full overflow-hidden rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm [overflow-wrap:anywhere]",
+            "min-w-0 max-w-full overflow-hidden rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm",
             isUser
               ? "rounded-br-md bg-primary text-primary-foreground"
               : message.error
@@ -210,11 +210,11 @@ export function ChatMessageBubble({
               )}
             </div>
           ) : (
-            <div className="min-w-0 max-w-full space-y-2 overflow-hidden">
+            <div className="space-y-2">
               <div
                 className={cn(
                   "min-w-0 max-w-full overflow-hidden [overflow-wrap:anywhere] [&_*]:max-w-full [&_a]:break-all [&_a]:text-primary [&_a]:underline",
-                  "[&_p]:my-1.5 first:[&_p]:mt-0 last:[&_p]:mb-0 [&_p]:break-words [&_p]:[overflow-wrap:anywhere]",
+                  "[&_p]:my-1.5 first:[&_p]:mt-0 last:[&_p]:mb-0 [&_p]:break-words",
                   "[&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-5",
                   "[&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:break-words [&_h1]:text-base [&_h1]:font-semibold",
                   "[&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:break-words [&_h2]:text-base [&_h2]:font-semibold",
