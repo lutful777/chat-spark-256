@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, Check, Eye, EyeOff, Loader2, Plus, Plug, Save, Settings2, ShieldAlert, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -45,6 +45,17 @@ function cloneProvider(provider: ProviderConfig): ProviderConfig {
 }
 
 function SettingsPage() {
+  const routerState = useRouterState();
+  const isChildActive = routerState.location.pathname.startsWith("/settings/");
+
+  if (isChildActive) {
+    return <Outlet />;
+  }
+
+  return <SettingsPageContent />;
+}
+
+function SettingsPageContent() {
   const navigate = useNavigate();
   const { ready, providers, activeProviderId, setActiveProviderId, upsertProvider, removeProvider } = useChatStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
