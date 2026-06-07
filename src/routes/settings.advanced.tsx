@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { AppRouteNav } from "@/components/layout/AppRouteNav";
 import { DataBackupPanel } from "@/components/settings/DataBackupPanel";
 import { OutlookConnect } from "@/components/outlook/OutlookConnect";
 import { GitHubConnect } from "@/components/github/GitHubConnect";
@@ -10,6 +11,12 @@ import { SupabaseMemoryKey } from "@/components/memory/SupabaseMemoryKey";
 import { SerperSearchSettings } from "@/components/search/SerperSearchSettings";
 
 export const Route = createFileRoute("/settings/advanced")({
+  head: () => ({
+    meta: [
+      { title: "Advanced Settings — AI Chat" },
+      { name: "description", content: "Pengaturan lanjutan AI Chat." },
+    ],
+  }),
   component: AdvancedSettingsPage,
 });
 
@@ -17,15 +24,16 @@ function AdvancedSettingsPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="settings-page min-h-[100dvh] text-foreground">
+    <div className="settings-page min-h-[100dvh] overflow-x-hidden text-foreground">
       <header className="relative z-10 flex items-center gap-2 border-b border-border px-3 py-3">
         <Button type="button" variant="ghost" size="icon" aria-label="Kembali" onClick={() => navigate({ to: "/settings" })}>
           <ArrowLeft className="size-5" />
         </Button>
-        <h1 className="text-base font-semibold">Advanced</h1>
+        <h1 className="min-w-0 truncate text-base font-semibold">Advanced Settings</h1>
       </header>
 
       <div className="mx-auto w-full max-w-5xl space-y-4 p-3 md:p-6">
+        <AppRouteNav />
         <DataBackupPanel compact />
 
         <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
