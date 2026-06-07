@@ -1,130 +1,78 @@
-/* Loaded after styles.css. Keep this small: Settings uses normal browser scrolling.
-   The fixed keyboard-safe layout remains only on the Chat page. */
+/* Android WebView stability layer. Keep selectors narrow and page-specific. */
+
 html,
 body {
-  background: #080b14 !important;
-  background-color: #080b14 !important;
-}
-
-body:has(.settings-page),
-html:has(.settings-page) {
-  position: static !important;
-  inset: auto !important;
-  height: auto !important;
-  min-height: 100dvh !important;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-  overscroll-behavior-y: auto !important;
-  background: #080b14 !important;
-  background-color: #080b14 !important;
+  background: #080b14;
+  overflow-x: hidden;
 }
 
 .settings-page {
-  min-height: 100dvh !important;
-  height: auto !important;
-  max-height: none !important;
-  overflow: visible !important;
-  contain: none !important;
-  isolation: auto !important;
+  width: 100%;
+  min-height: 100dvh;
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: visible;
   background: #080b14 !important;
-  background-color: #080b14 !important;
-  background-image: none !important;
+  color: var(--foreground);
 }
 
 .settings-page > .mx-auto {
+  width: 100%;
+  max-width: min(64rem, 100%) !important;
+  overflow-x: hidden;
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
   background: #080b14 !important;
-  background-color: #080b14 !important;
-  background-image: none !important;
 }
 
 .settings-page header {
-  position: static !important;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   background: #080b14 !important;
-  background-color: #080b14 !important;
-  background-image: none !important;
+  border-bottom-color: rgba(255,255,255,.09) !important;
+}
+
+.settings-page section,
+.settings-page .rounded-2xl,
+.settings-page .rounded-3xl {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .settings-page section {
+  overflow-x: hidden;
   background: #101626 !important;
-  background-color: #101626 !important;
-  background-image: none !important;
 }
 
 .settings-page input,
 .settings-page textarea,
 .settings-page select,
 .settings-page [role="combobox"] {
+  min-width: 0;
+  max-width: 100%;
   background: #090e1a !important;
-  background-color: #090e1a !important;
-  background-image: none !important;
   border-color: rgba(255,255,255,.12) !important;
 }
 
-/* Android APK lightweight mode: keep pages smooth and avoid visual artifacts. */
-.android-apk-webview *,
-.android-apk-webview *::before,
-.android-apk-webview *::after {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  filter: none !important;
-  text-shadow: none !important;
-  box-shadow: none !important;
-  transition-duration: 0s !important;
-  animation-duration: 0s !important;
-}
+@media (max-width: 640px) {
+  .settings-page > .mx-auto {
+    max-width: 100% !important;
+    padding: 10px !important;
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom)) !important;
+  }
 
-.android-apk-webview .settings-page,
-.android-apk-webview .settings-page * {
-  transform: none !important;
-  will-change: auto !important;
-}
+  .settings-page header {
+    min-height: 48px;
+    padding: 8px 10px !important;
+  }
 
-.android-apk-webview .settings-page header {
-  position: static !important;
-  min-height: 48px !important;
-  padding: 8px 10px !important;
-}
-
-.android-apk-webview .settings-page > .mx-auto {
-  max-width: none !important;
-  padding: 10px !important;
-  gap: 10px !important;
-}
-
-.android-apk-webview .settings-page section,
-.android-apk-webview .settings-page .rounded-2xl {
-  border-radius: 12px !important;
-  padding: 12px !important;
-  border-color: rgba(255,255,255,.08) !important;
-}
-
-.android-apk-webview .settings-page .grid {
-  gap: 10px !important;
-}
-
-.android-apk-webview .settings-page .space-y-5,
-.android-apk-webview .settings-page .space-y-4,
-.android-apk-webview .settings-page .space-y-2 {
-  gap: 10px !important;
-}
-
-.android-apk-webview .settings-page input,
-.android-apk-webview .settings-page textarea,
-.android-apk-webview .settings-page select,
-.android-apk-webview .settings-page button {
-  min-height: 40px !important;
-}
-
-.android-apk-webview .settings-page svg {
-  width: 16px !important;
-  height: 16px !important;
-}
-
-.android-apk-webview .settings-page p,
-.android-apk-webview .settings-page label,
-.android-apk-webview .settings-page span,
-.android-apk-webview .settings-page button,
-.android-apk-webview .settings-page input,
-.android-apk-webview .settings-page select {
-  letter-spacing: normal !important;
+  .settings-page section,
+  .settings-page .rounded-2xl,
+  .settings-page .rounded-3xl {
+    border-radius: 12px !important;
+  }
 }
