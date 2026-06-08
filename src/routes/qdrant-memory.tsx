@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DataBackupPanel } from "@/components/settings/DataBackupPanel";
 import { OutlookConnect } from "@/components/outlook/OutlookConnect";
-import { GitHubConnect } from "@/components/github/GitHubConnect";
 import { QdrantMemorySettings } from "@/components/memory/QdrantMemorySettings";
 import { SupabaseMemoryKey } from "@/components/memory/SupabaseMemoryKey";
 import { SerperSearchSettings } from "@/components/search/SerperSearchSettings";
@@ -91,7 +90,6 @@ function QdrantMemoryPage() {
         </section>
 
         <OutlookConnect />
-        <GitHubConnect />
 
         <section className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-foreground">
           Endpoint dan API key Qdrant disimpan lokal di browser/perangkat ini. Jangan masukkan API key ke GitHub, APK, atau file public.
