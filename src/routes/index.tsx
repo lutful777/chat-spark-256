@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
-import { Brain, BrainCircuit, Check, ChevronDown, Download, Eraser, File as FileJson, FileText, Github, Menu, PanelLeftClose, Settings, Sparkles } from "lucide-react";
+import { Brain, BrainCircuit, Check, ChevronDown, Download, Eraser, File as FileJson, FileText, Menu, PanelLeftClose, Settings, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -33,11 +33,8 @@ import type { ChatAttachment, ChatMessage } from "@/lib/chat/types";
 import { compactConversationMessages, getConversationSummaryStatus } from "@/lib/chat/summary";
 import { autoSaveProjectMemory, buildProjectMemoryContext } from "@/lib/memory/projectMemory";
 import { runOutlookMailCommand } from "@/lib/outlook/chatCommand";
-import { runGitHubChatCommand } from "@/lib/github/chatCommand";
-import { autoSaveImportantMemory, buildAiMemoryContext, getValidSupabaseAuthSession, loadSupabaseMemoryConfig } from "@/lib/memory/supabaseMemory";
+import { autoSaveImportantMemory, buildAiMemoryContext, loadSupabaseMemoryConfig } from "@/lib/memory/supabaseMemory";
 import { buildRealtimeContext, loadRealtimeSearchConfig, searchRealtimeWeb } from "@/lib/search/realtime";
-import { loadGitHubConfig } from "@/lib/github/api";
-import { OWNER_EMAIL } from "@/lib/app/roles";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -46,7 +43,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "AI Chat — chat AI multi-provider dengan mode GitHub, auto Real Time Search, Thinking, upload file, dan memory.",
+          "AI Chat — chat AI multi-provider dengan auto Real Time Search, Thinking, upload file, dan memory.",
       },
       { property: "og:title", content: "AI Chat" },
       {
@@ -78,7 +75,7 @@ const THINKING_DEEP_CONTEXT = [
 ].join("\n");
 
 function stripModePrefix(text: string): string {
-  return text.replace(/^\[(GITHUB|REALTIME|THINKING_DEEP|THINKING)\]\s*/i, "").trim();
+  return text.replace(/^\[(REALTIME|THINKING_DEEP|THINKING)\]\s*/i, "").trim();
 }
 
 function shouldUseAutoRealtime(text: string): boolean {
@@ -97,14 +94,12 @@ function shouldUseAutoRealtime(text: string): boolean {
 }
 
 function ModeIcon({ mode }: { mode: ChatMode }) {
-  if (mode === "github") return <Github className="size-4" />;
   if (mode === "thinking") return <Brain className="size-4" />;
   if (mode === "thinking-deep") return <BrainCircuit className="size-4" />;
   return <Sparkles className="size-4" />;
 }
 
 function modeLabel(mode: ChatMode): string {
-  if (mode === "github") return "GitHub";
   if (mode === "thinking") return "Thinking";
   if (mode === "thinking-deep") return "Think Deeply";
   return "Plain";
@@ -118,19 +113,6 @@ function displayModelName(model?: string): string {
 
 function normalizeMode(next: ChatMode): ChatMode {
   return next === "realtime" ? "normal" : next;
-}
-
-function isProtectedAppRepo(owner?: string, repo?: string): boolean {
-  return owner?.trim().toLowerCase() === "lutful777" && repo?.trim().toLowerCase() === "chat-spark-256";
-}
-
-async function assertGitHubModeAllowed(owner?: string, repo?: string): Promise<void> {
-  if (!isProtectedAppRepo(owner, repo)) return;
-  const session = await getValidSupabaseAuthSession();
-  const email = session?.user.email?.trim().toLowerCase();
-  if (email !== OWNER_EMAIL) {
-    throw new Error(`Repo website ini hanya bisa diedit oleh Owner/Admin/Developer. Login Memory dengan ${OWNER_EMAIL} dulu.`);
-  }
 }
 
 function ChatPage() {
@@ -184,10 +166,8 @@ function ChatPage() {
     !!activeProvider?.model.trim();
 
   const memoryConfig = loadSupabaseMemoryConfig();
-  const githubConfig = loadGitHubConfig();
   const realtimeConfig = loadRealtimeSearchConfig();
   const memoryOk = !!(memoryConfig.enabled && memoryConfig.anonKey.trim());
-  const githubOk = !!(githubConfig.token.trim() && githubConfig.owner && githubConfig.repo);
   const realtimeDesc = realtimeConfig.serperApiKey.trim() ? "Auto search · Serper aktif" : "Auto search · fallback aktif";
   const activeModelLabel = displayModelName(activeProvider?.model);
 
@@ -256,12 +236,6 @@ function ChatPage() {
   };
 
   const handleStop = () => abortRef.current?.abort();
-
-  const fillGitHubCommand = (command: string) => {
-    setMode("github");
-    setStatusOpen(false);
-    inputRef.current?.setText(command);
-  };
 
   const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
@@ -355,16 +329,6 @@ function ChatPage() {
 
     setLoading(true);
     try {
-      if (/^\[GITHUB\]/i.test(text.trim())) {
-        await assertGitHubModeAllowed(githubConfig.owner, githubConfig.repo);
-      }
-      const githubReply = await runGitHubChatCommand(text, activeProvider);
-      if (githubReply) {
-        setConversationMessages(convId, [...withUser, { id: uid(), role: "assistant", content: githubReply, createdAt: Date.now() }]);
-        autoSaveProjectMemory(text, githubReply);
-        void autoSaveImportantMemory(text, githubReply);
-        return;
-      }
       const outlookReply = await runOutlookMailCommand(cleanText);
       if (outlookReply) {
         setConversationMessages(convId, [...withUser, { id: uid(), role: "assistant", content: outlookReply, createdAt: Date.now() }]);
@@ -388,7 +352,7 @@ function ChatPage() {
     const isThinkingStd = !isThinkingDeep && trimmedText.startsWith("[THINKING]");
     const thinkingDepth: "none" | "standard" | "deep" = isThinkingDeep ? "deep" : isThinkingStd ? "standard" : "none";
     const explicitRealtime = realtime || trimmedText.startsWith("[REALTIME]");
-    const autoRealtime = !explicitRealtime && !trimmedText.startsWith("[GITHUB]") && mode === "normal" && shouldUseAutoRealtime(cleanText);
+    const autoRealtime = !explicitRealtime && mode === "normal" && shouldUseAutoRealtime(cleanText);
 
     let realtimeContext = "";
     if (explicitRealtime || autoRealtime) {
@@ -463,7 +427,6 @@ function ChatPage() {
           <StatusPanel
             mode={mode}
             canSend={canSend}
-            githubOk={githubOk}
             memoryOk={memoryOk}
             realtimeOk
             realtimeDesc={realtimeDesc}
@@ -471,9 +434,7 @@ function ChatPage() {
             summaryDesc={summaryStatus.enabled ? `Aktif · ringkas ${summaryStatus.summarizedMessages} pesan lama` : `${summaryStatus.totalMessages}/30 pesan`}
             providerName={activeProvider?.name ?? "Provider"}
             providerModel={activeProvider?.model ?? "Belum dipilih"}
-            repoName={githubOk ? `${githubConfig.owner}/${githubConfig.repo}` : "Belum connect"}
             onMode={setMode}
-            onCommand={fillGitHubCommand}
           />
         </SheetContent>
       </Sheet>
@@ -520,17 +481,6 @@ function ChatPage() {
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
-              <DropdownMenuItem onClick={() => setMode("github")}>
-                <Github className="mr-2 size-4" /> GitHub
-                {mode === "github" && <Check className="ml-auto size-3" />}
-              </DropdownMenuItem>
-              {mode === "github" && <>
-                <DropdownMenuItem onClick={() => inputRef.current?.setText("Tambah tombol ")}>Tambah tombol</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => inputRef.current?.setText("Hapus tombol ")}>Hapus tombol</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => inputRef.current?.setText("Perbaiki error ")}>Perbaiki error</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => inputRef.current?.setText("cek build")}>Cek build</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => inputRef.current?.setText("PUSH")}>Push</DropdownMenuItem>
-              </>}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -542,7 +492,7 @@ function ChatPage() {
           <ScrollArea className="h-full">
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-3 py-6 sm:px-4">
               {summaryStatus.enabled && <div className="rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">Conversation Summary aktif — chat panjang diringkas saat dikirim ke AI agar lebih ringan dan hemat token. Riwayat lengkap tetap tampil di layar.</div>}
-              {messages.length === 0 ? <div className="flex min-h-[55vh] flex-col items-center justify-center text-center"><div className="mb-5 rounded-[2rem] border border-border/70 bg-card/80 p-5 shadow-2xl shadow-black/20 backdrop-blur"><Sparkles className="size-9 text-primary" /></div><h1 className="text-3xl font-semibold tracking-tight">AI Chat</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Pilih mode di header. Plain otomatis mencari data terbaru jika diperlukan, Thinking untuk jawaban teliti, atau GitHub untuk update aplikasi.</p><div className="mt-5 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-3"><PremiumCard title="Plain" desc="Auto Search bila perlu" /><PremiumCard title="Thinking" desc="Jawaban lebih teliti" /><PremiumCard title="GitHub" desc="Update web app via chat" /></div></div> : messages.map((m) => <ChatMessageBubble key={m.id} message={m} onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined} onEdit={m.role === "user" ? () => handleEdit(m) : undefined} onDelete={() => handleDelete(m)} />)}
+              {messages.length === 0 ? <div className="flex min-h-[55vh] flex-col items-center justify-center text-center"><div className="mb-5 rounded-[2rem] border border-border/70 bg-card/80 p-5 shadow-2xl shadow-black/20 backdrop-blur"><Sparkles className="size-9 text-primary" /></div><h1 className="text-3xl font-semibold tracking-tight">AI Chat</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Pilih mode di header. Plain otomatis mencari data terbaru jika diperlukan, dan Thinking untuk jawaban lebih teliti.</p><div className="mt-5 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-2"><PremiumCard title="Plain" desc="Auto Search bila perlu" /><PremiumCard title="Thinking" desc="Jawaban lebih teliti" /></div></div> : messages.map((m) => <ChatMessageBubble key={m.id} message={m} onRegenerate={m.id === lastAssistantId ? handleRegenerate : undefined} onEdit={m.role === "user" ? () => handleEdit(m) : undefined} onDelete={() => handleDelete(m)} />)}
               {loading && <TypingIndicator />}
               <div ref={scrollEndRef} />
             </div>
@@ -562,7 +512,6 @@ function PremiumCard({ title, desc }: { title: string; desc: string }) {
 function StatusPanel({
   mode,
   canSend,
-  githubOk,
   memoryOk,
   realtimeOk,
   realtimeDesc,
@@ -570,13 +519,10 @@ function StatusPanel({
   summaryDesc,
   providerName,
   providerModel,
-  repoName,
   onMode,
-  onCommand,
 }: {
   mode: ChatMode;
   canSend: boolean;
-  githubOk: boolean;
   memoryOk: boolean;
   realtimeOk: boolean;
   realtimeDesc: string;
@@ -584,9 +530,7 @@ function StatusPanel({
   summaryDesc: string;
   providerName: string;
   providerModel: string;
-  repoName: string;
   onMode: (mode: ChatMode) => void;
-  onCommand: (command: string) => void;
 }) {
   return (
     <div className="flex h-full flex-col bg-sidebar p-4 text-sidebar-foreground">
@@ -597,7 +541,6 @@ function StatusPanel({
 
       <div className="space-y-2">
         <StatusRow ok={canSend} title="Provider" desc={canSend ? `${providerName} · ${providerModel}` : "Belum lengkap"} />
-        <StatusRow ok={githubOk} title="GitHub" desc={repoName} />
         <StatusRow ok={memoryOk} title="Memory" desc={memoryOk ? "Supabase aktif" : "Supabase belum aktif"} />
         <StatusRow ok={realtimeOk} title="Auto Search" desc={realtimeDesc} />
         <StatusRow ok={summaryEnabled} title="Summary" desc={summaryDesc} />
@@ -609,18 +552,6 @@ function StatusPanel({
           <Button variant={mode === "normal" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("normal")}><Sparkles className="mr-2 size-4" />Plain</Button>
           <Button variant={mode === "thinking" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("thinking")}><Brain className="mr-2 size-4" />Thinking</Button>
           <Button variant={mode === "thinking-deep" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("thinking-deep")}><BrainCircuit className="mr-2 size-4" />Think Deeply</Button>
-          <Button variant={mode === "github" ? "default" : "secondary"} className="justify-start rounded-2xl" onClick={() => onMode("github")}><Github className="mr-2 size-4" />GitHub</Button>
-        </div>
-      </div>
-
-      <div className="mt-5 rounded-3xl border border-sidebar-border bg-sidebar-accent/30 p-3">
-        <p className="mb-2 text-xs font-semibold text-muted-foreground">Command GitHub</p>
-        <div className="grid gap-2">
-          <Button variant="secondary" className="justify-start rounded-2xl" onClick={() => onCommand("Tambah tombol ")}>Tambah tombol</Button>
-          <Button variant="secondary" className="justify-start rounded-2xl" onClick={() => onCommand("Hapus tombol ")}>Hapus tombol</Button>
-          <Button variant="secondary" className="justify-start rounded-2xl" onClick={() => onCommand("Perbaiki error ")}>Perbaiki error</Button>
-          <Button variant="secondary" className="justify-start rounded-2xl" onClick={() => onCommand("cek build")}>Cek build</Button>
-          <Button variant="secondary" className="justify-start rounded-2xl" onClick={() => onCommand("PUSH")}>Push</Button>
         </div>
       </div>
     </div>
